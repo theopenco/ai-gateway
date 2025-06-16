@@ -663,7 +663,7 @@ const completions = createRoute({
 chat.openapi(completions, async (c) => {
 	const {
 		model: modelInput,
-		messages,
+		messages: messagesInput,
 		temperature,
 		max_tokens,
 		top_p,
@@ -672,6 +672,9 @@ chat.openapi(completions, async (c) => {
 		response_format,
 		stream,
 	} = c.req.valid("json");
+
+	// filter out empty messages
+	const messages = messagesInput.filter((m) => m.content.trim());
 
 	// Extract or generate request ID
 	const requestId = c.req.header("x-request-id") || shortid(40);
