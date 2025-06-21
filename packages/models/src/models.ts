@@ -137,6 +137,20 @@ export let models = [
 		jsonOutput: true,
 	},
 	{
+		model: "o1",
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "o1",
+				inputPrice: 15.0 / 1e6,
+				outputPrice: 60.0 / 1e6,
+				contextSize: 200000,
+				streaming: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
 		model: "gpt-4.1-mini",
 		providers: [
 			{
