@@ -220,7 +220,14 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			}
 			break;
 		default: // OpenAI format
-			content = json.choices?.[0]?.message?.content || null;
+			// Handle both regular content and tool calls
+			if (json.choices?.[0]?.message?.tool_calls) {
+				// For tool calls, we'll keep the original JSON structure
+				// but set content to null since it's in tool_calls
+				content = null;
+			} else {
+				content = json.choices?.[0]?.message?.content || null;
+			}
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
@@ -619,9 +626,28 @@ const completions = createRoute({
 								role: z.string().openapi({
 									example: "user",
 								}),
-								content: z.string().openapi({
-									example: "Hello!",
-								}),
+								content: z.union([
+									z.string().openapi({
+										example: "Hello!",
+									}),
+									z.array(
+										z.union([
+											z.object({
+												type: z.literal("text"),
+												text: z.string(),
+											}),
+											z.object({
+												type: z.literal("image_url"),
+												image_url: z.object({
+													url: z.string(),
+													detail: z.enum(["low", "high", "auto"]).optional(),
+												}),
+											}),
+										]),
+									),
+								]),
+								name: z.string().optional(),
+								tool_call_id: z.string().optional(),
 							}),
 						),
 						temperature: z.number().optional(),
@@ -637,6 +663,30 @@ const completions = createRoute({
 							})
 							.optional(),
 						stream: z.boolean().optional().default(false),
+						tools: z
+							.array(
+								z.object({
+									type: z.literal("function"),
+									function: z.object({
+										name: z.string(),
+										description: z.string().optional(),
+										parameters: z.record(z.any()).optional(),
+									}),
+								}),
+							)
+							.optional(),
+						tool_choice: z
+							.union([
+								z.literal("auto"),
+								z.literal("none"),
+								z.object({
+									type: z.literal("function"),
+									function: z.object({
+										name: z.string(),
+									}),
+								}),
+							])
+							.optional(),
 					}),
 				},
 			},
@@ -647,7 +697,37 @@ const completions = createRoute({
 			content: {
 				"application/json": {
 					schema: z.object({
-						message: z.string(),
+						id: z.string(),
+						object: z.string(),
+						created: z.number(),
+						model: z.string(),
+						choices: z.array(
+							z.object({
+								index: z.number(),
+								message: z.object({
+									role: z.string(),
+									content: z.string().nullable(),
+									tool_calls: z
+										.array(
+											z.object({
+												id: z.string(),
+												type: z.literal("function"),
+												function: z.object({
+													name: z.string(),
+													arguments: z.string(),
+												}),
+											}),
+										)
+										.optional(),
+								}),
+								finish_reason: z.string(),
+							}),
+						),
+						usage: z.object({
+							prompt_tokens: z.number(),
+							completion_tokens: z.number(),
+							total_tokens: z.number(),
+						}),
 					}),
 				},
 				"text/event-stream": {
@@ -688,6 +768,8 @@ chat.openapi(completions, async (c) => {
 		presence_penalty,
 		response_format,
 		stream,
+		tools,
+		tool_choice,
 	} = c.req.valid("json");
 
 	// Extract or generate request ID
@@ -1184,6 +1266,8 @@ chat.openapi(completions, async (c) => {
 		frequency_penalty,
 		presence_penalty,
 		response_format,
+		tools,
+		tool_choice,
 	);
 
 	const startTime = Date.now();
