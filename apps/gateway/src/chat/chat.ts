@@ -1,17 +1,17 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import {
+	type ApiKey,
 	db,
-	shortid,
 	type InferSelectModel,
 	type Project,
+	shortid,
 	type tables,
-	type ApiKey,
 } from "@llmgateway/db";
 import {
 	getCheapestFromAvailableProviders,
+	getModelStreamingSupport,
 	getProviderEndpoint,
 	getProviderHeaders,
-	getModelStreamingSupport,
 	type Model,
 	models,
 	prepareRequestBody,
@@ -165,10 +165,34 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 	let promptTokens = null;
 	let completionTokens = null;
 	let totalTokens = null;
+	let toolCalls = null;
 
 	switch (usedProvider) {
 		case "anthropic":
-			content = json.content?.[0]?.text || null;
+			// Check for tool_calls in Anthropic response
+			if (json.content && Array.isArray(json.content)) {
+				// Look for tool_calls in content blocks
+				for (const block of json.content) {
+					if (block.type === "tool_use") {
+						// Convert Anthropic tool_use format to OpenAI tool_calls format
+						toolCalls = toolCalls || ([] as any[]);
+						toolCalls.push({
+							id: `call_${shortid()}`,
+							type: "function",
+							function: {
+								name: block.name,
+								arguments: block.input ? JSON.stringify(block.input) : "{}",
+							},
+						});
+						// If we have tool calls, content should be null
+						content = null;
+					} else if (block.type === "text" && content === null && !toolCalls) {
+						content = block.text || null;
+					}
+				}
+			} else {
+				content = json.content?.[0]?.text || null;
+			}
 			finishReason = json.stop_reason || null;
 			promptTokens = json.usage?.input_tokens || null;
 			completionTokens = json.usage?.output_tokens || null;
@@ -179,7 +203,32 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			break;
 		case "google-vertex":
 		case "google-ai-studio":
-			content = json.candidates?.[0]?.content?.parts?.[0]?.text || null;
+			// Check for tool_calls in Google response
+			if (json.candidates?.[0]?.content?.parts) {
+				const parts = json.candidates[0].content.parts;
+				for (const part of parts) {
+					if (part.functionCall) {
+						// Convert Google functionCall format to OpenAI tool_calls format
+						toolCalls = toolCalls || ([] as any[]);
+						toolCalls.push({
+							id: `call_${shortid()}`,
+							type: "function",
+							function: {
+								name: part.functionCall.name,
+								arguments: part.functionCall.args
+									? JSON.stringify(part.functionCall.args)
+									: "{}",
+							},
+						});
+						// If we have tool calls, content should be null
+						content = null;
+					} else if (part.text && content === null && !toolCalls) {
+						content = part.text;
+					}
+				}
+			} else {
+				content = json.candidates?.[0]?.content?.parts?.[0]?.text || null;
+			}
 			finishReason = json.candidates?.[0]?.finishReason || null;
 			promptTokens = json.usageMetadata?.promptTokenCount || null;
 			completionTokens = json.usageMetadata?.candidatesTokenCount || null;
@@ -188,36 +237,48 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 		case "inference.net":
 		case "kluster.ai":
 		case "together.ai":
-			content = json.choices?.[0]?.message?.content || null;
+			// Check for tool_calls in these providers (they typically follow OpenAI format)
+			if (json.choices?.[0]?.message?.tool_calls) {
+				toolCalls = json.choices[0].message.tool_calls;
+				content = null;
+			} else {
+				content = json.choices?.[0]?.message?.content || null;
+			}
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
 			totalTokens = json.usage?.total_tokens || null;
 			break;
 		case "mistral":
-			content = json.choices?.[0]?.message?.content || null;
+			// Check for tool_calls in Mistral response
+			if (json.choices?.[0]?.message?.tool_calls) {
+				toolCalls = json.choices[0].message.tool_calls;
+				content = null;
+			} else {
+				content = json.choices?.[0]?.message?.content || null;
+
+				// Handle Mistral's JSON output mode which wraps JSON in markdown code blocks
+				if (
+					content &&
+					typeof content === "string" &&
+					content.includes("```json")
+				) {
+					const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+					if (jsonMatch && jsonMatch[1]) {
+						// Extract and clean the JSON content
+						content = jsonMatch[1].trim();
+						// Ensure it's valid JSON by parsing and re-stringifying to normalize formatting
+						try {
+							const parsed = JSON.parse(content);
+							content = JSON.stringify(parsed);
+						} catch (_e) {}
+					}
+				}
+			}
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
 			totalTokens = json.usage?.total_tokens || null;
-
-			// Handle Mistral's JSON output mode which wraps JSON in markdown code blocks
-			if (
-				content &&
-				typeof content === "string" &&
-				content.includes("```json")
-			) {
-				const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
-				if (jsonMatch && jsonMatch[1]) {
-					// Extract and clean the JSON content
-					content = jsonMatch[1].trim();
-					// Ensure it's valid JSON by parsing and re-stringifying to normalize formatting
-					try {
-						const parsed = JSON.parse(content);
-						content = JSON.stringify(parsed);
-					} catch (_e) {}
-				}
-			}
 			break;
 		default: // OpenAI format
 			// Handle both regular content and tool calls
@@ -225,6 +286,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 				// For tool calls, we'll keep the original JSON structure
 				// but set content to null since it's in tool_calls
 				content = null;
+				toolCalls = json.choices?.[0]?.message?.tool_calls;
 			} else {
 				content = json.choices?.[0]?.message?.content || null;
 			}
@@ -240,6 +302,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 		promptTokens,
 		completionTokens,
 		totalTokens,
+		toolCalls,
 	};
 }
 
@@ -292,6 +355,7 @@ function transformToOpenAIFormat(
 	promptTokens: number | null,
 	completionTokens: number | null,
 	totalTokens: number | null,
+	toolCalls: any[] | null,
 ) {
 	let transformedResponse = json;
 
@@ -309,6 +373,7 @@ function transformToOpenAIFormat(
 						message: {
 							role: "assistant",
 							content: content,
+							...(toolCalls ? { tool_calls: toolCalls } : {}),
 						},
 						finish_reason:
 							finishReason === "STOP"
@@ -336,6 +401,7 @@ function transformToOpenAIFormat(
 						message: {
 							role: "assistant",
 							content: content,
+							...(toolCalls ? { tool_calls: toolCalls } : {}),
 						},
 						finish_reason:
 							finishReason === "end_turn"
@@ -366,6 +432,7 @@ function transformToOpenAIFormat(
 							message: {
 								role: "assistant",
 								content: content,
+								...(toolCalls ? { tool_calls: toolCalls } : {}),
 							},
 							finish_reason: finishReason || "stop",
 						},
@@ -392,6 +459,7 @@ function transformStreamingChunkToOpenAIFormat(
 	usedModel: string,
 	data: any,
 ): any {
+	console.log("transforming data", JSON.stringify(data, null, 2));
 	let transformedData = data;
 
 	switch (usedProvider) {
@@ -409,6 +477,37 @@ function transformStreamingChunkToOpenAIFormat(
 							delta: {
 								content: data.delta.text,
 								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+					usage: data.usage || null,
+				};
+			} else if (data.type === "content_block_delta" && data.delta?.tool_use) {
+				// Handle tool_use in streaming response
+				const toolUse = data.delta.tool_use;
+				transformedData = {
+					id: data.id || `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created || Math.floor(Date.now() / 1000),
+					model: data.model || usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+								tool_calls: [
+									{
+										id: `call_${shortid()}`,
+										type: "function",
+										function: {
+											name: toolUse.name,
+											arguments: toolUse.input
+												? JSON.stringify(toolUse.input)
+												: "{}",
+										},
+									},
+								],
 							},
 							finish_reason: null,
 						},
@@ -476,6 +575,37 @@ function transformStreamingChunkToOpenAIFormat(
 					],
 					usage: data.usage || null,
 				};
+			} else if (data.delta?.tool_use) {
+				// Handle tool_use in older format
+				const toolUse = data.delta.tool_use;
+				transformedData = {
+					id: data.id || `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created || Math.floor(Date.now() / 1000),
+					model: data.model || usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+								tool_calls: [
+									{
+										id: `call_${shortid()}`,
+										type: "function",
+										function: {
+											name: toolUse.name,
+											arguments: toolUse.input
+												? JSON.stringify(toolUse.input)
+												: "{}",
+										},
+									},
+								],
+							},
+							finish_reason: null,
+						},
+					],
+					usage: data.usage || null,
+				};
 			} else {
 				// For other Anthropic events (like message_start, content_block_start, etc.)
 				// Transform them to OpenAI format but without content
@@ -500,31 +630,80 @@ function transformStreamingChunkToOpenAIFormat(
 		}
 		case "google-vertex":
 		case "google-ai-studio": {
-			if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-				transformedData = {
-					id: `chatcmpl-${Date.now()}`,
-					object: "chat.completion.chunk",
-					created: Math.floor(Date.now() / 1000),
-					model: usedModel,
-					choices: [
-						{
-							index: 0,
-							delta: {
-								content: data.candidates[0].content.parts[0].text,
-								role: "assistant",
+			if (data.candidates?.[0]?.content?.parts) {
+				const parts = data.candidates[0].content.parts;
+				let hasToolCall = false;
+
+				// Check for function calls in parts
+				for (const part of parts) {
+					if (part.functionCall) {
+						hasToolCall = true;
+						transformedData = {
+							id: `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created: Math.floor(Date.now() / 1000),
+							model: usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: {
+										role: "assistant",
+										tool_calls: [
+											{
+												id: `call_${shortid()}`,
+												type: "function",
+												function: {
+													name: part.functionCall.name,
+													arguments: part.functionCall.args
+														? JSON.stringify(part.functionCall.args)
+														: "{}",
+												},
+											},
+										],
+									},
+									finish_reason: null,
+								},
+							],
+							usage: data.usageMetadata
+								? {
+										prompt_tokens: data.usageMetadata.promptTokenCount || null,
+										completion_tokens:
+											data.usageMetadata.candidatesTokenCount || null,
+										total_tokens: data.usageMetadata.totalTokenCount || null,
+									}
+								: null,
+						};
+						break;
+					}
+				}
+
+				// If no function call was found, handle text content
+				if (!hasToolCall && parts[0]?.text) {
+					transformedData = {
+						id: `chatcmpl-${Date.now()}`,
+						object: "chat.completion.chunk",
+						created: Math.floor(Date.now() / 1000),
+						model: usedModel,
+						choices: [
+							{
+								index: 0,
+								delta: {
+									content: parts[0].text,
+									role: "assistant",
+								},
+								finish_reason: null,
 							},
-							finish_reason: null,
-						},
-					],
-					usage: data.usageMetadata
-						? {
-								prompt_tokens: data.usageMetadata.promptTokenCount || null,
-								completion_tokens:
-									data.usageMetadata.candidatesTokenCount || null,
-								total_tokens: data.usageMetadata.totalTokenCount || null,
-							}
-						: null,
-				};
+						],
+						usage: data.usageMetadata
+							? {
+									prompt_tokens: data.usageMetadata.promptTokenCount || null,
+									completion_tokens:
+										data.usageMetadata.candidatesTokenCount || null,
+									total_tokens: data.usageMetadata.totalTokenCount || null,
+								}
+							: null,
+					};
+				}
 			} else if (data.candidates?.[0]?.finishReason) {
 				const finishReason = data.candidates[0].finishReason;
 				transformedData = {
@@ -556,6 +735,132 @@ function transformStreamingChunkToOpenAIFormat(
 			}
 			break;
 		}
+		case "inference.net":
+		case "kluster.ai":
+		case "together.ai": {
+			// These providers typically follow OpenAI format, but we'll handle them explicitly
+			// to ensure tool_calls are properly processed
+			if (data.choices?.[0]?.delta?.tool_calls) {
+				// Handle tool_calls in delta
+				transformedData = {
+					id: data.id || `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created || Math.floor(Date.now() / 1000),
+					model: data.model || usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+								tool_calls: data.choices[0].delta.tool_calls,
+							},
+							finish_reason: data.choices?.[0]?.finish_reason || null,
+						},
+					],
+					usage: data.usage || null,
+				};
+			} else if (data.choices?.[0]?.delta?.content) {
+				// Handle content in delta
+				transformedData = {
+					id: data.id || `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created || Math.floor(Date.now() / 1000),
+					model: data.model || usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+								content: data.choices[0].delta.content,
+							},
+							finish_reason: data.choices?.[0]?.finish_reason || null,
+						},
+					],
+					usage: data.usage || null,
+				};
+			} else if (data.choices?.[0]?.finish_reason) {
+				// Handle finish reason
+				transformedData = {
+					id: data.id || `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created || Math.floor(Date.now() / 1000),
+					model: data.model || usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+							},
+							finish_reason: data.choices[0].finish_reason || "stop",
+						},
+					],
+					usage: data.usage || null,
+				};
+			}
+			break;
+		}
+		case "mistral": {
+			// Mistral follows OpenAI format, but we'll handle it explicitly
+			// to ensure tool_calls are properly processed
+			if (data.choices?.[0]?.delta?.tool_calls) {
+				// Handle tool_calls in delta
+				transformedData = {
+					id: data.id || `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created || Math.floor(Date.now() / 1000),
+					model: data.model || usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+								tool_calls: data.choices[0].delta.tool_calls,
+							},
+							finish_reason: data.choices?.[0]?.finish_reason || null,
+						},
+					],
+					usage: data.usage || null,
+				};
+			} else if (data.choices?.[0]?.delta?.content) {
+				// Handle content in delta
+				transformedData = {
+					id: data.id || `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created || Math.floor(Date.now() / 1000),
+					model: data.model || usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+								content: data.choices[0].delta.content,
+							},
+							finish_reason: data.choices?.[0]?.finish_reason || null,
+						},
+					],
+					usage: data.usage || null,
+				};
+			} else if (data.choices?.[0]?.finish_reason) {
+				// Handle finish reason
+				transformedData = {
+					id: data.id || `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created || Math.floor(Date.now() / 1000),
+					model: data.model || usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+							},
+							finish_reason: data.choices[0].finish_reason || "stop",
+						},
+					],
+					usage: data.usage || null,
+				};
+			}
+			break;
+		}
 		// OpenAI and other providers that already use OpenAI format
 		default: {
 			// Ensure the response has the required OpenAI format fields
@@ -573,10 +878,15 @@ function transformStreamingChunkToOpenAIFormat(
 										...data.delta,
 										role: "assistant",
 									}
-								: {
-										content: data.content || "",
-										role: "assistant",
-									},
+								: data.tool_calls
+									? {
+											tool_calls: data.tool_calls,
+											role: "assistant",
+										}
+									: {
+											content: data.content || "",
+											role: "assistant",
+										},
 							finish_reason: data.finish_reason || null,
 						},
 					],
@@ -584,6 +894,7 @@ function transformStreamingChunkToOpenAIFormat(
 				};
 			} else {
 				// Even if the response has the correct format, ensure role is set in delta
+				// and preserve tool_calls if present
 				transformedData = {
 					...data,
 					choices:
@@ -593,6 +904,10 @@ function transformStreamingChunkToOpenAIFormat(
 								? {
 										...choice.delta,
 										role: choice.delta.role || "assistant",
+										// Ensure tool_calls is preserved if present
+										...(choice.delta.tool_calls
+											? { tool_calls: choice.delta.tool_calls }
+											: {}),
 									}
 								: choice.delta,
 						})) || data.choices,
@@ -1529,6 +1844,7 @@ chat.openapi(completions, async (c) => {
 							} else {
 								try {
 									const data = JSON.parse(line.substring(6));
+									console.log("responding", JSON.stringify(data));
 
 									// Transform streaming responses to OpenAI format for all providers
 									const transformedData = transformStreamingChunkToOpenAIFormat(
@@ -1678,7 +1994,12 @@ chat.openapi(completions, async (c) => {
 											break;
 										default: // OpenAI format
 											if (data.choices && data.choices[0]) {
-												if (data.choices[0].delta?.content) {
+												// Handle both content and tool_calls in delta
+												if (data.choices[0].delta?.tool_calls) {
+													// For tool calls, we don't update fullContent
+													// as the content is in the tool_calls structure
+													// The tool_calls are already preserved in the transformed data
+												} else if (data.choices[0].delta?.content) {
 													fullContent += data.choices[0].delta.content;
 												}
 												if (data.choices[0].finish_reason) {
@@ -1985,8 +2306,14 @@ chat.openapi(completions, async (c) => {
 	const responseText = JSON.stringify(json);
 
 	// Extract content and token usage based on provider
-	const { content, finishReason, promptTokens, completionTokens, totalTokens } =
-		parseProviderResponse(usedProvider, json);
+	const {
+		content,
+		finishReason,
+		promptTokens,
+		completionTokens,
+		totalTokens,
+		toolCalls,
+	} = parseProviderResponse(usedProvider, json);
 
 	// Estimate tokens if not provided by the API
 	const { calculatedPromptTokens, calculatedCompletionTokens } = estimateTokens(
@@ -2055,6 +2382,7 @@ chat.openapi(completions, async (c) => {
 		promptTokens,
 		completionTokens,
 		totalTokens,
+		toolCalls,
 	);
 
 	if (cachingEnabled && cacheKey && !stream) {
