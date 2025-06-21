@@ -1516,7 +1516,6 @@ chat.openapi(completions, async (c) => {
 									};
 
 									await stream.writeSSE({
-										event: "chunk",
 										data: JSON.stringify(finalUsageChunk),
 										id: String(eventId++),
 									});
@@ -1562,7 +1561,6 @@ chat.openapi(completions, async (c) => {
 									}
 
 									await stream.writeSSE({
-										event: "chunk",
 										data: JSON.stringify(transformedData),
 										id: String(eventId++),
 									});
@@ -1761,7 +1759,6 @@ chat.openapi(completions, async (c) => {
 						};
 
 						await stream.writeSSE({
-							event: "chunk",
 							data: JSON.stringify(finalUsageChunk),
 							id: String(eventId++),
 						});
