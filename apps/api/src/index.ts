@@ -32,7 +32,7 @@ app.use(
 	cors({
 		origin: process.env.UI_URL || "http://localhost:3002",
 		allowHeaders: ["Content-Type", "Authorization", "Cache-Control"],
-		allowMethods: ["POST", "GET", "OPTIONS"],
+		allowMethods: ["POST", "GET", "OPTIONS", "PUT", "PATCH", "DELETE"],
 		exposeHeaders: ["Content-Length"],
 		maxAge: 600,
 		credentials: true,
