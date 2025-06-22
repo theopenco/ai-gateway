@@ -237,6 +237,32 @@ projects.openapi(createProject, async (c) => {
 		});
 	}
 
+	// Check project limits based on plan
+	const existingProjects = await db.query.project.findMany({
+		where: {
+			organizationId: {
+				eq: organizationId,
+			},
+			status: {
+				ne: "deleted",
+			},
+		},
+	});
+
+	const projectCount = existingProjects.length;
+	const isPro = userOrganization.organization?.plan === "pro";
+	const proLimit = 10;
+	const freeLimit = 2;
+	const projectLimit = isPro ? proLimit : freeLimit;
+
+	if (projectCount >= projectLimit) {
+		throw new HTTPException(403, {
+			message: isPro
+				? `You have reached the limit of ${proLimit} projects for the Pro plan`
+				: `You have reached the limit of ${freeLimit} projects for the Free plan. Please upgrade to Pro for up to ${proLimit} projects`,
+		});
+	}
+
 	const [newProject] = await db
 		.insert(tables.project)
 		.values({
