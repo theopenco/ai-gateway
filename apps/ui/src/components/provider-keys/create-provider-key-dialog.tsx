@@ -5,7 +5,6 @@ import React, { useState } from "react";
 
 import { ProviderSelect } from "./provider-select";
 import { UpgradeToProDialog } from "@/components/shared/upgrade-to-pro-dialog";
-import { useDefaultOrganization } from "@/hooks/useOrganization";
 import { Alert, AlertDescription } from "@/lib/components/alert";
 import { Badge } from "@/lib/components/badge";
 import { Button } from "@/lib/components/button";
@@ -24,11 +23,17 @@ import { toast } from "@/lib/components/use-toast";
 import { HOSTED } from "@/lib/env";
 import { $api } from "@/lib/fetch-client";
 
+import type { Organization } from "@/lib/types";
+
+interface CreateProviderKeyDialogProps {
+	children: React.ReactNode;
+	selectedOrganization: Organization;
+}
+
 export function CreateProviderKeyDialog({
 	children,
-}: {
-	children: React.ReactNode;
-}) {
+	selectedOrganization,
+}: CreateProviderKeyDialogProps) {
 	const posthog = usePostHog();
 	const [open, setOpen] = useState(false);
 	const [selectedProvider, setSelectedProvider] = useState("");
@@ -39,25 +44,25 @@ export function CreateProviderKeyDialog({
 	const queryKey = $api.queryOptions("get", "/keys/provider").queryKey;
 	const queryClient = useQueryClient();
 
-	const { data: organization } = useDefaultOrganization();
-
 	const { data: providerKeysData, isPending: isLoading } =
 		$api.useSuspenseQuery("get", "/keys/provider");
 
-	const isProPlan = organization?.plan === "pro";
+	const isProPlan = selectedOrganization.plan === "pro";
 
 	const createMutation = $api.useMutation("post", "/keys/provider");
+
+	// Filter provider keys by selected organization
+	const organizationProviderKeys =
+		providerKeysData?.providerKeys.filter(
+			(key) => key.organizationId === selectedOrganization.id,
+		) || [];
 
 	const availableProviders = providers.filter((provider) => {
 		if (provider.id === "llmgateway") {
 			return false;
 		}
 
-		if (isLoading || !providerKeysData?.providerKeys) {
-			return true;
-		}
-
-		const existingKey = providerKeysData.providerKeys.find(
+		const existingKey = organizationProviderKeys.find(
 			(key: any) => key.provider === provider.id && key.status !== "deleted",
 		);
 		return !existingKey;
@@ -105,19 +110,10 @@ export function CreateProviderKeyDialog({
 		} = {
 			provider: selectedProvider,
 			token,
-			organizationId: organization?.id || "",
+			organizationId: selectedOrganization.id,
 		};
 		if (baseUrl) {
 			payload.baseUrl = baseUrl;
-		}
-
-		if (!payload.organizationId) {
-			toast({
-				title: "Error",
-				description: "No organization found. Please try refreshing the page.",
-				variant: "destructive",
-			});
-			return;
 		}
 
 		setIsValidating(true);
@@ -168,6 +164,9 @@ export function CreateProviderKeyDialog({
 					<DialogTitle>Add Provider Key</DialogTitle>
 					<DialogDescription>
 						Create a new provider key to connect to an LLM provider.
+						<span className="block mt-1">
+							Organization: {selectedOrganization.name}
+						</span>
 					</DialogDescription>
 				</DialogHeader>
 				{HOSTED && !isProPlan && (
@@ -200,7 +199,8 @@ export function CreateProviderKeyDialog({
 						<Label htmlFor="token">Provider API Key</Label>
 						<Input
 							id="token"
-							placeholder="Enter the provider's API key"
+							type="password"
+							placeholder="sk-..."
 							value={token}
 							onChange={(e) => setToken(e.target.value)}
 							required
@@ -209,17 +209,15 @@ export function CreateProviderKeyDialog({
 
 					{selectedProvider === "llmgateway" && (
 						<div className="space-y-2">
-							<Label htmlFor="baseUrl">Base URL</Label>
+							<Label htmlFor="base-url">Base URL</Label>
 							<Input
-								id="baseUrl"
-								placeholder="e.g. https://api.example.com"
+								id="base-url"
+								type="url"
+								placeholder="https://api.llmgateway.com"
 								value={baseUrl}
 								onChange={(e) => setBaseUrl(e.target.value)}
 								required
 							/>
-							<p className="text-muted-foreground text-xs">
-								Required for LLM Gateway provider
-							</p>
 						</div>
 					)}
 
@@ -227,16 +225,8 @@ export function CreateProviderKeyDialog({
 						<Button type="button" variant="outline" onClick={handleClose}>
 							Cancel
 						</Button>
-						<Button
-							type="submit"
-							disabled={
-								(!isProPlan && HOSTED) ||
-								availableProviders.length === 0 ||
-								isLoading ||
-								isValidating
-							}
-						>
-							{isValidating ? "Validating..." : "Add Provider Key"}
+						<Button type="submit" disabled={isValidating}>
+							{isValidating ? "Validating..." : "Add Key"}
 						</Button>
 					</DialogFooter>
 				</form>

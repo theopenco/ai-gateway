@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 
 import { UpgradeToProDialog } from "@/components/shared/upgrade-to-pro-dialog";
-import { useDefaultOrganization } from "@/hooks/useOrganization";
 import { Badge } from "@/lib/components/badge";
 import { Button } from "@/lib/components/button";
 import {
@@ -13,10 +12,11 @@ import {
 	CardTitle,
 } from "@/lib/components/card";
 import { useToast } from "@/lib/components/use-toast";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 
 export function PlanManagement() {
-	const { data: organization } = useDefaultOrganization();
+	const { selectedOrganization } = useDashboardContext();
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
 
@@ -124,7 +124,7 @@ export function PlanManagement() {
 		}
 	};
 
-	if (!organization) {
+	if (!selectedOrganization) {
 		return (
 			<Card>
 				<CardHeader>
@@ -135,9 +135,9 @@ export function PlanManagement() {
 		);
 	}
 
-	const isProPlan = organization.plan === "pro";
-	const planExpiresAt = organization.planExpiresAt
-		? new Date(organization.planExpiresAt)
+	const isProPlan = selectedOrganization.plan === "pro";
+	const planExpiresAt = selectedOrganization.planExpiresAt
+		? new Date(selectedOrganization.planExpiresAt)
 		: null;
 
 	return (

@@ -2,19 +2,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useState } from "react";
 
-import { useDefaultOrganization } from "@/hooks/useOrganization";
 import { Button } from "@/lib/components/button";
 import { Label } from "@/lib/components/label";
 import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Separator } from "@/lib/components/separator";
 import { useToast } from "@/lib/components/use-toast";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 
 export function OrganizationRetentionSettings() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
-	const { data: organization, error } = useDefaultOrganization();
-	const isError = !!error;
+	const { selectedOrganization } = useDashboardContext();
 
 	const updateOrganization = $api.useMutation("patch", "/orgs/{id}", {
 		onSuccess: () => {
@@ -24,15 +23,15 @@ export function OrganizationRetentionSettings() {
 	});
 
 	const [retentionLevel, setRetentionLevel] = useState<"retain" | "none">(
-		(organization as any)?.retentionLevel || "retain",
+		selectedOrganization?.retentionLevel || "retain",
 	);
 
-	if (isError || !organization) {
+	if (!selectedOrganization) {
 		return (
 			<div className="space-y-2">
 				<h3 className="text-lg font-medium">Data Retention</h3>
 				<p className="text-muted-foreground text-sm">
-					Unable to load organization settings.
+					Please select an organization to configure data retention settings.
 				</p>
 			</div>
 		);
@@ -41,8 +40,8 @@ export function OrganizationRetentionSettings() {
 	const handleSave = async () => {
 		try {
 			await updateOrganization.mutateAsync({
-				params: { path: { id: organization.id } },
-				body: { retentionLevel } as any,
+				params: { path: { id: selectedOrganization.id } },
+				body: { retentionLevel },
 			});
 
 			toast({
@@ -65,6 +64,11 @@ export function OrganizationRetentionSettings() {
 				<p className="text-muted-foreground text-sm">
 					Configure how request payloads and AI responses are stored
 				</p>
+				{selectedOrganization && (
+					<p className="text-muted-foreground text-sm mt-1">
+						Organization: {selectedOrganization.name}
+					</p>
+				)}
 			</div>
 
 			<Separator />

@@ -18,8 +18,8 @@ import {
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
 
+import { OrganizationSwitcher } from "./organization-switcher";
 import { ModeToggle } from "@/components/mode-toggle";
-import { useDefaultOrganization } from "@/hooks/useOrganization";
 import { useUser } from "@/hooks/useUser";
 import { signOut } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/lib/components/avatar";
@@ -41,16 +41,29 @@ import {
 	useSidebar,
 	SidebarTrigger,
 } from "@/lib/components/sidebar";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { DOCS_URL } from "@/lib/env";
 import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
 
-export function DashboardSidebar() {
+import type { Organization } from "@/lib/types";
+
+interface DashboardSidebarProps {
+	organizations: Organization[];
+	onSelectOrganization: (org: Organization | null) => void;
+	onOrganizationCreated: (org: Organization) => void;
+}
+
+export function DashboardSidebar({
+	organizations,
+	onSelectOrganization,
+	onOrganizationCreated,
+}: DashboardSidebarProps) {
 	const queryClient = useQueryClient();
 	const { location } = useRouterState();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const { user } = useUser();
-	const { data: organization } = useDefaultOrganization();
+	const { selectedOrganization } = useDashboardContext();
 	const navigate = useNavigate();
 	const posthog = usePostHog();
 	const isActive = (path: string) => {
@@ -104,7 +117,7 @@ export function DashboardSidebar() {
 		<>
 			{sidebarState === "collapsed" && <SidebarTrigger />}
 			<Sidebar variant="floating">
-				<SidebarHeader className="border-b">
+				<SidebarHeader>
 					<div className="flex h-14 items-center px-4">
 						<Link
 							to="/dashboard"
@@ -116,6 +129,12 @@ export function DashboardSidebar() {
 							</span>
 						</Link>
 					</div>
+					<OrganizationSwitcher
+						organizations={organizations}
+						selectedOrganization={selectedOrganization}
+						onSelectOrganization={onSelectOrganization}
+						onOrganizationCreated={onOrganizationCreated}
+					/>
 				</SidebarHeader>
 
 				<SidebarContent className="px-2 py-4">
@@ -284,32 +303,34 @@ export function DashboardSidebar() {
 				</SidebarContent>
 
 				<SidebarFooter className="border-t">
-					{showCreditCTA && organization && organization.plan !== "pro" && (
-						<div className="flex relative flex-col items-start space-y-4 rounded-lg bg-primary/5 p-4 dark:bg-primary/10">
-							<button
-								aria-label="Dismiss"
-								onClick={hideCreditCTA}
-								className="absolute right-1.5 top-1.5 rounded-full p-1 text-muted-foreground/70 hover:text-foreground transition"
-							>
-								<X className="h-3 w-3" />
-							</button>
-							<div>
-								<p className="text-sm font-medium">Upgrade to Pro</p>
-								<p className="text-xs text-muted-foreground">
-									0% fees on all API calls & more
-								</p>
-							</div>
-
-							<Button asChild>
-								<Link
-									to="/dashboard/settings/billing"
-									search={{ success: undefined, canceled: undefined }}
+					{showCreditCTA &&
+						selectedOrganization &&
+						selectedOrganization.plan !== "pro" && (
+							<div className="flex relative flex-col items-start space-y-4 rounded-lg bg-primary/5 p-4 dark:bg-primary/10">
+								<button
+									aria-label="Dismiss"
+									onClick={hideCreditCTA}
+									className="absolute right-1.5 top-1.5 rounded-full p-1 text-muted-foreground/70 hover:text-foreground transition"
 								>
-									Upgrade
-								</Link>
-							</Button>
-						</div>
-					)}
+									<X className="h-3 w-3" />
+								</button>
+								<div>
+									<p className="text-sm font-medium">Upgrade to Pro</p>
+									<p className="text-xs text-muted-foreground">
+										0% fees on all API calls & more
+									</p>
+								</div>
+
+								<Button asChild>
+									<Link
+										to="/dashboard/settings/billing"
+										search={{ success: undefined, canceled: undefined }}
+									>
+										Upgrade
+									</Link>
+								</Button>
+							</div>
+						)}
 
 					<div className="flex items-center justify-between p-4 pt-0">
 						<div className="flex items-center gap-3">

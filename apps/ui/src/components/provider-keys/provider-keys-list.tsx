@@ -36,8 +36,30 @@ import {
 import { toast } from "@/lib/components/use-toast";
 import { $api } from "@/lib/fetch-client";
 
-export function ProviderKeysList() {
+import type { Organization } from "@/lib/types";
+
+interface ProviderKeysListProps {
+	selectedOrganization: Organization | null;
+}
+
+export function ProviderKeysList({
+	selectedOrganization,
+}: ProviderKeysListProps) {
 	const queryClient = useQueryClient();
+
+	// Show message if no organization is selected
+	if (!selectedOrganization) {
+		return (
+			<div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-center">
+				<div className="mb-4">
+					<KeyIcon className="h-10 w-10 text-gray-500" />
+				</div>
+				<p className="text-gray-400 mb-6">
+					Please select an organization to view provider keys.
+				</p>
+			</div>
+		);
+	}
 
 	const { data } = $api.useSuspenseQuery("get", "/keys/provider");
 	const deleteMutation = $api.useMutation("delete", "/keys/provider/{id}");
@@ -45,7 +67,10 @@ export function ProviderKeysList() {
 
 	const queryKey = $api.queryOptions("get", "/keys/provider").queryKey;
 
-	const keys = data?.providerKeys.filter((key) => key.status !== "deleted");
+	// Filter provider keys by selected organization
+	const keys = data?.providerKeys
+		.filter((key) => key.status !== "deleted")
+		.filter((key) => key.organizationId === selectedOrganization.id);
 
 	const deleteKey = (id: string) => {
 		deleteMutation.mutate(
@@ -111,7 +136,7 @@ export function ProviderKeysList() {
 				<p className="text-gray-400 mb-6">
 					No provider keys have been created yet.
 				</p>
-				<CreateProviderKeyDialog>
+				<CreateProviderKeyDialog selectedOrganization={selectedOrganization}>
 					<Button
 						type="button"
 						className="cursor-pointer flex items-center gap-2 bg-white text-black px-4 py-2 rounded-md hover:bg-gray-200"
@@ -201,7 +226,9 @@ export function ProviderKeysList() {
 														</AlertDialogTitle>
 														<AlertDialogDescription>
 															This action cannot be undone. This will
-															permanently delete your provider key.
+															permanently delete the provider key and any
+															applications using it will no longer be able to
+															access the API.
 														</AlertDialogDescription>
 													</AlertDialogHeader>
 													<AlertDialogFooter>

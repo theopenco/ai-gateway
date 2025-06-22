@@ -13,6 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/lib/components/select";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 
 const UnifiedFinishReason = {
@@ -34,29 +35,46 @@ export function RecentLogs() {
 	>();
 	const [provider, setProvider] = useState<string | undefined>();
 	const [model, setModel] = useState<string | undefined>();
+	const { selectedProject } = useDashboardContext();
 
-	const { data, isLoading, error } = $api.useSuspenseQuery("get", "/logs", {
-		params: {
-			query: {
-				orderBy: "createdAt_desc",
-				dateRangeStart: dateRange?.start
-					? dateRange.start.toISOString()
-					: undefined,
-				dateRangeEnd: dateRange?.end ? dateRange.end.toISOString() : undefined,
-				finishReason,
-				unifiedFinishReason,
-				provider,
-				model,
+	const { data, isLoading, error } = $api.useQuery(
+		"get",
+		"/logs",
+		{
+			params: {
+				query: {
+					orderBy: "createdAt_desc",
+					startDate: dateRange?.start
+						? dateRange.start.toISOString()
+						: undefined,
+					endDate: dateRange?.end ? dateRange.end.toISOString() : undefined,
+					finishReason,
+					unifiedFinishReason,
+					provider,
+					model,
+					...(selectedProject?.id ? { projectId: selectedProject.id } : {}),
+				},
 			},
 		},
-	});
+		{
+			enabled: !!selectedProject?.id,
+		},
+	);
 
 	const handleDateRangeChange = (_value: string, range: DateRange) => {
 		setDateRange(range);
 	};
 
+	if (!selectedProject) {
+		return (
+			<div className="py-8 text-center text-muted-foreground">
+				<p>Please select a project to view recent logs.</p>
+			</div>
+		);
+	}
+
 	return (
-		<div className="space-y-4">
+		<div className="space-y-4 max-w-full overflow-hidden">
 			<div className="flex flex-wrap gap-2 mb-4">
 				<DateRangeSelect onChange={handleDateRangeChange} value="24h" />
 
@@ -128,7 +146,7 @@ export function RecentLogs() {
 			) : error ? (
 				<div>Error loading logs</div>
 			) : (
-				<div className="space-y-4">
+				<div className="space-y-4 max-w-full">
 					{data?.logs.length ? (
 						data.logs.map((log) => (
 							<LogCard
@@ -145,6 +163,11 @@ export function RecentLogs() {
 					) : (
 						<div className="py-4 text-center text-muted-foreground">
 							No logs found matching the selected filters.
+							{selectedProject && (
+								<span className="block mt-1 text-sm">
+									Project: {selectedProject.name}
+								</span>
+							)}
 						</div>
 					)}
 				</div>
