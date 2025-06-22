@@ -42,12 +42,23 @@ export function prepareRequestBody(
 	frequency_penalty: number | undefined,
 	presence_penalty: number | undefined,
 	response_format: any,
+	tools?: any[],
+	tool_choice?: string | { type: string; function: { name: string } },
 ) {
 	const requestBody: any = {
 		model: usedModel,
 		messages,
 		stream: stream,
 	};
+
+	// Add tools and tool_choice if provided
+	if (tools && tools.length > 0) {
+		requestBody.tools = tools;
+	}
+
+	if (tool_choice) {
+		requestBody.tool_choice = tool_choice;
+	}
 
 	switch (usedProvider) {
 		case "openai": {
