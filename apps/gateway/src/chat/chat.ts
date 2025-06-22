@@ -1537,6 +1537,29 @@ chat.openapi(completions, async (c) => {
 										data,
 									);
 
+									// For Anthropic, if we have partial usage data, complete it
+									if (usedProvider === "anthropic" && transformedData.usage) {
+										const usage = transformedData.usage;
+										if (
+											usage.output_tokens !== undefined &&
+											usage.prompt_tokens === undefined
+										) {
+											// Estimate prompt tokens if not provided
+											const estimatedPromptTokens = Math.round(
+												messages.reduce(
+													(acc, m) => acc + (m.content?.length || 0),
+													0,
+												) / 4,
+											);
+											transformedData.usage = {
+												prompt_tokens: estimatedPromptTokens,
+												completion_tokens: usage.output_tokens,
+												total_tokens:
+													estimatedPromptTokens + usage.output_tokens,
+											};
+										}
+									}
+
 									await stream.writeSSE({
 										data: JSON.stringify(transformedData),
 										id: String(eventId++),
