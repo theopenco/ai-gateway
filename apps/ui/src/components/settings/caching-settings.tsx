@@ -2,42 +2,44 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useState } from "react";
 
-import { useDefaultProject } from "@/hooks/useDefaultProject";
 import { Button } from "@/lib/components/button";
 import { Checkbox } from "@/lib/components/checkbox";
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { Separator } from "@/lib/components/separator";
 import { useToast } from "@/lib/components/use-toast";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 
 export function CachingSettings() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
-	const { data: defaultProject, isError } = useDefaultProject();
+	const { selectedProject, selectedOrganization } = useDashboardContext();
 
 	const updateProject = $api.useMutation("patch", "/projects/{id}", {
 		onSuccess: (data) => {
-			const queryKey = $api.queryOptions("get", "/orgs/{id}/projects", {
-				params: { path: { id: data.project.organizationId } },
-			}).queryKey;
-			queryClient.invalidateQueries({ queryKey });
+			if (selectedOrganization) {
+				const queryKey = $api.queryOptions("get", "/orgs/{id}/projects", {
+					params: { path: { id: data.project.organizationId } },
+				}).queryKey;
+				queryClient.invalidateQueries({ queryKey });
+			}
 		},
 	});
 
 	const [cachingEnabled, setCachingEnabled] = useState(
-		defaultProject?.cachingEnabled || false,
+		selectedProject?.cachingEnabled || false,
 	);
 	const [cacheDurationSeconds, setCacheDurationSeconds] = useState(
-		defaultProject?.cacheDurationSeconds || 60,
+		selectedProject?.cacheDurationSeconds || 60,
 	);
 
-	if (isError || !defaultProject) {
+	if (!selectedProject) {
 		return (
 			<div className="space-y-2">
 				<h3 className="text-lg font-medium">Request Caching</h3>
 				<p className="text-muted-foreground text-sm">
-					Unable to load project settings.
+					Please select a project to configure caching settings.
 				</p>
 			</div>
 		);
@@ -46,7 +48,7 @@ export function CachingSettings() {
 	const handleSave = async () => {
 		try {
 			await updateProject.mutateAsync({
-				params: { path: { id: defaultProject.id } },
+				params: { path: { id: selectedProject.id } },
 				body: {
 					cachingEnabled,
 					cacheDurationSeconds,
@@ -73,6 +75,11 @@ export function CachingSettings() {
 				<p className="text-muted-foreground text-sm">
 					Configure caching for identical LLM requests
 				</p>
+				{selectedProject && (
+					<p className="text-muted-foreground text-sm mt-1">
+						Project: {selectedProject.name}
+					</p>
+				)}
 			</div>
 
 			<Separator />

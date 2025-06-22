@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 
-import { useDefaultOrganization } from "@/hooks/useOrganization";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -14,6 +13,7 @@ import { Checkbox } from "@/lib/components/checkbox";
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { useToast } from "@/lib/components/use-toast";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 import Spinner from "@/lib/icons/Spinner";
 
@@ -21,7 +21,7 @@ function AutoTopUpSettings() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
 
-	const { data: organization, error } = useDefaultOrganization();
+	const { selectedOrganization } = useDashboardContext();
 	const { data: paymentMethods } = $api.useQuery(
 		"get",
 		"/payments/payment-methods",
@@ -43,12 +43,12 @@ function AutoTopUpSettings() {
 	);
 
 	useEffect(() => {
-		if (organization) {
-			setEnabled(organization.autoTopUpEnabled || false);
-			setThreshold(Number(organization.autoTopUpThreshold) || 10);
-			setAmount(Number(organization.autoTopUpAmount) || 10);
+		if (selectedOrganization) {
+			setEnabled(selectedOrganization.autoTopUpEnabled || false);
+			setThreshold(Number(selectedOrganization.autoTopUpThreshold) || 10);
+			setAmount(Number(selectedOrganization.autoTopUpAmount) || 10);
 		}
-	}, [organization]);
+	}, [selectedOrganization]);
 
 	const updateOrganization = $api.useMutation("patch", "/orgs/{id}");
 
@@ -69,7 +69,7 @@ function AutoTopUpSettings() {
 			return;
 		}
 
-		if (!organization) {
+		if (!selectedOrganization) {
 			toast({
 				title: "Error",
 				description: "Organization not found.",
@@ -81,7 +81,7 @@ function AutoTopUpSettings() {
 		try {
 			await updateOrganization.mutateAsync({
 				params: {
-					path: { id: organization.id },
+					path: { id: selectedOrganization.id },
 				},
 				body: {
 					autoTopUpEnabled: enabled,
@@ -107,13 +107,13 @@ function AutoTopUpSettings() {
 		}
 	};
 
-	if (error) {
+	if (!selectedOrganization) {
 		return (
 			<Card>
 				<CardHeader>
 					<CardTitle>Auto Top-Up</CardTitle>
 					<CardDescription>
-						Unable to load auto top-up settings.
+						Please select an organization to manage auto top-up settings.
 					</CardDescription>
 				</CardHeader>
 			</Card>
@@ -224,7 +224,7 @@ function AutoTopUpSettings() {
 										<span>${feeData.planFee.toFixed(2)}</span>
 									</div>
 								)}
-								{organization?.plan === "pro" && (
+								{selectedOrganization?.plan === "pro" && (
 									<div className="flex justify-between text-green-600">
 										<span>Service fee (Pro plan)</span>
 										<span>$0.00</span>

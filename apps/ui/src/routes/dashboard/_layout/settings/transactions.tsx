@@ -3,7 +3,6 @@ import { format } from "date-fns";
 
 import { SettingsLoading } from "@/components/settings/settings-loading";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useDefaultOrganization } from "@/hooks/useOrganization";
 import { Badge } from "@/lib/components/badge";
 import {
 	Card,
@@ -12,6 +11,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/lib/components/card";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 
 export const Route = createFileRoute(
@@ -109,16 +109,16 @@ function TransactionCard({ transaction }: { transaction: Transaction }) {
 }
 
 function TransactionsPage() {
-	const { data: organization } = useDefaultOrganization();
+	const { selectedOrganization } = useDashboardContext();
 	const isMobile = useIsMobile();
 
 	const { data } = $api.useSuspenseQuery("get", "/orgs/{id}/transactions", {
 		params: {
-			path: { id: organization?.id ?? "" },
+			path: { id: selectedOrganization?.id ?? "" },
 		},
 	});
 
-	if (!organization || !data) {
+	if (!selectedOrganization || !data) {
 		return null;
 	}
 

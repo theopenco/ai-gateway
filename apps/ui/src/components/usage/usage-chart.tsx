@@ -11,13 +11,38 @@ import {
 } from "recharts";
 
 import { Button } from "@/lib/components/button";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 
 export function UsageChart() {
 	const [days, setDays] = useState<7 | 30>(7);
-	const { data, isLoading, error } = $api.useSuspenseQuery("get", "/activity", {
-		params: { query: { days: String(days) } },
-	});
+	const { selectedProject } = useDashboardContext();
+
+	const { data, isLoading, error } = $api.useQuery(
+		"get",
+		"/activity",
+		{
+			params: {
+				query: {
+					days: String(days),
+					...(selectedProject?.id ? { projectId: selectedProject.id } : {}),
+				},
+			},
+		},
+		{
+			enabled: !!selectedProject?.id,
+		},
+	);
+
+	if (!selectedProject) {
+		return (
+			<div className="flex h-[350px] items-center justify-center">
+				<p className="text-muted-foreground">
+					Please select a project to view usage data
+				</p>
+			</div>
+		);
+	}
 
 	if (isLoading) {
 		return (
@@ -38,7 +63,14 @@ export function UsageChart() {
 	if (!data || data.activity.length === 0) {
 		return (
 			<div className="flex h-[350px] items-center justify-center">
-				<p className="text-muted-foreground">No usage data available</p>
+				<p className="text-muted-foreground">
+					No usage data available
+					{selectedProject && (
+						<span className="block mt-1 text-sm">
+							Project: {selectedProject.name}
+						</span>
+					)}
+				</p>
 			</div>
 		);
 	}

@@ -60,23 +60,21 @@ export function LogCard({ log }: { log: Log }) {
 	}
 
 	return (
-		<div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+		<div className="rounded-lg border bg-card text-card-foreground shadow-sm max-w-full overflow-hidden">
 			<div
 				className={`flex items-start gap-4 p-4 ${isExpanded ? "border-b" : ""}`}
 			>
 				<div className={`mt-0.5 rounded-full p-1.5 ${bgColor}`}>
 					<StatusIcon className={`h-5 w-5 ${color}`} />
 				</div>
-				<div className="flex-1 space-y-1">
-					<div className="flex items-center justify-between">
-						<p
-							className={`font-medium ${isExpanded ? "line-clamp-2" : "line-clamp-1"}`}
-						>
+				<div className="flex-1 space-y-1 min-w-0">
+					<div className="flex items-start justify-between gap-4">
+						<p className="font-medium break-words max-w-none">
 							{log.content || <i className="italic">–</i>}
 						</p>
 						<Badge
 							variant={log.hasError ? "destructive" : "default"}
-							className="ml-2"
+							className="flex-shrink-0"
 						>
 							{log.unifiedFinishReason}
 						</Badge>
@@ -322,7 +320,7 @@ export function LogCard({ log }: { log: Log }) {
 					<div className="space-y-2">
 						<h4 className="text-sm font-medium">Message Context</h4>
 						<div className="rounded-md border p-3">
-							<pre className="max-h-60 text-xs overflow-auto">
+							<pre className="max-h-60 text-xs overflow-auto whitespace-pre-wrap break-words">
 								{log.messages ? JSON.stringify(log.messages, null, 2) : "–"}
 							</pre>
 						</div>
@@ -330,7 +328,7 @@ export function LogCard({ log }: { log: Log }) {
 					<div className="space-y-2">
 						<h4 className="text-sm font-medium">Response</h4>
 						<div className="rounded-md border p-3">
-							<pre className="max-h-60 text-xs text-wrap overflow-auto">
+							<pre className="max-h-60 text-xs overflow-auto whitespace-pre-wrap break-words">
 								{log.content || "–"}
 							</pre>
 						</div>

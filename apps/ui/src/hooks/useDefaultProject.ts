@@ -1,19 +1,5 @@
 import { $api } from "@/lib/fetch-client";
 
-export interface Project {
-	id: string;
-	name: string;
-	cachingEnabled: boolean;
-	cacheDurationSeconds: number;
-	organizationId: string;
-	mode: "api-keys" | "credits";
-}
-
-export interface Organization {
-	id: string;
-	name: string;
-}
-
 export function useDefaultProject() {
 	const { data: orgsData, isError: orgsError } = $api.useSuspenseQuery(
 		"get",
