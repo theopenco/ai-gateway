@@ -72,7 +72,14 @@ activity.openapi(getActivity, async (c) => {
 	}
 
 	// Get the days parameter from the query
-	const { days, projectId } = c.req.valid("query");
+	const query = c.req.valid("query");
+	for (const key of Object.keys(query)) {
+		if ((query as Record<string, unknown>)[key] === "all") {
+			(query as Record<string, unknown>)[key] = undefined;
+		}
+	}
+
+	const { days, projectId } = query;
 
 	// Calculate the date range
 	const endDate = new Date();
