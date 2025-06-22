@@ -58,17 +58,26 @@ function RouteComponent() {
 		}
 	}, [organizationsData, selectedOrganization]);
 
-	// Auto-select first project when projects change and no project is selected
-	useEffect(() => {
-		if (projects.length > 0 && !selectedProject) {
-			setSelectedProject(projects[0]);
-		}
-	}, [projects, selectedProject]);
-
 	// Reset project selection when organization changes
 	useEffect(() => {
 		setSelectedProject(null);
-	}, [selectedOrganization]);
+		// Debounce or wait for projects to load for new org
+	}, [selectedOrganization?.id]); // Use id for more stable comparison
+
+	// Auto-select with better condition checking
+	useEffect(() => {
+		if (projects.length > 0 && !selectedProject && selectedOrganization) {
+			// Only auto-select if we have projects for the current org
+			// and ensure the projects actually belong to the selected organization
+			const firstProject = projects[0];
+			if (
+				firstProject &&
+				firstProject.organizationId === selectedOrganization.id
+			) {
+				setSelectedProject(firstProject);
+			}
+		}
+	}, [projects, selectedProject, selectedOrganization]);
 
 	useEffect(() => {
 		posthog.capture("page_viewed_dashboard");

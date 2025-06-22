@@ -12,6 +12,7 @@ import {
 } from "@/lib/components/dialog";
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
+import { toast } from "@/lib/components/use-toast";
 import { $api } from "@/lib/fetch-client";
 
 import type { Organization, Project } from "@/lib/types";
@@ -22,6 +23,11 @@ interface NewProjectDialogProps {
 	setIsOpen: (isOpen: boolean) => void;
 	selectedOrganization: Organization | null;
 	onProjectCreated: (project: Project) => void;
+}
+
+// Type for the projects query response data
+interface ProjectsQueryData {
+	projects: Project[];
 }
 
 export function NewProjectDialog({
@@ -41,16 +47,34 @@ export function NewProjectDialog({
 					params: { path: { id: selectedOrganization.id } },
 				}).queryKey;
 
-				queryClient.setQueryData(queryKey, (oldData: any) => {
-					if (!oldData) {
-						return { projects: [data.project] };
-					}
-					return {
-						...oldData,
-						projects: [...oldData.projects, data.project],
-					};
-				});
+				queryClient.setQueryData(
+					queryKey,
+					(oldData: ProjectsQueryData | undefined) => {
+						if (!oldData) {
+							return { projects: [data.project] };
+						}
+						return {
+							...oldData,
+							projects: [...oldData.projects, data.project],
+						};
+					},
+				);
 			}
+
+			// Show success toast
+			toast({
+				title: "Project created successfully",
+				description: `${data.project.name} has been created.`,
+			});
+		},
+		onError: (error) => {
+			// Show error toast
+			toast({
+				title: "Failed to create project",
+				description:
+					error.message || "An unexpected error occurred. Please try again.",
+				variant: "destructive",
+			});
 		},
 	});
 
@@ -78,6 +102,8 @@ export function NewProjectDialog({
 				setIsOpen(false);
 			}
 		} catch (error) {
+			// Error is already handled by the mutation's onError callback
+			// But we can add additional logging if needed
 			console.error("Failed to create project:", error);
 		}
 	};
