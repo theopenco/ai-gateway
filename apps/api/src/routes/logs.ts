@@ -149,6 +149,10 @@ logs.openapi(get, async (c) => {
 
 	// Get query parameters
 	const query = c.req.valid("query");
+
+	const sanitize = (value: string | undefined) =>
+		value === "all" ? undefined : value;
+
 	const {
 		apiKeyId,
 		providerKeyId,
@@ -163,7 +167,19 @@ logs.openapi(get, async (c) => {
 		cursor,
 		orderBy = "createdAt_desc",
 		limit: queryLimit,
-	} = query;
+	} = {
+		...query,
+		apiKeyId: sanitize(query.apiKeyId),
+		providerKeyId: sanitize(query.providerKeyId),
+		projectId: sanitize(query.projectId),
+		orgId: sanitize(query.orgId),
+		startDate: sanitize(query.startDate),
+		endDate: sanitize(query.endDate),
+		finishReason: sanitize(query.finishReason),
+		unifiedFinishReason: sanitize(query.unifiedFinishReason),
+		provider: sanitize(query.provider),
+		model: sanitize(query.model),
+	};
 
 	// Set default limit if not provided or enforce max limit
 	const limit = queryLimit ? Math.min(queryLimit, 100) : 50;
