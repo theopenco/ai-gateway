@@ -212,6 +212,30 @@ organization.openapi(createOrganization, async (c) => {
 
 	const { name } = c.req.valid("json");
 
+	// Get user's existing organizations to check limits
+	const userOrganizations = await db.query.userOrganization.findMany({
+		where: {
+			userId: user.id,
+		},
+		with: {
+			organization: true,
+		},
+	});
+
+	// Filter out deleted organizations
+	const activeOrganizations = userOrganizations
+		.filter((uo) => uo.organization?.status !== "deleted")
+		.map((uo) => uo.organization!);
+
+	const orgsLimit = 3;
+
+	// If user only has free plan, they can have only 1 organization
+	if (activeOrganizations.length >= orgsLimit) {
+		throw new HTTPException(403, {
+			message: `You have reached the limit of ${orgsLimit} organizations. Please reach out to support to increase this limit.`,
+		});
+	}
+
 	const [newOrganization] = await db
 		.insert(tables.organization)
 		.values({
