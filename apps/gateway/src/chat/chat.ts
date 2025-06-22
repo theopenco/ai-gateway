@@ -1701,7 +1701,11 @@ chat.openapi(completions, async (c) => {
 					}
 				}
 			} catch (error) {
-				console.error("Error reading stream:", error);
+				if (error instanceof Error && error.name === "AbortError") {
+					canceled = true;
+				} else {
+					console.error("Error reading stream:", error);
+				}
 			} finally {
 				// Clean up the event listeners
 				c.req.raw.signal.removeEventListener("abort", onAbort);
