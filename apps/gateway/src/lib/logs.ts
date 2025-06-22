@@ -78,10 +78,14 @@ export type LogData = InferInsertModel<typeof log>;
 
 export async function insertLog(logData: LogInsertData): Promise<unknown> {
 	if (logData.unifiedFinishReason === undefined) {
-		logData.unifiedFinishReason = getUnifiedFinishReason(
-			logData.finishReason,
-			logData.usedProvider,
-		);
+		if (logData.canceled) {
+			logData.unifiedFinishReason = UnifiedFinishReason.CANCELED;
+		} else {
+			logData.unifiedFinishReason = getUnifiedFinishReason(
+				logData.finishReason,
+				logData.usedProvider,
+			);
+		}
 	}
 	await publishToQueue(LOG_QUEUE, logData);
 	return 1; // Return 1 to match test expectations
