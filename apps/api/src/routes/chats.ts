@@ -66,36 +66,43 @@ chats.openapi(listChats, async (c) => {
 		throw new HTTPException(401, { message: "Unauthorized" });
 	}
 
-	// Get user's chats
-	const userChats = await db
-		.select()
+	// Get user's chats with message counts in a single query
+	const chatsWithCount = await db
+		.select({
+			id: tables.chat.id,
+			title: tables.chat.title,
+			model: tables.chat.model,
+			status: tables.chat.status,
+			createdAt: tables.chat.createdAt,
+			updatedAt: tables.chat.updatedAt,
+			messageCount: count(tables.message.id),
+		})
 		.from(tables.chat)
+		.leftJoin(tables.message, eq(tables.chat.id, tables.message.chatId))
 		.where(
 			and(eq(tables.chat.userId, user.id), eq(tables.chat.status, "active")),
 		)
+		.groupBy(
+			tables.chat.id,
+			tables.chat.title,
+			tables.chat.model,
+			tables.chat.status,
+			tables.chat.createdAt,
+			tables.chat.updatedAt,
+		)
 		.orderBy(desc(tables.chat.updatedAt));
 
-	// Get message counts for each chat
-	const chatsWithCount = await Promise.all(
-		userChats.map(async (chat) => {
-			const messageCount = await db
-				.select({ count: count() })
-				.from(tables.message)
-				.where(eq(tables.message.chatId, chat.id));
+	const formattedChats = chatsWithCount.map((chat) => ({
+		id: chat.id,
+		title: chat.title,
+		model: chat.model,
+		status: chat.status as "active" | "archived" | "deleted",
+		createdAt: chat.createdAt.toISOString(),
+		updatedAt: chat.updatedAt.toISOString(),
+		messageCount: chat.messageCount,
+	}));
 
-			return {
-				id: chat.id,
-				title: chat.title,
-				model: chat.model,
-				status: chat.status as "active" | "archived" | "deleted",
-				createdAt: chat.createdAt.toISOString(),
-				updatedAt: chat.updatedAt.toISOString(),
-				messageCount: messageCount[0].count,
-			};
-		}),
-	);
-
-	return c.json({ chats: chatsWithCount });
+	return c.json({ chats: formattedChats });
 });
 
 // Create new chat

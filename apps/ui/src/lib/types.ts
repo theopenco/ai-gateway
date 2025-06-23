@@ -24,3 +24,9 @@ export interface Project {
 	mode: "api-keys" | "credits" | "hybrid";
 	status: "active" | "inactive" | "deleted" | null;
 }
+
+export type User = {
+	id: string;
+	email: string;
+	name: string | null;
+} | null;
