@@ -13,7 +13,7 @@ import {
 	BrainCircuit,
 	FileText,
 	MoreHorizontal,
-	User,
+	User as UserIcon,
 	CreditCard,
 	Shield,
 	SunIcon,
@@ -68,7 +68,7 @@ import { DOCS_URL } from "@/lib/env";
 import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
 
-import type { Organization } from "@/lib/types";
+import type { Organization, User } from "@/lib/types";
 
 // Configuration
 const PROJECT_NAVIGATION = [
@@ -113,7 +113,7 @@ const ORGANIZATION_SETTINGS = [
 	},
 	{
 		href: "/dashboard/settings/transactions",
-		label: "Preferences",
+		label: "Transactions",
 	},
 ] as const;
 
@@ -142,7 +142,7 @@ const USER_MENU_ITEMS = [
 	{
 		href: "/dashboard/settings/account",
 		label: "Account",
-		icon: User,
+		icon: UserIcon,
 	},
 	{
 		href: "/dashboard/settings/billing",
@@ -441,7 +441,7 @@ function UserDropdownMenu({
 	toggleSidebar,
 	onLogout,
 }: {
-	user: any;
+	user: User;
 	isMobile: boolean;
 	toggleSidebar: () => void;
 	onLogout: () => void;
