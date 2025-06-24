@@ -29,7 +29,7 @@
 		"zod-openapi": "^4.2.4"
 	},
 	"devDependencies": {
-		"@types/node": "^22.15.17",
+		"@types/node": "^24.0.3",
 		"tsx": "^4.19.3"
 	}
 }
