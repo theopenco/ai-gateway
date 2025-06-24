@@ -173,6 +173,11 @@ keysProvider.openapi(create, async (c) => {
 	}
 
 	if (!validationResult.valid) {
+		if (validationResult.statusCode && validationResult.statusCode >= 500) {
+			throw new HTTPException(500, {
+				message: validationResult.error || "Upstream server error",
+			});
+		}
 		throw new HTTPException(400, {
 			message: `Invalid API key: ${validationResult.error || "Unknown error"}`,
 		});
