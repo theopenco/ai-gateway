@@ -416,7 +416,6 @@ export async function validateProviderKey(
 			if (response.status === 401) {
 				return {
 					valid: false,
-					error: "invalid api key",
 					statusCode: response.status,
 				};
 			}

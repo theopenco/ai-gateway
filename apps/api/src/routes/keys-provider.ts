@@ -172,17 +172,16 @@ keysProvider.openapi(create, async (c) => {
 		});
 	}
 
+	if (validationResult.error) {
+		const errorMessage = validationResult.error || "Upstream server error";
+		throw new HTTPException(500, {
+			message: `Error from provider: ${errorMessage}. Please try again later or contact support.`,
+		});
+	}
+
 	if (!validationResult.valid) {
-		if (validationResult.statusCode && (validationResult.statusCode >= 500 || validationResult.statusCode === 429)) {
-			const errorMessage = validationResult.statusCode === 429 
-				? "Rate limit exceeded during validation - please try again later" 
-				: validationResult.error || "Upstream server error";
-			throw new HTTPException(500, {
-				message: errorMessage,
-			});
-		}
 		throw new HTTPException(400, {
-			message: `Invalid API key: ${validationResult.error || "Unknown error"}`,
+			message: `Invalid API key. Please make sure the key is correct.`,
 		});
 	}
 
