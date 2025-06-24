@@ -173,9 +173,12 @@ keysProvider.openapi(create, async (c) => {
 	}
 
 	if (!validationResult.valid) {
-		if (validationResult.statusCode && validationResult.statusCode >= 500) {
+		if (validationResult.statusCode && (validationResult.statusCode >= 500 || validationResult.statusCode === 429)) {
+			const errorMessage = validationResult.statusCode === 429 
+				? "Rate limit exceeded during validation - please try again later" 
+				: validationResult.error || "Upstream server error";
 			throw new HTTPException(500, {
-				message: validationResult.error || "Upstream server error",
+				message: errorMessage,
 			});
 		}
 		throw new HTTPException(400, {
