@@ -48,7 +48,7 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        if: steps.check-author.outputs.skip != 'true'
+        if: steps.check-author.outputs.skip != 'true' && github.event.pull_request.user.login != 'dependabot[bot]'
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.CLAUDE_CODE_API_KEY }}
