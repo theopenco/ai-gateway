@@ -37,7 +37,6 @@ import { Route as DashboardLayoutSettingsTransactionsImport } from './routes/das
 import { Route as DashboardLayoutSettingsSecurityImport } from './routes/dashboard/_layout/settings/security'
 import { Route as DashboardLayoutSettingsPreferencesImport } from './routes/dashboard/_layout/settings/preferences'
 import { Route as DashboardLayoutSettingsBillingImport } from './routes/dashboard/_layout/settings/billing'
-import { Route as DashboardLayoutSettingsAdvancedImport } from './routes/dashboard/_layout/settings/advanced'
 import { Route as DashboardLayoutSettingsAccountImport } from './routes/dashboard/_layout/settings/account'
 
 // Create Virtual Routes
@@ -201,13 +200,6 @@ const DashboardLayoutSettingsBillingRoute =
     getParentRoute: () => DashboardLayoutSettingsRoute,
   } as any)
 
-const DashboardLayoutSettingsAdvancedRoute =
-  DashboardLayoutSettingsAdvancedImport.update({
-    id: '/advanced',
-    path: '/advanced',
-    getParentRoute: () => DashboardLayoutSettingsRoute,
-  } as any)
-
 const DashboardLayoutSettingsAccountRoute =
   DashboardLayoutSettingsAccountImport.update({
     id: '/account',
@@ -366,13 +358,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutSettingsAccountImport
       parentRoute: typeof DashboardLayoutSettingsImport
     }
-    '/dashboard/_layout/settings/advanced': {
-      id: '/dashboard/_layout/settings/advanced'
-      path: '/advanced'
-      fullPath: '/dashboard/settings/advanced'
-      preLoaderRoute: typeof DashboardLayoutSettingsAdvancedImport
-      parentRoute: typeof DashboardLayoutSettingsImport
-    }
     '/dashboard/_layout/settings/billing': {
       id: '/dashboard/_layout/settings/billing'
       path: '/billing'
@@ -415,7 +400,6 @@ declare module '@tanstack/react-router' {
 
 interface DashboardLayoutSettingsRouteChildren {
   DashboardLayoutSettingsAccountRoute: typeof DashboardLayoutSettingsAccountRoute
-  DashboardLayoutSettingsAdvancedRoute: typeof DashboardLayoutSettingsAdvancedRoute
   DashboardLayoutSettingsBillingRoute: typeof DashboardLayoutSettingsBillingRoute
   DashboardLayoutSettingsPreferencesRoute: typeof DashboardLayoutSettingsPreferencesRoute
   DashboardLayoutSettingsSecurityRoute: typeof DashboardLayoutSettingsSecurityRoute
@@ -426,7 +410,6 @@ interface DashboardLayoutSettingsRouteChildren {
 const DashboardLayoutSettingsRouteChildren: DashboardLayoutSettingsRouteChildren =
   {
     DashboardLayoutSettingsAccountRoute: DashboardLayoutSettingsAccountRoute,
-    DashboardLayoutSettingsAdvancedRoute: DashboardLayoutSettingsAdvancedRoute,
     DashboardLayoutSettingsBillingRoute: DashboardLayoutSettingsBillingRoute,
     DashboardLayoutSettingsPreferencesRoute:
       DashboardLayoutSettingsPreferencesRoute,
@@ -498,7 +481,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/usage': typeof DashboardLayoutUsageRoute
   '/dashboard/': typeof DashboardLayoutIndexRoute
   '/dashboard/settings/account': typeof DashboardLayoutSettingsAccountRoute
-  '/dashboard/settings/advanced': typeof DashboardLayoutSettingsAdvancedRoute
   '/dashboard/settings/billing': typeof DashboardLayoutSettingsBillingRoute
   '/dashboard/settings/preferences': typeof DashboardLayoutSettingsPreferencesRoute
   '/dashboard/settings/security': typeof DashboardLayoutSettingsSecurityRoute
@@ -525,7 +507,6 @@ export interface FileRoutesByTo {
   '/dashboard/provider-keys': typeof DashboardLayoutProviderKeysRoute
   '/dashboard/usage': typeof DashboardLayoutUsageRoute
   '/dashboard/settings/account': typeof DashboardLayoutSettingsAccountRoute
-  '/dashboard/settings/advanced': typeof DashboardLayoutSettingsAdvancedRoute
   '/dashboard/settings/billing': typeof DashboardLayoutSettingsBillingRoute
   '/dashboard/settings/preferences': typeof DashboardLayoutSettingsPreferencesRoute
   '/dashboard/settings/security': typeof DashboardLayoutSettingsSecurityRoute
@@ -556,7 +537,6 @@ export interface FileRoutesById {
   '/dashboard/_layout/usage': typeof DashboardLayoutUsageRoute
   '/dashboard/_layout/': typeof DashboardLayoutIndexRoute
   '/dashboard/_layout/settings/account': typeof DashboardLayoutSettingsAccountRoute
-  '/dashboard/_layout/settings/advanced': typeof DashboardLayoutSettingsAdvancedRoute
   '/dashboard/_layout/settings/billing': typeof DashboardLayoutSettingsBillingRoute
   '/dashboard/_layout/settings/preferences': typeof DashboardLayoutSettingsPreferencesRoute
   '/dashboard/_layout/settings/security': typeof DashboardLayoutSettingsSecurityRoute
@@ -587,7 +567,6 @@ export interface FileRouteTypes {
     | '/dashboard/usage'
     | '/dashboard/'
     | '/dashboard/settings/account'
-    | '/dashboard/settings/advanced'
     | '/dashboard/settings/billing'
     | '/dashboard/settings/preferences'
     | '/dashboard/settings/security'
@@ -613,7 +592,6 @@ export interface FileRouteTypes {
     | '/dashboard/provider-keys'
     | '/dashboard/usage'
     | '/dashboard/settings/account'
-    | '/dashboard/settings/advanced'
     | '/dashboard/settings/billing'
     | '/dashboard/settings/preferences'
     | '/dashboard/settings/security'
@@ -642,7 +620,6 @@ export interface FileRouteTypes {
     | '/dashboard/_layout/usage'
     | '/dashboard/_layout/'
     | '/dashboard/_layout/settings/account'
-    | '/dashboard/_layout/settings/advanced'
     | '/dashboard/_layout/settings/billing'
     | '/dashboard/_layout/settings/preferences'
     | '/dashboard/_layout/settings/security'
@@ -778,7 +755,6 @@ export const routeTree = rootRoute
       "parent": "/dashboard/_layout",
       "children": [
         "/dashboard/_layout/settings/account",
-        "/dashboard/_layout/settings/advanced",
         "/dashboard/_layout/settings/billing",
         "/dashboard/_layout/settings/preferences",
         "/dashboard/_layout/settings/security",
@@ -796,10 +772,6 @@ export const routeTree = rootRoute
     },
     "/dashboard/_layout/settings/account": {
       "filePath": "dashboard/_layout/settings/account.tsx",
-      "parent": "/dashboard/_layout/settings"
-    },
-    "/dashboard/_layout/settings/advanced": {
-      "filePath": "dashboard/_layout/settings/advanced.tsx",
       "parent": "/dashboard/_layout/settings"
     },
     "/dashboard/_layout/settings/billing": {
