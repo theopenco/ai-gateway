@@ -115,6 +115,10 @@ const ORGANIZATION_SETTINGS = [
 		href: "/dashboard/settings/transactions",
 		label: "Transactions",
 	},
+	{
+		href: "/dashboard/settings/policies",
+		label: "Policies",
+	},
 ] as const;
 
 const TOOLS_RESOURCES = [
@@ -307,7 +311,8 @@ function OrganizationSection({
 							className={cn(
 								"flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer",
 								isActive("/dashboard/settings/billing") ||
-									isActive("/dashboard/settings/transactions")
+									isActive("/dashboard/settings/transactions") ||
+									isActive("/dashboard/settings/policies")
 									? "bg-primary/10 text-primary"
 									: "text-foreground/70 hover:bg-accent hover:text-accent-foreground",
 							)}
