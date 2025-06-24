@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { CachingSettings } from "@/components/settings/caching-settings";
-import { OrganizationRetentionSettings } from "@/components/settings/organization-retention-settings";
 import { ProjectModeSettings } from "@/components/settings/project-mode-settings";
 import { SettingsLoading } from "@/components/settings/settings-loading";
 import {
@@ -36,13 +35,6 @@ function RouteComponent() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
-						<div>
-							<h4 className="text-base font-medium mb-4">
-								Organization Settings
-							</h4>
-							<OrganizationRetentionSettings />
-						</div>
-						<Separator className="my-6" />
 						<div>
 							<h4 className="text-base font-medium mb-4">Project Settings</h4>
 							<ProjectModeSettings />

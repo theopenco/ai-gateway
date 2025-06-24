@@ -172,9 +172,16 @@ keysProvider.openapi(create, async (c) => {
 		});
 	}
 
+	if (validationResult.error) {
+		const errorMessage = validationResult.error || "Upstream server error";
+		throw new HTTPException(500, {
+			message: `Error from provider: ${errorMessage} and status code ${validationResult.statusCode}. Please try again later or contact support.`,
+		});
+	}
+
 	if (!validationResult.valid) {
 		throw new HTTPException(400, {
-			message: `Invalid API key: ${validationResult.error || "Unknown error"}`,
+			message: `Invalid API key. Please make sure the key is correct.`,
 		});
 	}
 
