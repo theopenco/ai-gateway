@@ -348,7 +348,7 @@ export async function validateProviderKey(
 	token: string,
 	baseUrl?: string,
 	skipValidation = false,
-): Promise<{ valid: boolean; error?: string }> {
+): Promise<{ valid: boolean; error?: string; statusCode?: number }> {
 	// Skip validation if requested (e.g. in test environment)
 	if (skipValidation) {
 		return { valid: true };
@@ -401,16 +401,6 @@ export async function validateProviderKey(
 		});
 
 		if (!response.ok) {
-			if (response.status >= 500) {
-				throw new Error(
-					`Server error: ${response.status} ${response.statusText}`,
-				);
-			}
-
-			if (response.status === 401) {
-				return { valid: false, error: "invalid api key" };
-			}
-
 			const errorText = await response.text();
 			let errorMessage = `Error from provider: ${response.status} ${response.statusText}`;
 
@@ -423,7 +413,14 @@ export async function validateProviderKey(
 				}
 			} catch (_err) {}
 
-			return { valid: false, error: errorMessage };
+			if (response.status === 401) {
+				return {
+					valid: false,
+					statusCode: response.status,
+				};
+			}
+
+			return { valid: false, error: errorMessage, statusCode: response.status };
 		}
 
 		return { valid: true };
