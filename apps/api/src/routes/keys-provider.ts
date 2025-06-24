@@ -175,7 +175,7 @@ keysProvider.openapi(create, async (c) => {
 	if (validationResult.error) {
 		const errorMessage = validationResult.error || "Upstream server error";
 		throw new HTTPException(500, {
-			message: `Error from provider: ${errorMessage}. Please try again later or contact support.`,
+			message: `Error from provider: ${errorMessage} and status code ${validationResult.statusCode}. Please try again later or contact support.`,
 		});
 	}
 
