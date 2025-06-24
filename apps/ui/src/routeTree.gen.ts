@@ -36,6 +36,7 @@ import { Route as DashboardLayoutSettingsIndexImport } from './routes/dashboard/
 import { Route as DashboardLayoutSettingsTransactionsImport } from './routes/dashboard/_layout/settings/transactions'
 import { Route as DashboardLayoutSettingsSecurityImport } from './routes/dashboard/_layout/settings/security'
 import { Route as DashboardLayoutSettingsPreferencesImport } from './routes/dashboard/_layout/settings/preferences'
+import { Route as DashboardLayoutSettingsPoliciesImport } from './routes/dashboard/_layout/settings/policies'
 import { Route as DashboardLayoutSettingsBillingImport } from './routes/dashboard/_layout/settings/billing'
 import { Route as DashboardLayoutSettingsAccountImport } from './routes/dashboard/_layout/settings/account'
 
@@ -190,6 +191,13 @@ const DashboardLayoutSettingsPreferencesRoute =
   DashboardLayoutSettingsPreferencesImport.update({
     id: '/preferences',
     path: '/preferences',
+    getParentRoute: () => DashboardLayoutSettingsRoute,
+  } as any)
+
+const DashboardLayoutSettingsPoliciesRoute =
+  DashboardLayoutSettingsPoliciesImport.update({
+    id: '/policies',
+    path: '/policies',
     getParentRoute: () => DashboardLayoutSettingsRoute,
   } as any)
 
@@ -365,6 +373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutSettingsBillingImport
       parentRoute: typeof DashboardLayoutSettingsImport
     }
+    '/dashboard/_layout/settings/policies': {
+      id: '/dashboard/_layout/settings/policies'
+      path: '/policies'
+      fullPath: '/dashboard/settings/policies'
+      preLoaderRoute: typeof DashboardLayoutSettingsPoliciesImport
+      parentRoute: typeof DashboardLayoutSettingsImport
+    }
     '/dashboard/_layout/settings/preferences': {
       id: '/dashboard/_layout/settings/preferences'
       path: '/preferences'
@@ -401,6 +416,7 @@ declare module '@tanstack/react-router' {
 interface DashboardLayoutSettingsRouteChildren {
   DashboardLayoutSettingsAccountRoute: typeof DashboardLayoutSettingsAccountRoute
   DashboardLayoutSettingsBillingRoute: typeof DashboardLayoutSettingsBillingRoute
+  DashboardLayoutSettingsPoliciesRoute: typeof DashboardLayoutSettingsPoliciesRoute
   DashboardLayoutSettingsPreferencesRoute: typeof DashboardLayoutSettingsPreferencesRoute
   DashboardLayoutSettingsSecurityRoute: typeof DashboardLayoutSettingsSecurityRoute
   DashboardLayoutSettingsTransactionsRoute: typeof DashboardLayoutSettingsTransactionsRoute
@@ -411,6 +427,7 @@ const DashboardLayoutSettingsRouteChildren: DashboardLayoutSettingsRouteChildren
   {
     DashboardLayoutSettingsAccountRoute: DashboardLayoutSettingsAccountRoute,
     DashboardLayoutSettingsBillingRoute: DashboardLayoutSettingsBillingRoute,
+    DashboardLayoutSettingsPoliciesRoute: DashboardLayoutSettingsPoliciesRoute,
     DashboardLayoutSettingsPreferencesRoute:
       DashboardLayoutSettingsPreferencesRoute,
     DashboardLayoutSettingsSecurityRoute: DashboardLayoutSettingsSecurityRoute,
@@ -482,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardLayoutIndexRoute
   '/dashboard/settings/account': typeof DashboardLayoutSettingsAccountRoute
   '/dashboard/settings/billing': typeof DashboardLayoutSettingsBillingRoute
+  '/dashboard/settings/policies': typeof DashboardLayoutSettingsPoliciesRoute
   '/dashboard/settings/preferences': typeof DashboardLayoutSettingsPreferencesRoute
   '/dashboard/settings/security': typeof DashboardLayoutSettingsSecurityRoute
   '/dashboard/settings/transactions': typeof DashboardLayoutSettingsTransactionsRoute
@@ -508,6 +526,7 @@ export interface FileRoutesByTo {
   '/dashboard/usage': typeof DashboardLayoutUsageRoute
   '/dashboard/settings/account': typeof DashboardLayoutSettingsAccountRoute
   '/dashboard/settings/billing': typeof DashboardLayoutSettingsBillingRoute
+  '/dashboard/settings/policies': typeof DashboardLayoutSettingsPoliciesRoute
   '/dashboard/settings/preferences': typeof DashboardLayoutSettingsPreferencesRoute
   '/dashboard/settings/security': typeof DashboardLayoutSettingsSecurityRoute
   '/dashboard/settings/transactions': typeof DashboardLayoutSettingsTransactionsRoute
@@ -538,6 +557,7 @@ export interface FileRoutesById {
   '/dashboard/_layout/': typeof DashboardLayoutIndexRoute
   '/dashboard/_layout/settings/account': typeof DashboardLayoutSettingsAccountRoute
   '/dashboard/_layout/settings/billing': typeof DashboardLayoutSettingsBillingRoute
+  '/dashboard/_layout/settings/policies': typeof DashboardLayoutSettingsPoliciesRoute
   '/dashboard/_layout/settings/preferences': typeof DashboardLayoutSettingsPreferencesRoute
   '/dashboard/_layout/settings/security': typeof DashboardLayoutSettingsSecurityRoute
   '/dashboard/_layout/settings/transactions': typeof DashboardLayoutSettingsTransactionsRoute
@@ -568,6 +588,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/dashboard/settings/account'
     | '/dashboard/settings/billing'
+    | '/dashboard/settings/policies'
     | '/dashboard/settings/preferences'
     | '/dashboard/settings/security'
     | '/dashboard/settings/transactions'
@@ -593,6 +614,7 @@ export interface FileRouteTypes {
     | '/dashboard/usage'
     | '/dashboard/settings/account'
     | '/dashboard/settings/billing'
+    | '/dashboard/settings/policies'
     | '/dashboard/settings/preferences'
     | '/dashboard/settings/security'
     | '/dashboard/settings/transactions'
@@ -621,6 +643,7 @@ export interface FileRouteTypes {
     | '/dashboard/_layout/'
     | '/dashboard/_layout/settings/account'
     | '/dashboard/_layout/settings/billing'
+    | '/dashboard/_layout/settings/policies'
     | '/dashboard/_layout/settings/preferences'
     | '/dashboard/_layout/settings/security'
     | '/dashboard/_layout/settings/transactions'
@@ -756,6 +779,7 @@ export const routeTree = rootRoute
       "children": [
         "/dashboard/_layout/settings/account",
         "/dashboard/_layout/settings/billing",
+        "/dashboard/_layout/settings/policies",
         "/dashboard/_layout/settings/preferences",
         "/dashboard/_layout/settings/security",
         "/dashboard/_layout/settings/transactions",
@@ -776,6 +800,10 @@ export const routeTree = rootRoute
     },
     "/dashboard/_layout/settings/billing": {
       "filePath": "dashboard/_layout/settings/billing.tsx",
+      "parent": "/dashboard/_layout/settings"
+    },
+    "/dashboard/_layout/settings/policies": {
+      "filePath": "dashboard/_layout/settings/policies.tsx",
       "parent": "/dashboard/_layout/settings"
     },
     "/dashboard/_layout/settings/preferences": {
