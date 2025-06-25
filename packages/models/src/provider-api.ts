@@ -21,6 +21,7 @@ export function getProviderHeaders(
 		case "kluster.ai":
 		case "openai":
 		case "inference.net":
+		case "xai":
 		default:
 			return {
 				Authorization: `Bearer ${token}`,
@@ -61,7 +62,8 @@ export function prepareRequestBody(
 	}
 
 	switch (usedProvider) {
-		case "openai": {
+		case "openai":
+		case "xai": {
 			if (stream) {
 				requestBody.stream_options = {
 					include_usage: true,
@@ -245,6 +247,9 @@ export function getProviderEndpoint(
 			case "mistral":
 				url = "https://api.mistral.ai";
 				break;
+			case "xai":
+				url = "https://api.x.ai";
+				break;
 			default:
 				throw new Error(`Provider ${provider} requires a baseUrl`);
 		}
@@ -269,6 +274,7 @@ export function getProviderEndpoint(
 		case "openai":
 		case "llmgateway":
 		case "cloudrift":
+		case "xai":
 		default:
 			return `${url}/v1/chat/completions`;
 	}
