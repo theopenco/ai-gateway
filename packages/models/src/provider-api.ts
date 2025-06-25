@@ -282,6 +282,7 @@ export function getCheapestModelForProvider(
 ): string | null {
 	const availableModels = models
 		.filter((model) => model.providers.some((p) => p.providerId === provider))
+		.filter((model) => !model.deprecatedAt || new Date() <= model.deprecatedAt)
 		.map((model) => ({
 			model: model.model,
 			provider: model.providers.find((p) => p.providerId === provider)!,

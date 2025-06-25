@@ -36,11 +36,21 @@ export interface ModelDefinition {
 	 * Whether the model supports JSON output mode
 	 */
 	jsonOutput?: boolean;
+	/**
+	 * Date when the model will be deprecated (still usable but filtered from selection algorithms)
+	 */
+	deprecatedAt?: Date;
+	/**
+	 * Date when the model will be deactivated (returns error when requested)
+	 */
+	deactivatedAt?: Date;
 }
 
 export let models = [
 	{
 		model: "custom", // custom provider which expects base URL to be set
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "llmgateway",
@@ -54,6 +64,8 @@ export let models = [
 	},
 	{
 		model: "auto", // native automatic routing
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "llmgateway",
@@ -67,6 +79,8 @@ export let models = [
 	},
 	{
 		model: "gpt-4o-mini",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -81,6 +95,8 @@ export let models = [
 	},
 	{
 		model: "gpt-4",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -95,6 +111,8 @@ export let models = [
 	},
 	{
 		model: "gpt-4o",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -110,6 +128,8 @@ export let models = [
 	},
 	{
 		model: "gpt-3.5-turbo",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -124,6 +144,8 @@ export let models = [
 	},
 	{
 		model: "gpt-4.1",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -138,6 +160,8 @@ export let models = [
 	},
 	{
 		model: "o1",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -152,6 +176,8 @@ export let models = [
 	},
 	{
 		model: "gpt-4.1-mini",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -166,6 +192,8 @@ export let models = [
 	},
 	{
 		model: "gpt-4.1-nano",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -180,6 +208,8 @@ export let models = [
 	},
 	{
 		model: "o3",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -194,6 +224,8 @@ export let models = [
 	},
 	{
 		model: "o3-mini",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -208,6 +240,8 @@ export let models = [
 	},
 	{
 		model: "claude-3-7-sonnet-20250219",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "anthropic",
@@ -221,6 +255,8 @@ export let models = [
 	},
 	{
 		model: "claude-3-5-sonnet-20241022",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "anthropic",
@@ -234,6 +270,8 @@ export let models = [
 	},
 	{
 		model: "gemini-2.0-flash",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "google-ai-studio",
@@ -247,6 +285,8 @@ export let models = [
 	},
 	{
 		model: "gpt-4-turbo",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "openai",
@@ -261,6 +301,8 @@ export let models = [
 	},
 	{
 		model: "claude-2.1",
+		deprecatedAt: new Date("2025-06-15T00:00:00Z"),
+		deactivatedAt: new Date("2025-07-21T16:00:00Z"),
 		providers: [
 			{
 				providerId: "anthropic",
@@ -274,6 +316,8 @@ export let models = [
 	},
 	{
 		model: "llama-3.1-8b-instruct",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "inference.net",
@@ -303,6 +347,8 @@ export let models = [
 	},
 	{
 		model: "llama-3.1-70b-instruct",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "inference.net",
@@ -316,6 +362,8 @@ export let models = [
 	},
 	{
 		model: "claude-3-7-sonnet",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "anthropic",
@@ -329,6 +377,8 @@ export let models = [
 	},
 	{
 		model: "claude-sonnet-4-20250514",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "anthropic",
@@ -342,6 +392,8 @@ export let models = [
 	},
 	{
 		model: "claude-opus-4-20250514",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "anthropic",
@@ -355,6 +407,8 @@ export let models = [
 	},
 	{
 		model: "claude-3-5-sonnet",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "anthropic",
@@ -368,6 +422,8 @@ export let models = [
 	},
 	{
 		model: "gemini-2.5-pro-preview-05-06",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "google-ai-studio",
@@ -381,6 +437,8 @@ export let models = [
 	},
 	{
 		model: "gemini-2.5-pro-preview-06-05",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "google-ai-studio",
@@ -394,6 +452,8 @@ export let models = [
 	},
 	{
 		model: "gemini-2.5-flash-preview-04-17",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "google-ai-studio",
@@ -407,6 +467,8 @@ export let models = [
 	},
 	{
 		model: "gemini-2.5-flash-preview-05-20",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "google-ai-studio",
@@ -420,6 +482,8 @@ export let models = [
 	},
 	{
 		model: "gemini-2.5-flash-preview-04-17-thinking",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "google-ai-studio",
@@ -433,6 +497,8 @@ export let models = [
 	},
 	{
 		model: "gemini-1.5-flash-8b",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "google-ai-studio",
@@ -446,6 +512,8 @@ export let models = [
 	},
 	{
 		model: "gemini-2.0-flash-lite",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "google-ai-studio",
@@ -459,6 +527,8 @@ export let models = [
 	},
 	{
 		model: "deepseek-v3",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "cloudrift",
@@ -472,6 +542,8 @@ export let models = [
 	},
 	{
 		model: "deepseek-r1",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "cloudrift",
@@ -485,6 +557,8 @@ export let models = [
 	},
 	{
 		model: "deepseek-r1-0528",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "cloudrift",
@@ -498,6 +572,8 @@ export let models = [
 	},
 	{
 		model: "llama-4-maverick-17b-128e-instruct",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "cloudrift",
@@ -511,6 +587,8 @@ export let models = [
 	},
 	{
 		model: "mistral-large-latest",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "mistral",

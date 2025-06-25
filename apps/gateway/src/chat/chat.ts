@@ -867,6 +867,13 @@ chat.openapi(completions, async (c) => {
 		});
 	}
 
+	// Check if model is deactivated
+	if (modelInfo.deactivatedAt && new Date() > modelInfo.deactivatedAt) {
+		throw new HTTPException(410, {
+			message: `Model ${requestedModel} has been deactivated and is no longer available`,
+		});
+	}
+
 	if (response_format?.type === "json_object") {
 		if (!(modelInfo as any).jsonOutput) {
 			throw new HTTPException(400, {
@@ -971,6 +978,11 @@ chat.openapi(completions, async (c) => {
 
 		for (const modelDef of models) {
 			if (modelDef.model === "auto" || modelDef.model === "custom") {
+				continue;
+			}
+
+			// Skip deprecated models
+			if (modelDef.deprecatedAt && new Date() > modelDef.deprecatedAt) {
 				continue;
 			}
 
