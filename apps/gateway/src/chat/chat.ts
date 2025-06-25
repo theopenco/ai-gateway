@@ -869,7 +869,7 @@ chat.openapi(completions, async (c) => {
 
 	// Check if model is deactivated
 	if (modelInfo.deactivatedAt && new Date() > modelInfo.deactivatedAt) {
-		throw new HTTPException(400, {
+		throw new HTTPException(410, {
 			message: `Model ${requestedModel} has been deactivated and is no longer available`,
 		});
 	}
