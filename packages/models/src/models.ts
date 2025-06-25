@@ -301,8 +301,8 @@ export let models = [
 	},
 	{
 		model: "claude-2.1",
-		deprecatedAt: new Date("2025-06-15T00:00:00"),
-		deactivatedAt: new Date("2025-07-21T16:00:00"),
+		deprecatedAt: new Date("2025-06-15T00:00:00Z"),
+		deactivatedAt: new Date("2025-07-21T16:00:00Z"),
 		providers: [
 			{
 				providerId: "anthropic",
