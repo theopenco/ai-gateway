@@ -98,6 +98,7 @@ function hasProviderEnvironmentToken(provider: Provider): boolean {
 		"kluster.ai": "KLUSTER_AI_API_KEY",
 		"together.ai": "TOGETHER_AI_API_KEY",
 		cloudrift: "CLOUD_RIFT_API_KEY",
+		xai: "X_AI_API_KEY",
 		mistral: "MISTRAL_API_KEY",
 	} as const;
 
@@ -140,6 +141,9 @@ function getProviderTokenFromEnv(usedProvider: Provider): string | undefined {
 			break;
 		case "mistral":
 			token = process.env.MISTRAL_API_KEY;
+			break;
+		case "xai":
+			token = process.env.X_AI_API_KEY;
 			break;
 		default:
 			throw new HTTPException(400, {

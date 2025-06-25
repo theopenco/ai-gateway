@@ -128,6 +128,17 @@ export const providers = [
 		website: "https://mistral.ai",
 		announcement: null,
 	},
+	{
+		id: "xai",
+		name: "xAI",
+		description: "xAI's Grok large language models",
+		streaming: true,
+		cancellation: true,
+		jsonOutput: true,
+		color: "#000000",
+		website: "https://x.ai",
+		announcement: null,
+	},
 ] as const satisfies ProviderDefinition[];
 
 export type ProviderId = (typeof providers)[number]["id"];
