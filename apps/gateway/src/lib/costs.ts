@@ -2,13 +2,22 @@ import { type Model, type ModelDefinition, models } from "@llmgateway/models";
 import { encode, encodeChat } from "gpt-tokenizer";
 
 // Define ChatMessage type to match what gpt-tokenizer expects
-interface ChatMessage {
+export interface ChatMessage {
 	role: "user" | "system" | "assistant" | undefined;
 	content: string;
 	name?: string;
 }
 
-const DEFAULT_TOKENIZER_MODEL = "gpt-4";
+export const DEFAULT_TOKENIZER_MODEL = "gpt-4";
+
+export function countMessageTokens(messages: ChatMessage[]): number {
+	try {
+		return encodeChat(messages, DEFAULT_TOKENIZER_MODEL).length;
+	} catch (error) {
+		console.error(`Failed to encode chat messages: ${error}`);
+		return 0;
+	}
+}
 
 /**
  * Calculate costs based on model, provider, and token counts
