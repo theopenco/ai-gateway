@@ -32,6 +32,10 @@ import {
 } from "../lib/cache";
 import { calculateCosts } from "../lib/costs";
 import { insertLog } from "../lib/logs";
+import {
+	hasProviderEnvironmentToken,
+	getProviderEnvVar,
+} from "../lib/provider";
 
 import type { ServerTypes } from "../vars";
 
@@ -84,75 +88,23 @@ function createLogEntry(
 }
 
 /**
- * Check if a provider has an environment token available
- * @param provider The provider to check
- * @returns True if the provider has a valid environment token, false otherwise
- */
-function hasProviderEnvironmentToken(provider: Provider): boolean {
-	const envVarMap = {
-		openai: "OPENAI_API_KEY",
-		anthropic: "ANTHROPIC_API_KEY",
-		"google-vertex": "VERTEX_API_KEY",
-		"google-ai-studio": "GOOGLE_AI_STUDIO_API_KEY",
-		"inference.net": "INFERENCE_NET_API_KEY",
-		"kluster.ai": "KLUSTER_AI_API_KEY",
-		"together.ai": "TOGETHER_AI_API_KEY",
-		cloudrift: "CLOUD_RIFT_API_KEY",
-		mistral: "MISTRAL_API_KEY",
-	} as const;
-
-	const envVar = envVarMap[provider as keyof typeof envVarMap];
-	return envVar ? Boolean(process.env[envVar]) : false;
-}
-
-/**
  * Get provider token from environment variables
  * @param usedProvider The provider to get the token for
  * @returns The token for the provider or undefined if not found
  */
 function getProviderTokenFromEnv(usedProvider: Provider): string | undefined {
-	let token: string | undefined;
-
-	switch (usedProvider) {
-		case "openai":
-			token = process.env.OPENAI_API_KEY;
-			break;
-		case "anthropic":
-			token = process.env.ANTHROPIC_API_KEY;
-			break;
-		case "google-vertex":
-			token = process.env.VERTEX_API_KEY;
-			break;
-		case "google-ai-studio":
-			token = process.env.GOOGLE_AI_STUDIO_API_KEY;
-			break;
-		case "inference.net":
-			token = process.env.INFERENCE_NET_API_KEY;
-			break;
-		case "kluster.ai":
-			token = process.env.KLUSTER_AI_API_KEY;
-			break;
-		case "together.ai":
-			token = process.env.TOGETHER_AI_API_KEY;
-			break;
-		case "cloudrift":
-			token = process.env.CLOUD_RIFT_API_KEY;
-			break;
-		case "mistral":
-			token = process.env.MISTRAL_API_KEY;
-			break;
-		default:
-			throw new HTTPException(400, {
-				message: `No environment variable set for provider: ${usedProvider}`,
-			});
+	const envVar = getProviderEnvVar(usedProvider);
+	if (!envVar) {
+		throw new HTTPException(400, {
+			message: `No environment variable set for provider: ${usedProvider}`,
+		});
 	}
-
+	const token = process.env[envVar];
 	if (!token) {
 		throw new HTTPException(400, {
 			message: `No API key set in environment for provider: ${usedProvider}`,
 		});
 	}
-
 	return token;
 }
 
