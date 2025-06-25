@@ -1,6 +1,7 @@
 import type { Provider } from "@llmgateway/models";
 
 export const providerEnvVarMap: Record<Provider, string> = {
+	llmgateway: "LLMGATEWAY_API_KEY",
 	openai: "OPENAI_API_KEY",
 	anthropic: "ANTHROPIC_API_KEY",
 	"google-vertex": "VERTEX_API_KEY",
