@@ -109,10 +109,11 @@ describe("e2e tests with real provider keys", () => {
 		});
 
 		for (const provider of providers) {
-			const envVar = getProviderEnvVar(provider.id);
-			if (envVar) {
-				await createProviderKey(provider.id, envVar, "api-keys");
-				await createProviderKey(provider.id, envVar, "credits");
+			const envVarName = getProviderEnvVar(provider.id);
+			const envVarValue = envVarName ? process.env[envVarName] : undefined;
+			if (envVarValue) {
+				await createProviderKey(provider.id, envVarValue, "api-keys");
+				await createProviderKey(provider.id, envVarValue, "credits");
 			}
 		}
 	});
@@ -351,8 +352,9 @@ describe("e2e tests with real provider keys", () => {
 	);
 
 	test("JSON output mode error for unsupported model", async () => {
-		const envVar = getProviderEnvVar("anthropic");
-		if (!envVar) {
+		const envVarName = getProviderEnvVar("anthropic");
+		const envVarValue = envVarName ? process.env[envVarName] : undefined;
+		if (!envVarValue) {
 			console.log(
 				"Skipping JSON output error test - no Anthropic API key provided",
 			);
@@ -390,8 +392,9 @@ describe("e2e tests with real provider keys", () => {
 	test("/v1/chat/completions with llmgateway/auto in credits mode", async () => {
 		// require all provider keys to be set
 		for (const provider of providers) {
-			const envVar = getProviderEnvVar(provider.id);
-			if (!envVar) {
+			const envVarName = getProviderEnvVar(provider.id);
+			const envVarValue = envVarName ? process.env[envVarName] : undefined;
+			if (!envVarValue) {
 				console.log(
 					`Skipping llmgateway/auto in credits mode test - no API key provided for ${provider.id}`,
 				);
@@ -485,8 +488,9 @@ describe("e2e tests with real provider keys", () => {
 	});
 
 	test.skip("/v1/chat/completions with bare 'custom' model", async () => {
-		const envVar = getProviderEnvVar("openai");
-		if (!envVar) {
+		const envVarName = getProviderEnvVar("openai");
+		const envVarValue = envVarName ? process.env[envVarName] : undefined;
+		if (!envVarValue) {
 			console.log("Skipping custom model test - no OpenAI API key provided");
 			return;
 		}
@@ -504,7 +508,7 @@ describe("e2e tests with real provider keys", () => {
 		await db.insert(tables.providerKey).values({
 			id: "provider-key-custom",
 			provider: "llmgateway",
-			token: envVar,
+			token: envVarValue,
 			baseUrl: "https://api.openai.com", // Use real OpenAI endpoint for testing
 			status: "active",
 			organizationId: "org-id",
