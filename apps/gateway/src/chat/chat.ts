@@ -140,6 +140,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 		case "inference.net":
 		case "kluster.ai":
 		case "together.ai":
+		case "groq":
 			content = json.choices?.[0]?.message?.content || null;
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
@@ -213,7 +214,8 @@ function estimateTokens(
 		(usedProvider === "anthropic" ||
 			usedProvider === "inference.net" ||
 			usedProvider === "kluster.ai" ||
-			usedProvider === "together.ai") &&
+			usedProvider === "together.ai" ||
+			usedProvider === "groq") &&
 		(!promptTokens || !completionTokens)
 	) {
 		if (!promptTokens) {
@@ -305,7 +307,8 @@ function transformToOpenAIFormat(
 		}
 		case "inference.net":
 		case "kluster.ai":
-		case "together.ai": {
+		case "together.ai":
+		case "groq": {
 			if (!transformedResponse.id) {
 				transformedResponse = {
 					id: `chatcmpl-${Date.now()}`,
@@ -1599,6 +1602,7 @@ chat.openapi(completions, async (c) => {
 										case "inference.net":
 										case "kluster.ai":
 										case "together.ai":
+										case "groq":
 											if (data.choices && data.choices[0]) {
 												if (data.choices[0].delta?.content) {
 													fullContent += data.choices[0].delta.content;

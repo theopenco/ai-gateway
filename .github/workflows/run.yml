@@ -47,3 +47,4 @@ jobs:
           CLOUD_RIFT_API_KEY: ${{ secrets.CLOUD_RIFT_API_KEY }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           X_AI_API_KEY: ${{ secrets.X_AI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
