@@ -600,7 +600,7 @@ function UpgradeCTA({
 			<div>
 				<p className="text-sm font-medium">Upgrade to Pro</p>
 				<p className="text-xs text-muted-foreground">
-					0% fees on all API calls & more
+					0% credits fees, BYOK & more
 				</p>
 			</div>
 			<Button asChild>
