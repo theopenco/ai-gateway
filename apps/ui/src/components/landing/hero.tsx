@@ -8,11 +8,13 @@ import { AuthLink } from "../shared/auth-link";
 import AnthropicLogo from "@/assets/models/anthropic.svg?react";
 import CloudriftLogo from "@/assets/models/cloudrift.svg?react";
 import GoogleVertexAILogo from "@/assets/models/google-vertex-ai.svg?react";
+import GroqLogo from "@/assets/models/groq.svg?react";
 import InferenceNetLogo from "@/assets/models/inference-net.svg?react";
 import KlusterAILogo from "@/assets/models/kluster-ai.svg?react";
 import MistralLogo from "@/assets/models/mistral.svg?react";
 import OpenAILogo from "@/assets/models/openai.svg?react";
 import TogetherAILogo from "@/assets/models/together-ai.svg?react";
+import XaiLogo from "@/assets/models/xai.svg?react";
 import heroImageLight from "@/assets/new-hero-light.png";
 import heroImageDark from "@/assets/new-hero.png";
 import { Button } from "@/lib/components/button";
@@ -37,6 +39,20 @@ const transitionVariants = {
 		},
 	},
 };
+
+// Provider logos configuration
+const PROVIDER_LOGOS = [
+	{ name: "OpenAI", component: OpenAILogo },
+	{ name: "Anthropic", component: AnthropicLogo },
+	{ name: "Google Vertex AI", component: GoogleVertexAILogo },
+	{ name: "Mistral", component: MistralLogo },
+	{ name: "Together AI", component: TogetherAILogo },
+	{ name: "Cloudrift", component: CloudriftLogo },
+	{ name: "Kluster AI", component: KlusterAILogo },
+	{ name: "Inference Net", component: InferenceNetLogo },
+	{ name: "Groq", component: GroqLogo },
+	{ name: "xAI", component: XaiLogo },
+] as const;
 
 export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 	return (
@@ -226,33 +242,15 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 									<ChevronRight className="ml-1 inline-block size-3" />
 								</Link>
 							</div>
-							<div className="group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-4 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14">
-								<div className="flex">
-									<OpenAILogo className="mx-auto h-16 w-fit" />
-								</div>
-
-								<div className="flex">
-									<AnthropicLogo className="mx-auto h-16 w-fit" />
-								</div>
-								<div className="flex">
-									<GoogleVertexAILogo className="mx-auto h-16 w-fit" />
-								</div>
-								<div className="flex">
-									<MistralLogo className="mx-auto h-16 w-fit" />
-								</div>
-								<div className="flex">
-									<TogetherAILogo className="mx-auto h-16 w-fit" />
-								</div>
-								<div className="flex">
-									<CloudriftLogo className="mx-auto h-16 w-fit" />
-								</div>
-								<div className="flex">
-									<KlusterAILogo className="mx-auto h-16 w-fit" />
-								</div>
-
-								<div className="flex">
-									<InferenceNetLogo className="mx-auto h-16 w-fit" />
-								</div>
+							<div className="group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-5 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14">
+								{PROVIDER_LOGOS.map((provider) => {
+									const LogoComponent = provider.component;
+									return (
+										<div key={provider.name} className="flex">
+											<LogoComponent className="mx-auto h-16 w-fit" />
+										</div>
+									);
+								})}
 							</div>
 						</div>
 					</section>

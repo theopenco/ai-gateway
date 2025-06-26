@@ -19,12 +19,14 @@ import {
 	SunIcon,
 	MoonIcon,
 	ComputerIcon,
+	Plus,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
 
 import { OrganizationSwitcher } from "./organization-switcher";
+import { TopUpCreditsDialog } from "@/components/credits/top-up-credits-dialog";
 import { useUser } from "@/hooks/useUser";
 import { signOut } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/lib/components/avatar";
@@ -435,6 +437,35 @@ function ThemeSelect() {
 	);
 }
 
+function CreditsDisplay({
+	selectedOrganization,
+}: {
+	selectedOrganization: Organization | null;
+}) {
+	const creditsBalance = selectedOrganization
+		? Number(selectedOrganization.credits).toFixed(2)
+		: "0.00";
+
+	return (
+		<div className="px-2 py-1.5">
+			<TopUpCreditsDialog>
+				<button className="w-full flex items-center justify-between p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-left">
+					<div className="flex items-center gap-2">
+						<CreditCard className="h-4 w-4 text-muted-foreground" />
+						<div className="flex flex-col">
+							<span className="text-sm font-medium">Credits</span>
+							<span className="text-xs text-muted-foreground">
+								${creditsBalance}
+							</span>
+						</div>
+					</div>
+					<Plus className="h-4 w-4 text-muted-foreground ml-auto" />
+				</button>
+			</TopUpCreditsDialog>
+		</div>
+	);
+}
+
 function UserDropdownMenu({
 	user,
 	isMobile,
@@ -685,6 +716,7 @@ export function DashboardSidebar({
 						onHide={hideCreditCTA}
 						selectedOrganization={selectedOrganization}
 					/>
+					<CreditsDisplay selectedOrganization={selectedOrganization} />
 					<UserDropdownMenu
 						user={user}
 						isMobile={isMobile}
