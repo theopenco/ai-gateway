@@ -66,7 +66,9 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
 	useEffect(() => {
-		Crisp.configure(CRISP_ID);
+		if (CRISP_ID) {
+			Crisp.configure(CRISP_ID);
+		}
 	}, []);
 
 	return (
