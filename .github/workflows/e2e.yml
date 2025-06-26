@@ -1,0 +1,16 @@
+name: ci
+on:
+  push:
+    paths:
+      - "packages/models/src/models.ts"
+      - "packages/models/src/providers.ts"
+      - "apps/gateway/src/chat/chat.ts"
+      - "apps/gateway/src/api.e2e.ts"
+  merge_group:
+jobs:
+  e2e:
+    uses: ./.github/workflows/run.yml
+    secrets: inherit
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    with:
+      cmd: pnpm run setup && pnpm test:e2e
