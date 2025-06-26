@@ -139,6 +139,17 @@ export const providers = [
 		website: "https://x.ai",
 		announcement: null,
 	},
+	{
+		id: "groq",
+		name: "Groq",
+		description: "Groq's ultra-fast LPU inference with various models",
+		streaming: true,
+		cancellation: true,
+		jsonOutput: true,
+		color: "#F55036",
+		website: "https://groq.com",
+		announcement: null,
+	},
 ] as const satisfies ProviderDefinition[];
 
 export type ProviderId = (typeof providers)[number]["id"];

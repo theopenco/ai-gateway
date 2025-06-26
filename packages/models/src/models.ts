@@ -698,4 +698,52 @@ export let models = [
 		],
 		jsonOutput: true,
 	},
+	{
+		model: "deepseek-r1-distill-llama-70b",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "groq",
+				modelName: "deepseek-r1-distill-llama-70b",
+				inputPrice: 0.75 / 1e6,
+				outputPrice: 0.99 / 1e6,
+				contextSize: 131072,
+				streaming: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "gemma2-9b-it",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "groq",
+				modelName: "gemma2-9b-it",
+				inputPrice: 0.2 / 1e6,
+				outputPrice: 0.2 / 1e6,
+				contextSize: 8129,
+				streaming: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "meta-llama/llama-guard-4-12b",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "groq",
+				modelName: "meta-llama/llama-guard-4-12b",
+				inputPrice: 0.2 / 1e6,
+				outputPrice: 0.2 / 1e6,
+				contextSize: 131072,
+				streaming: true,
+			},
+		],
+		jsonOutput: true,
+	},
 ] as const satisfies ModelDefinition[];

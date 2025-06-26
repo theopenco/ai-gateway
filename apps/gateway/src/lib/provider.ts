@@ -12,6 +12,7 @@ export const providerEnvVarMap: Record<Provider, string> = {
 	cloudrift: "CLOUD_RIFT_API_KEY",
 	mistral: "MISTRAL_API_KEY",
 	xai: "X_AI_API_KEY",
+	groq: "GROQ_API_KEY",
 };
 
 export function getProviderEnvVar(

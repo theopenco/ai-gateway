@@ -22,6 +22,7 @@ export function getProviderHeaders(
 		case "openai":
 		case "inference.net":
 		case "xai":
+		case "groq":
 		default:
 			return {
 				Authorization: `Bearer ${token}`,
@@ -63,7 +64,8 @@ export function prepareRequestBody(
 
 	switch (usedProvider) {
 		case "openai":
-		case "xai": {
+		case "xai":
+		case "groq": {
 			if (stream) {
 				requestBody.stream_options = {
 					include_usage: true,
@@ -250,6 +252,9 @@ export function getProviderEndpoint(
 			case "xai":
 				url = "https://api.x.ai";
 				break;
+			case "groq":
+				url = "https://api.groq.com/openai";
+				break;
 			default:
 				throw new Error(`Provider ${provider} requires a baseUrl`);
 		}
@@ -275,6 +280,7 @@ export function getProviderEndpoint(
 		case "llmgateway":
 		case "cloudrift":
 		case "xai":
+		case "groq":
 		default:
 			return `${url}/v1/chat/completions`;
 	}
