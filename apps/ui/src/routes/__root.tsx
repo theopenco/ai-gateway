@@ -7,17 +7,18 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { Crisp } from "crisp-sdk-web";
 import { ThemeProvider } from "next-themes";
 import { PostHogProvider } from "posthog-js/react";
+import { useEffect, type ReactNode } from "react";
 
 import appCss from "@/globals.css?url";
 import { Toaster } from "@/lib/components/toaster";
-import { POSTHOG_HOST, POSTHOG_KEY } from "@/lib/env";
+import { CRISP_ID, POSTHOG_HOST, POSTHOG_KEY } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
 import type { QueryClient } from "@tanstack/react-query";
 import type { PostHogConfig } from "posthog-js";
-import type { ReactNode } from "react";
 
 const options: Partial<PostHogConfig> | undefined = {
 	api_host: POSTHOG_HOST,
@@ -64,6 +65,12 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
+	useEffect(() => {
+		if (CRISP_ID) {
+			Crisp.configure(CRISP_ID);
+		}
+	}, []);
+
 	return (
 		<RootDocument>
 			<Outlet />

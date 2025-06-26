@@ -43,7 +43,7 @@ interface TopUpCreditsDialogProps {
 	children: React.ReactNode;
 }
 
-function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
+export function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [step, setStep] = useState<
 		"amount" | "payment" | "select-payment" | "confirm-payment" | "success"

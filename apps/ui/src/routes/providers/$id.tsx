@@ -3,11 +3,14 @@ import {
 	providers as providerDefinitions,
 } from "@llmgateway/models";
 import { createFileRoute } from "@tanstack/react-router";
+import { Plus, GitBranch, Copy, Check } from "lucide-react";
+import { useState } from "react";
 
 import Footer from "@/components/landing/footer";
 import { Navbar } from "@/components/landing/navbar";
 import { Hero } from "@/components/providers/hero";
 import { Badge } from "@/lib/components/badge";
+import { Button } from "@/lib/components/button";
 import {
 	Card,
 	CardContent,
@@ -65,6 +68,17 @@ export const Route = createFileRoute("/providers/$id")({
 
 function ProviderPage() {
 	const provider = Route.useLoaderData();
+	const [copiedModel, setCopiedModel] = useState<string | null>(null);
+
+	const copyModelName = async (modelName: string) => {
+		try {
+			await navigator.clipboard.writeText(modelName);
+			setCopiedModel(modelName);
+			setTimeout(() => setCopiedModel(null), 2000);
+		} catch (err) {
+			console.error("Failed to copy model name:", err);
+		}
+	};
 
 	const providerModels = modelDefinitions
 		.filter((m) => m.providers.some((p) => p.providerId === provider.id))
@@ -100,6 +114,33 @@ function ProviderPage() {
 			<Navbar />
 			<Hero providerId={provider.id} />
 			<div className="mx-auto px-6 lg:px-0 container py-8">
+				<div className="flex justify-between items-center mb-8">
+					<h2 className="text-2xl font-bold">Available Models</h2>
+					<div className="flex gap-2">
+						<Button variant="outline" size="sm" asChild>
+							<a
+								href="https://github.com/theopenco/llmgateway/issues/new?assignees=&labels=enhancement%2Cmodel-request&projects=&template=model-request.md&title=%5BModel+Request%5D+"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="inline-flex items-center gap-2"
+							>
+								<Plus className="h-4 w-4" />
+								Request Model
+							</a>
+						</Button>
+						<Button variant="outline" size="sm" asChild>
+							<a
+								href="https://github.com/theopenco/llmgateway/issues/new?assignees=&labels=enhancement%2Cprovider-request&projects=&template=provider-request.md&title=%5BProvider+Request%5D+"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="inline-flex items-center gap-2"
+							>
+								<GitBranch className="h-4 w-4" />
+								Request Provider
+							</a>
+						</Button>
+					</div>
+				</div>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{providerModels.map((model) => (
 						<Card
@@ -107,12 +148,29 @@ function ProviderPage() {
 							className="flex flex-col h-full hover:shadow-md transition-shadow"
 						>
 							<CardHeader className="pb-2">
-								<CardTitle className="text-base leading-tight line-clamp-1">
-									{model.name}
-								</CardTitle>
-								<CardDescription className="text-xs">
-									{provider.name}
-								</CardDescription>
+								<div className="flex items-start justify-between gap-2">
+									<div className="flex-1 min-w-0">
+										<CardTitle className="text-base leading-tight line-clamp-1">
+											{model.name}
+										</CardTitle>
+										<CardDescription className="text-xs">
+											{provider.name}
+										</CardDescription>
+									</div>
+									<Button
+										variant="ghost"
+										size="sm"
+										className="h-6 w-6 p-0 shrink-0"
+										onClick={() => copyModelName(model.name)}
+										title="Copy model name"
+									>
+										{copiedModel === model.name ? (
+											<Check className="h-3 w-3 text-green-600" />
+										) : (
+											<Copy className="h-3 w-3" />
+										)}
+									</Button>
+								</div>
 							</CardHeader>
 							<CardContent className="mt-auto space-y-2">
 								<div className="flex flex-wrap gap-2">

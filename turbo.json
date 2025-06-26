@@ -37,7 +37,8 @@
 				"NEXT_PUBLIC_POSTHOG_HOST",
 				"GITHUB_URL",
 				"VITE_API_URL",
-				"VITE_DOCS_URL"
+				"VITE_DOCS_URL",
+				"VITE_CRISP_ID"
 			]
 		},
 		"generate": {

@@ -29,6 +29,7 @@ COPY ../packages/models/package.json ./packages/models/
 
 RUN pnpm install --frozen-lockfile
 
+ARG VITE_CRISP_ID
 ARG VITE_DOCS_URL
 ARG VITE_API_URL
 ARG VITE_POSTHOG_KEY
