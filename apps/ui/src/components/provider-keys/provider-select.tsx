@@ -47,7 +47,9 @@ export function ProviderSelect({
 						return (
 							<SelectItem key={provider.id} value={provider.id}>
 								<div className="flex items-center gap-2">
-									{Logo && <Logo className="h-4 w-4 text-white" />}
+									{Logo && (
+										<Logo className="h-4 w-4 text-black dark:text-white" />
+									)}
 									<span>{provider.name}</span>
 								</div>
 							</SelectItem>
