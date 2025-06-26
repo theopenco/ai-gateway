@@ -164,7 +164,7 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 						<div className="flex gap-2">
 							<Button variant="outline" size="sm" asChild>
 								<a
-									href="https://github.com/llmgateway/llmgateway/issues/new?assignees=&labels=enhancement%2Cmodel-request&projects=&template=model-request.md&title=%5BModel+Request%5D+"
+									href="https://github.com/theopenco/llmgateway/issues/new?assignees=&labels=enhancement%2Cmodel-request&projects=&template=model-request.md&title=%5BModel+Request%5D+"
 									target="_blank"
 									rel="noopener noreferrer"
 									className="inline-flex items-center gap-2"
@@ -175,7 +175,7 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 							</Button>
 							<Button variant="outline" size="sm" asChild>
 								<a
-									href="https://github.com/llmgateway/llmgateway/issues/new?assignees=&labels=enhancement%2Cprovider-request&projects=&template=provider-request.md&title=%5BProvider+Request%5D+"
+									href="https://github.com/theopenco/llmgateway/issues/new?assignees=&labels=enhancement%2Cprovider-request&projects=&template=provider-request.md&title=%5BProvider+Request%5D+"
 									target="_blank"
 									rel="noopener noreferrer"
 									className="inline-flex items-center gap-2"
