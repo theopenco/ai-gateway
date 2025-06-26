@@ -1,4 +1,4 @@
-name: Claude Code
+name: claude
 
 on:
   issue_comment:
@@ -11,7 +11,7 @@ on:
     types: [submitted]
 
 jobs:
-  claude:
+  code:
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
@@ -45,7 +45,7 @@ jobs:
           # assignee_trigger: "claude-bot"
 
           # Optional: Allow Claude to run specific commands
-          allowed_tools: "Bash(pnpm install),Bash(pnpm run build),Bash(pnpm run test:*),Bash(pnpm run format:*)"
+          allowed_tools: "Bash(pnpm install),Bash(pnpm run build),Bash(pnpm run test*),Bash(pnpm run format*)"
 
           # Optional: Add custom instructions for Claude to customize its behavior for your project
           # custom_instructions: |

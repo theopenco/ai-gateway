@@ -1,4 +1,4 @@
-name: Claude Code Review
+name: claude
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  claude-review:
+  review:
     runs-on: ubuntu-latest
     permissions:
       contents: read
