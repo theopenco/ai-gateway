@@ -6,6 +6,7 @@ on:
       - "packages/models/src/providers.ts"
       - "apps/gateway/src/chat/chat.ts"
       - "apps/gateway/src/api.e2e.ts"
+      - ".github/workflows/e2e.yml"
 jobs:
   e2e:
     uses: ./.github/workflows/run.yml
