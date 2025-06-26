@@ -25,6 +25,11 @@ export default [
 		},
 	},
 	{
-		ignores: ["**/.source/", "**/.output/", "**/out/"],
+		ignores: [
+			"**/.source/",
+			"**/.output/",
+			"**/out/",
+			"**/.content-collections/",
+		],
 	},
 ];
