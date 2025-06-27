@@ -452,6 +452,9 @@ describe("e2e tests with real provider keys", () => {
 				expect(json.usage.prompt_tokens).toBeGreaterThan(0);
 				expect(json.usage.completion_tokens).toBeGreaterThan(0);
 				expect(json.usage.total_tokens).toBeGreaterThan(0);
+				expect(json.usage.total_tokens).toEqual(
+					json.usage.prompt_tokens + json.usage.completion_tokens,
+				);
 			},
 		);
 	}
