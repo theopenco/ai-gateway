@@ -2,10 +2,7 @@ name: ci
 on:
   push:
     paths:
-      - "packages/models/src/models.ts"
-      - "packages/models/src/providers.ts"
-      - "apps/gateway/src/chat/chat.ts"
-      - "apps/gateway/src/api.e2e.ts"
+      - "packages/models/"
       - ".github/workflows/e2e.yml"
 jobs:
   e2e:

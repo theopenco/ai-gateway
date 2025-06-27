@@ -63,6 +63,14 @@ export function prepareRequestBody(
 		requestBody.tool_choice = tool_choice;
 	}
 
+	// transform messages.content from array to string
+	requestBody.messages = messages.map((m) => ({
+		role: m.role,
+		content: Array.isArray(m.content)
+			? m.content.map((c: any) => c.text).join(" ")
+			: m.content,
+	}));
+
 	switch (usedProvider) {
 		case "openai":
 		case "xai":
