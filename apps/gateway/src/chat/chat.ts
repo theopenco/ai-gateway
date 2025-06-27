@@ -891,6 +891,33 @@ chat.openapi(completions, async (c) => {
 		}
 	}
 
+	// Check if reasoning_effort is specified but model doesn't support reasoning
+	if (reasoning_effort !== undefined) {
+		// Check if any provider for this model supports reasoning
+		const supportsReasoning = modelInfo.providers.some(
+			(provider) => (provider as any).reasoning === true,
+		);
+
+		if (!supportsReasoning) {
+			console.error(
+				`Reasoning effort specified for non-reasoning model: ${requestedModel}`,
+				{
+					requestedModel,
+					requestedProvider,
+					reasoning_effort,
+					modelProviders: modelInfo.providers.map((p) => ({
+						providerId: p.providerId,
+						reasoning: (p as any).reasoning,
+					})),
+				},
+			);
+
+			throw new HTTPException(400, {
+				message: `Model ${requestedModel} does not support reasoning. Remove the reasoning_effort parameter or use a reasoning-capable model.`,
+			});
+		}
+	}
+
 	let usedProvider = requestedProvider;
 	let usedModel = requestedModel;
 

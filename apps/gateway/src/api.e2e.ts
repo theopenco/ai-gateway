@@ -410,6 +410,31 @@ describe("e2e tests with real provider keys", () => {
 		},
 	);
 
+	test("Reasoning effort error for unsupported model", async () => {
+		const res = await app.request("/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer real-token`,
+			},
+			body: JSON.stringify({
+				model: "gpt-4-turbo",
+				messages: [
+					{
+						role: "user",
+						content: "Hello",
+					},
+				],
+				reasoning_effort: "medium",
+			}),
+		});
+
+		expect(res.status).toBe(400);
+
+		const json = await res.json();
+		expect(json.message).toContain("does not support reasoning");
+	});
+
 	test("JSON output mode error for unsupported model", async () => {
 		const envVarName = getProviderEnvVar("anthropic");
 		const envVarValue = envVarName ? process.env[envVarName] : undefined;
