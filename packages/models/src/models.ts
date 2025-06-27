@@ -27,6 +27,10 @@ export interface ProviderModelMapping {
 	 * Whether this specific model supports streaming for this provider
 	 */
 	streaming: boolean;
+	/**
+	 * Whether this model supports thinking mode
+	 */
+	thinking?: boolean;
 }
 
 export interface ModelDefinition {
@@ -630,38 +634,38 @@ export let models = [
 			},
 		],
 	},
-	// {
-	// 	model: "gemma-3-4b-it",
-	// 	deprecatedAt: undefined,
-	// 	deactivatedAt: undefined,
-	// 	providers: [
-	// 		{
-	// 			providerId: "google-ai-studio",
-	// 			modelName: "gemma-3-4b-it",
-	// 			inputPrice: 0.075 / 1e6,
-	// 			outputPrice: 0.3 / 1e6,
-	// 			contextSize: 1000000,
-	// 			streaming: false,
-	// 			thinking: true,
-	// 		},
-	// 	],
-	// },
-	// {
-	// 	model: "gemma-3-12b-it",
-	// 	deprecatedAt: undefined,
-	// 	deactivatedAt: undefined,
-	// 	providers: [
-	// 		{
-	// 			providerId: "google-ai-studio",
-	// 			modelName: "gemma-3-12b-it",
-	// 			inputPrice: 0.075 / 1e6,
-	// 			outputPrice: 0.3 / 1e6,
-	// 			contextSize: 1000000,
-	// 			streaming: false,
-	// 			thinking: true,
-	// 		},
-	// 	],
-	// },
+	{
+		model: "gemma-3-4b-it",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemma-3-4b-it",
+				inputPrice: 0.075 / 1e6,
+				outputPrice: 0.3 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				thinking: true,
+			},
+		],
+	},
+	{
+		model: "gemma-3-12b-it",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemma-3-12b-it",
+				inputPrice: 0.075 / 1e6,
+				outputPrice: 0.3 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				thinking: true,
+			},
+		],
+	},
 	{
 		model: "deepseek-v3",
 		deprecatedAt: undefined,

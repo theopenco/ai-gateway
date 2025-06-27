@@ -159,6 +159,14 @@ export function LogCard({ log }: { log: Log }) {
 								<div>{log.completionTokens}</div>
 								<div className="text-muted-foreground">Total Tokens</div>
 								<div className="font-medium">{log.totalTokens}</div>
+								{log.reasoningTokens && (
+									<>
+										<div className="text-muted-foreground">
+											Reasoning Tokens
+										</div>
+										<div>{log.reasoningTokens}</div>
+									</>
+								)}
 								<div className="text-muted-foreground">
 									Original Finish Reason
 								</div>

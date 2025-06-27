@@ -117,6 +117,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 	let promptTokens = null;
 	let completionTokens = null;
 	let totalTokens = null;
+	let reasoningTokens = null;
 
 	switch (usedProvider) {
 		case "anthropic":
@@ -124,6 +125,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.stop_reason || null;
 			promptTokens = json.usage?.input_tokens || null;
 			completionTokens = json.usage?.output_tokens || null;
+			reasoningTokens = json.usage?.reasoning_tokens || null;
 			totalTokens =
 				json.usage?.input_tokens && json.usage?.output_tokens
 					? json.usage.input_tokens + json.usage.output_tokens
@@ -135,6 +137,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.candidates?.[0]?.finishReason || null;
 			promptTokens = json.usageMetadata?.promptTokenCount || null;
 			completionTokens = json.usageMetadata?.candidatesTokenCount || null;
+			reasoningTokens = json.usageMetadata?.reasoningTokenCount || null;
 			totalTokens = json.usageMetadata?.totalTokenCount || null;
 			break;
 		case "inference.net":
@@ -146,6 +149,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
+			reasoningTokens = json.usage?.reasoning_tokens || null;
 			totalTokens = json.usage?.total_tokens || null;
 			break;
 		case "mistral":
@@ -153,6 +157,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
+			reasoningTokens = json.usage?.reasoning_tokens || null;
 			totalTokens = json.usage?.total_tokens || null;
 
 			// Handle Mistral's JSON output mode which wraps JSON in markdown code blocks
@@ -185,6 +190,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
+			reasoningTokens = json.usage?.reasoning_tokens || null;
 			totalTokens = json.usage?.total_tokens || null;
 	}
 
@@ -194,6 +200,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 		promptTokens,
 		completionTokens,
 		totalTokens,
+		reasoningTokens,
 	};
 }
 
@@ -247,6 +254,7 @@ function transformToOpenAIFormat(
 	promptTokens: number | null,
 	completionTokens: number | null,
 	totalTokens: number | null,
+	reasoningTokens: number | null,
 ) {
 	let transformedResponse = json;
 
@@ -275,6 +283,9 @@ function transformToOpenAIFormat(
 					prompt_tokens: promptTokens,
 					completion_tokens: completionTokens,
 					total_tokens: totalTokens,
+					...(reasoningTokens !== null && {
+						reasoning_tokens: reasoningTokens,
+					}),
 				},
 			};
 			break;
@@ -302,6 +313,9 @@ function transformToOpenAIFormat(
 					prompt_tokens: promptTokens,
 					completion_tokens: completionTokens,
 					total_tokens: totalTokens,
+					...(reasoningTokens !== null && {
+						reasoning_tokens: reasoningTokens,
+					}),
 				},
 			};
 			break;
@@ -330,6 +344,9 @@ function transformToOpenAIFormat(
 						prompt_tokens: promptTokens,
 						completion_tokens: completionTokens,
 						total_tokens: totalTokens,
+						...(reasoningTokens !== null && {
+							reasoning_tokens: reasoningTokens,
+						}),
 					},
 				};
 			}
@@ -683,6 +700,7 @@ const completions = createRoute({
 							prompt_tokens: z.number(),
 							completion_tokens: z.number(),
 							total_tokens: z.number(),
+							reasoning_tokens: z.number().optional(),
 						}),
 					}),
 				},
@@ -1195,6 +1213,7 @@ chat.openapi(completions, async (c) => {
 				promptTokens: cachedResponse.usage?.prompt_tokens || null,
 				completionTokens: cachedResponse.usage?.completion_tokens || null,
 				totalTokens: cachedResponse.usage?.total_tokens || null,
+				reasoningTokens: cachedResponse.usage?.reasoning_tokens || null,
 				hasError: false,
 				streamed: false,
 				canceled: false,
@@ -1302,6 +1321,7 @@ chat.openapi(completions, async (c) => {
 						promptTokens: null,
 						completionTokens: null,
 						totalTokens: null,
+						reasoningTokens: null,
 						hasError: false,
 						streamed: true,
 						canceled: true,
@@ -1377,6 +1397,7 @@ chat.openapi(completions, async (c) => {
 					promptTokens: null,
 					completionTokens: null,
 					totalTokens: null,
+					reasoningTokens: null,
 					hasError: true,
 					streamed: true,
 					canceled: false,
@@ -1418,6 +1439,7 @@ chat.openapi(completions, async (c) => {
 			let promptTokens = null;
 			let completionTokens = null;
 			let totalTokens = null;
+			let reasoningTokens = null;
 
 			try {
 				while (true) {
@@ -1785,6 +1807,7 @@ chat.openapi(completions, async (c) => {
 					promptTokens: calculatedPromptTokens,
 					completionTokens: calculatedCompletionTokens,
 					totalTokens: calculatedTotalTokens,
+					reasoningTokens: reasoningTokens,
 					hasError: false,
 					errorDetails: null,
 					streamed: true,
@@ -1864,6 +1887,7 @@ chat.openapi(completions, async (c) => {
 			promptTokens: null,
 			completionTokens: null,
 			totalTokens: null,
+			reasoningTokens: null,
 			hasError: false,
 			streamed: false,
 			canceled: true,
@@ -1918,6 +1942,7 @@ chat.openapi(completions, async (c) => {
 			promptTokens: null,
 			completionTokens: null,
 			totalTokens: null,
+			reasoningTokens: null,
 			hasError: true,
 			streamed: false,
 			canceled: false,
@@ -1954,13 +1979,19 @@ chat.openapi(completions, async (c) => {
 
 	const json = await res.json();
 	if (process.env.NODE_ENV !== "production") {
-		console.log("response", json);
+		console.log("response", JSON.stringify(json, null, 2));
 	}
 	const responseText = JSON.stringify(json);
 
 	// Extract content and token usage based on provider
-	const { content, finishReason, promptTokens, completionTokens, totalTokens } =
-		parseProviderResponse(usedProvider, json);
+	const {
+		content,
+		finishReason,
+		promptTokens,
+		completionTokens,
+		totalTokens,
+		reasoningTokens,
+	} = parseProviderResponse(usedProvider, json);
 
 	// Estimate tokens if not provided by the API
 	const { calculatedPromptTokens, calculatedCompletionTokens } = estimateTokens(
@@ -2008,6 +2039,7 @@ chat.openapi(completions, async (c) => {
 		promptTokens: promptTokens,
 		completionTokens: completionTokens,
 		totalTokens: totalTokens,
+		reasoningTokens: reasoningTokens,
 		hasError: false,
 		streamed: false,
 		canceled: false,
@@ -2029,6 +2061,7 @@ chat.openapi(completions, async (c) => {
 		promptTokens,
 		completionTokens,
 		totalTokens,
+		reasoningTokens,
 	);
 
 	if (cachingEnabled && cacheKey && !stream) {
