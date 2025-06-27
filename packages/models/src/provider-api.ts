@@ -37,7 +37,7 @@ export function getProviderHeaders(
 export function prepareRequestBody(
 	usedProvider: ProviderId,
 	usedModel: string,
-	messages: any[],
+	originalMessages: any[],
 	stream: boolean,
 	temperature: number | undefined,
 	max_tokens: number | undefined,
@@ -48,6 +48,14 @@ export function prepareRequestBody(
 	tools?: any[],
 	tool_choice?: string | { type: string; function: { name: string } },
 ) {
+	// transform messages.content from array to string
+	const messages = originalMessages.map((m) => ({
+		role: m.role,
+		content: Array.isArray(m.content)
+			? m.content.map((c: any) => c.text).join(" ")
+			: m.content,
+	}));
+
 	const requestBody: any = {
 		model: usedModel,
 		messages,
@@ -62,14 +70,6 @@ export function prepareRequestBody(
 	if (tool_choice) {
 		requestBody.tool_choice = tool_choice;
 	}
-
-	// transform messages.content from array to string
-	requestBody.messages = messages.map((m) => ({
-		role: m.role,
-		content: Array.isArray(m.content)
-			? m.content.map((c: any) => c.text).join(" ")
-			: m.content,
-	}));
 
 	switch (usedProvider) {
 		case "openai":
@@ -145,6 +145,7 @@ export function prepareRequestBody(
 					: "";
 
 			requestBody.contents = nonSystemMessages.map((m, index) => ({
+				role: m.role === "assistant" ? "model" : "user",
 				parts: [
 					{
 						text:

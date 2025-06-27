@@ -547,7 +547,7 @@ export let models = [
 				streaming: true,
 			},
 		],
-		jsonOutput: true,
+		jsonOutput: false,
 	},
 	{
 		model: "deepseek-r1",
@@ -571,7 +571,7 @@ export let models = [
 				streaming: true,
 			},
 		],
-		jsonOutput: true,
+		jsonOutput: false,
 	},
 	{
 		model: "deepseek-r1-0528",
@@ -595,7 +595,7 @@ export let models = [
 				streaming: true,
 			},
 		],
-		jsonOutput: true,
+		jsonOutput: false,
 	},
 	{
 		model: "llama-4-maverick-17b-128e-instruct",
@@ -758,7 +758,7 @@ export let models = [
 		jsonOutput: true,
 	},
 	{
-		model: "meta-llama/llama-guard-4-12b",
+		model: "llama-guard-4-12b",
 		deprecatedAt: undefined,
 		deactivatedAt: undefined,
 		providers: [
