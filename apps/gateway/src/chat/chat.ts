@@ -686,6 +686,14 @@ const completions = createRoute({
 								}),
 							])
 							.optional(),
+						reasoning_effort: z
+							.enum(["low", "medium", "high"])
+							.optional()
+							.openapi({
+								description:
+									"Controls the reasoning effort for reasoning-capable models",
+								example: "medium",
+							}),
 					}),
 				},
 			},
@@ -770,6 +778,7 @@ chat.openapi(completions, async (c) => {
 		stream,
 		tools,
 		tool_choice,
+		reasoning_effort,
 	} = c.req.valid("json");
 
 	// Extract or generate request ID
@@ -1281,6 +1290,7 @@ chat.openapi(completions, async (c) => {
 		response_format,
 		tools,
 		tool_choice,
+		reasoning_effort,
 	);
 
 	const startTime = Date.now();
