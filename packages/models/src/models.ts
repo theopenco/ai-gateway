@@ -28,9 +28,9 @@ export interface ProviderModelMapping {
 	 */
 	streaming: boolean;
 	/**
-	 * Whether this model supports thinking mode
+	 * Whether this model supports reasoning mode
 	 */
-	thinking?: boolean;
+	reasoning?: boolean;
 }
 
 export interface ModelDefinition {
@@ -646,7 +646,7 @@ export let models = [
 				outputPrice: 0.3 / 1e6,
 				contextSize: 1000000,
 				streaming: false,
-				thinking: true,
+				reasoning: true,
 			},
 		],
 	},
@@ -662,7 +662,7 @@ export let models = [
 				outputPrice: 0.3 / 1e6,
 				contextSize: 1000000,
 				streaming: false,
-				thinking: true,
+				reasoning: true,
 			},
 		],
 	},

@@ -135,7 +135,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.stop_reason || null;
 			promptTokens = json.usage?.input_tokens || null;
 			completionTokens = json.usage?.output_tokens || null;
-			reasoningTokens = json.usage?.reasoning_tokens || null;
+			reasoningTokens = json.usage?.reasoning_output_tokens || null;
 			totalTokens =
 				json.usage?.input_tokens && json.usage?.output_tokens
 					? json.usage.input_tokens + json.usage.output_tokens
