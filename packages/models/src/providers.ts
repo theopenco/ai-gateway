@@ -150,6 +150,18 @@ export const providers = [
 		website: "https://groq.com",
 		announcement: null,
 	},
+	{
+		id: "deepseek",
+		name: "DeepSeek",
+		description:
+			"DeepSeek's high-performance language models with OpenAI-compatible API",
+		streaming: true,
+		cancellation: true,
+		jsonOutput: true,
+		color: "#FF6B00",
+		website: "https://deepseek.com",
+		announcement: null,
+	},
 ] as const satisfies ProviderDefinition[];
 
 export type ProviderId = (typeof providers)[number]["id"];
