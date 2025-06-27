@@ -180,23 +180,24 @@ export let models = [
 		],
 		jsonOutput: true,
 	},
-	{
-		model: "o1-mini",
-		deprecatedAt: undefined,
-		deactivatedAt: undefined,
-		providers: [
-			{
-				providerId: "openai",
-				modelName: "o1-mini",
-				inputPrice: 1.1 / 1e6,
-				outputPrice: 4.4 / 1e6,
-				contextSize: 128000,
-				streaming: true,
-				reasoning: true,
-			},
-		],
-		jsonOutput: true,
-	},
+	// TODO this model does not support the system role in the messages array (jeez openai)
+	// {
+	// 	model: "o1-mini",
+	// 	deprecatedAt: undefined,
+	// 	deactivatedAt: undefined,
+	// 	providers: [
+	// 		{
+	// 			providerId: "openai",
+	// 			modelName: "o1-mini",
+	// 			inputPrice: 1.1 / 1e6,
+	// 			outputPrice: 4.4 / 1e6,
+	// 			contextSize: 128000,
+	// 			streaming: true,
+	// 			reasoning: true,
+	// 		},
+	// 	],
+	// 	jsonOutput: true,
+	// },
 	{
 		model: "gpt-4.1-mini",
 		deprecatedAt: undefined,
