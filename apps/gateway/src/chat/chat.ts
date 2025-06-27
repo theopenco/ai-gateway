@@ -716,7 +716,7 @@ const completions = createRoute({
 chat.openapi(completions, async (c) => {
 	const {
 		model: modelInput,
-		messages,
+		messages: messagesInput,
 		temperature,
 		max_tokens,
 		top_p,
@@ -727,6 +727,22 @@ chat.openapi(completions, async (c) => {
 		tools,
 		tool_choice,
 	} = c.req.valid("json");
+
+	// filter out empty messages
+	const messages = messagesInput.filter((m) => {
+		if (typeof m.content === "string") {
+			return !!m.content.trim();
+		}
+		if (Array.isArray(m.content)) {
+			return m.content.some((c) => {
+				if (c.type === "text") {
+					return !!c.text.trim();
+				}
+				return false;
+			});
+		}
+		return false;
+	});
 
 	// Extract or generate request ID
 	const requestId = c.req.header("x-request-id") || shortid(40);

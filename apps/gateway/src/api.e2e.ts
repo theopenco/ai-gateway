@@ -17,12 +17,14 @@ function getTestOptions() {
 
 console.log("running with test options:", getTestOptions());
 
+const fullMode = process.env.FULL_MODE;
+
 const testModels = models
 	.filter((model) => !["custom", "auto"].includes(model.model))
 	.flatMap((model) => {
 		const testCases = [];
 
-		if (process.env.FULL_MODE) {
+		if (fullMode) {
 			// test all models
 			testCases.push({
 				model: model.model,
@@ -186,7 +188,7 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("response:", json);
+			console.log("response:", JSON.stringify(json, null, 2));
 
 			expect(res.status).toBe(200);
 			validateResponse(json);
@@ -339,7 +341,7 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("json", json);
+			console.log("json", JSON.stringify(json, null, 2));
 			expect(res.status).toBe(200);
 			expect(json).toHaveProperty("choices.[0].message.content");
 
@@ -350,6 +352,109 @@ describe("e2e tests with real provider keys", () => {
 			expect(parsedContent).toHaveProperty("message");
 		},
 	);
+
+	if (fullMode) {
+		test.each(testModels)(
+			"/v1/chat/completions with complex content array for $model",
+			getTestOptions(),
+			async ({ model }) => {
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer real-token`,
+					},
+					body: JSON.stringify({
+						model: model,
+						messages: [
+							{
+								role: "user",
+								content: [
+									{
+										type: "text",
+										text: "<task>\nhi sup!\n</task>",
+									},
+									{
+										type: "text",
+										text: "",
+									},
+								],
+							},
+						],
+					}),
+				});
+
+				const json = await res.json();
+				console.log("response:", JSON.stringify(json, null, 2));
+
+				expect(res.status).toBe(200);
+				validateResponse(json);
+
+				const log = await validateLogs();
+				expect(log.streamed).toBe(false);
+
+				expect(json).toHaveProperty("usage");
+				expect(json.usage).toHaveProperty("prompt_tokens");
+				expect(json.usage).toHaveProperty("completion_tokens");
+				expect(json.usage).toHaveProperty("total_tokens");
+				expect(typeof json.usage.prompt_tokens).toBe("number");
+				expect(typeof json.usage.completion_tokens).toBe("number");
+				expect(typeof json.usage.total_tokens).toBe("number");
+				expect(json.usage.prompt_tokens).toBeGreaterThan(0);
+				expect(json.usage.completion_tokens).toBeGreaterThan(0);
+				expect(json.usage.total_tokens).toBeGreaterThan(0);
+			},
+		);
+	}
+
+	if (fullMode) {
+		test.each(testModels)(
+			"/v1/chat/completions with empty content for $model",
+			getTestOptions(),
+			async ({ model }) => {
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer real-token`,
+					},
+					body: JSON.stringify({
+						model: model,
+						messages: [
+							{
+								role: "user",
+								content: "hi",
+							},
+							{
+								role: "user",
+								content: "hi",
+							},
+						],
+					}),
+				});
+
+				const json = await res.json();
+				console.log("response:", JSON.stringify(json, null, 2));
+
+				expect(res.status).toBe(200);
+				validateResponse(json);
+
+				const log = await validateLogs();
+				expect(log.streamed).toBe(false);
+
+				expect(json).toHaveProperty("usage");
+				expect(json.usage).toHaveProperty("prompt_tokens");
+				expect(json.usage).toHaveProperty("completion_tokens");
+				expect(json.usage).toHaveProperty("total_tokens");
+				expect(typeof json.usage.prompt_tokens).toBe("number");
+				expect(typeof json.usage.completion_tokens).toBe("number");
+				expect(typeof json.usage.total_tokens).toBe("number");
+				expect(json.usage.prompt_tokens).toBeGreaterThan(0);
+				expect(json.usage.completion_tokens).toBeGreaterThan(0);
+				expect(json.usage.total_tokens).toBeGreaterThan(0);
+			},
+		);
+	}
 
 	test("JSON output mode error for unsupported model", async () => {
 		const envVarName = getProviderEnvVar("anthropic");
@@ -437,7 +542,7 @@ describe("e2e tests with real provider keys", () => {
 		});
 
 		const json = await res.json();
-		console.log("response:", json);
+		console.log("response:", JSON.stringify(json, null, 2));
 		expect(res.status).toBe(200);
 		expect(json).toHaveProperty("choices.[0].message.content");
 
