@@ -95,6 +95,41 @@ export function prepareRequestBody(
 			}
 			break;
 		}
+		case "cloudrift": {
+			if (stream) {
+				requestBody.stream = stream;
+			}
+			if (response_format) {
+				requestBody.response_format = response_format;
+			}
+
+			// Add optional parameters if they are provided
+			if (temperature !== undefined) {
+				requestBody.temperature = temperature;
+			}
+			if (max_tokens !== undefined) {
+				requestBody.max_tokens = max_tokens;
+			}
+			if (top_p !== undefined) {
+				requestBody.top_p = top_p;
+			}
+			if (frequency_penalty !== undefined) {
+				requestBody.frequency_penalty = frequency_penalty;
+			}
+			if (presence_penalty !== undefined) {
+				requestBody.presence_penalty = presence_penalty;
+			}
+
+			// transform messages.content from array to string if necessary
+			requestBody.messages = messages.map((m) => ({
+				role: m.role,
+				content: Array.isArray(m.content)
+					? m.content.map((c: any) => c.text).join(" ")
+					: m.content,
+			}));
+
+			break;
+		}
 		case "anthropic": {
 			requestBody.max_tokens = max_tokens || 1024; // Set a default if not provided
 			requestBody.messages = messages.map((m) => ({
@@ -187,6 +222,8 @@ export function prepareRequestBody(
 			break;
 		}
 	}
+
+	console.log("after requestBody", JSON.stringify(requestBody, null, 2));
 
 	return requestBody;
 }
