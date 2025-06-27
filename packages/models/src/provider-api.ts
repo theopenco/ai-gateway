@@ -23,6 +23,7 @@ export function getProviderHeaders(
 		case "inference.net":
 		case "xai":
 		case "groq":
+		case "deepseek":
 		default:
 			return {
 				Authorization: `Bearer ${token}`,
@@ -65,7 +66,8 @@ export function prepareRequestBody(
 	switch (usedProvider) {
 		case "openai":
 		case "xai":
-		case "groq": {
+		case "groq":
+		case "deepseek": {
 			if (stream) {
 				requestBody.stream_options = {
 					include_usage: true,
@@ -255,6 +257,9 @@ export function getProviderEndpoint(
 			case "groq":
 				url = "https://api.groq.com/openai";
 				break;
+			case "deepseek":
+				url = "https://api.deepseek.com";
+				break;
 			default:
 				throw new Error(`Provider ${provider} requires a baseUrl`);
 		}
@@ -281,6 +286,7 @@ export function getProviderEndpoint(
 		case "cloudrift":
 		case "xai":
 		case "groq":
+		case "deepseek":
 		default:
 			return `${url}/v1/chat/completions`;
 	}

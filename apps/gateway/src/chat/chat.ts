@@ -141,6 +141,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 		case "kluster.ai":
 		case "together.ai":
 		case "groq":
+		case "deepseek":
 			content = json.choices?.[0]?.message?.content || null;
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
@@ -1603,6 +1604,7 @@ chat.openapi(completions, async (c) => {
 										case "kluster.ai":
 										case "together.ai":
 										case "groq":
+										case "deepseek":
 											if (data.choices && data.choices[0]) {
 												if (data.choices[0].delta?.content) {
 													fullContent += data.choices[0].delta.content;
