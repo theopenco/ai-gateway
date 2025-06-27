@@ -1,10 +1,13 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { db, eq, tables } from "@openllm/db";
-import { providers, validateProviderKey } from "@openllm/models";
+import { db, eq, tables } from "@llmgateway/db";
+import { providers, validateProviderKey } from "@llmgateway/models";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
+import { maskToken } from "../lib/maskToken";
+
 import type { ServerTypes } from "../vars";
+import type { ProviderId } from "@llmgateway/models";
 
 export const keysProvider = new OpenAPIHono<ServerTypes>();
 
@@ -84,7 +87,7 @@ keysProvider.openapi(create, async (c) => {
 		token: userToken,
 		baseUrl,
 		organizationId,
-	} = await c.req.json();
+	} = c.req.valid("json");
 
 	// Verify the user has access to this organization
 	const userOrgs = await db.query.userOrganization.findMany({
@@ -118,8 +121,8 @@ keysProvider.openapi(create, async (c) => {
 
 	const organization = userOrgs[0].organization;
 
-	// Check if organization has pro plan for provider keys
-	if (organization?.plan !== "pro") {
+	// Check if organization has pro plan for provider keys (only if PAID_MODE is enabled)
+	if (process.env.PAID_MODE === "true" && organization?.plan !== "pro") {
 		throw new HTTPException(403, {
 			message:
 				"Provider keys are only available on the Pro plan. Please upgrade to use your own API keys.",
@@ -151,8 +154,12 @@ keysProvider.openapi(create, async (c) => {
 	try {
 		const isTestEnv =
 			process.env.NODE_ENV === "test" && process.env.E2E_TEST !== "true";
+		// Validate that provider is one of the allowed provider IDs
+		if (!providers.some((p) => p.id === provider) && provider !== "custom") {
+			throw new Error(`Invalid provider: ${provider}`);
+		}
 		validationResult = await validateProviderKey(
-			provider,
+			provider as ProviderId,
 			userToken,
 			baseUrl,
 			isTestEnv,
@@ -165,9 +172,16 @@ keysProvider.openapi(create, async (c) => {
 		});
 	}
 
+	if (validationResult.error) {
+		const errorMessage = validationResult.error || "Upstream server error";
+		throw new HTTPException(500, {
+			message: `Error from provider: ${errorMessage} and status code ${validationResult.statusCode}. Please try again later or contact support.`,
+		});
+	}
+
 	if (!validationResult.valid) {
 		throw new HTTPException(400, {
-			message: `Invalid API key: ${validationResult.error || "Unknown error"}`,
+			message: `Invalid API key. Please make sure the key is correct.`,
 		});
 	}
 
@@ -262,7 +276,7 @@ keysProvider.openapi(list, async (c) => {
 	return c.json({
 		providerKeys: providerKeys.map((key) => ({
 			...key,
-			maskedToken: `${key.token.substring(0, 10)}•••••••••••`,
+			maskedToken: maskToken(key.token),
 			token: undefined,
 		})),
 	});
@@ -437,7 +451,7 @@ keysProvider.openapi(updateStatus, async (c) => {
 	}
 
 	const { id } = c.req.param();
-	const { status } = await c.req.json();
+	const { status } = c.req.valid("json");
 
 	// Get the user's projects
 	const userOrgs = await db.query.userOrganization.findMany({
@@ -491,7 +505,7 @@ keysProvider.openapi(updateStatus, async (c) => {
 		message: `Provider key status updated to ${status}`,
 		providerKey: {
 			...updatedProviderKey,
-			maskedToken: `${updatedProviderKey.token.substring(0, 8)}•••••••••••`,
+			maskedToken: maskToken(updatedProviderKey.token),
 			token: undefined,
 		},
 	});

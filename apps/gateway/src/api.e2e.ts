@@ -1,5 +1,5 @@
-import { db, tables, eq } from "@openllm/db";
-import { models, providers } from "@openllm/models";
+import { db, tables, eq } from "@llmgateway/db";
+import { models, providers } from "@llmgateway/models";
 import "dotenv/config";
 import { beforeEach, describe, expect, test } from "vitest";
 
@@ -22,11 +22,13 @@ const testModels = models
 	.flatMap((model) => {
 		const testCases = [];
 
-		// test all models
-		testCases.push({
-			model: model.model,
-			providers: model.providers,
-		});
+		if (process.env.FULL_MODE) {
+			// test all models
+			testCases.push({
+				model: model.model,
+				providers: model.providers,
+			});
+		}
 
 		// Create entries for provider-specific requests using provider/model format
 		for (const provider of model.providers) {
@@ -41,7 +43,11 @@ const testModels = models
 	});
 
 const streamingModels = testModels.filter((m) =>
-	m.providers.every((p) => {
+	m.providers.some((p: any) => {
+		// Check model-level streaming first, then fall back to provider-level
+		if (p.streaming !== undefined) {
+			return p.streaming;
+		}
 		const provider = providers.find((pr) => pr.id === p.providerId);
 		return provider?.streaming;
 	}),
@@ -103,10 +109,11 @@ describe("e2e tests with real provider keys", () => {
 		});
 
 		for (const provider of providers) {
-			const envVar = getProviderEnvVar(provider.id);
-			if (envVar) {
-				await createProviderKey(provider.id, envVar, "api-keys");
-				await createProviderKey(provider.id, envVar, "credits");
+			const envVarName = getProviderEnvVar(provider.id);
+			const envVarValue = envVarName ? process.env[envVarName] : undefined;
+			if (envVarValue) {
+				await createProviderKey(provider.id, envVarValue, "api-keys");
+				await createProviderKey(provider.id, envVarValue, "credits");
 			}
 		}
 	});
@@ -155,6 +162,7 @@ describe("e2e tests with real provider keys", () => {
 
 	test.each(testModels)(
 		"/v1/chat/completions with $model",
+		getTestOptions(),
 		async ({ model }) => {
 			const res = await app.request("/v1/chat/completions", {
 				method: "POST",
@@ -186,15 +194,26 @@ describe("e2e tests with real provider keys", () => {
 			const log = await validateLogs();
 			expect(log.streamed).toBe(false);
 
+			expect(json).toHaveProperty("usage");
+			expect(json.usage).toHaveProperty("prompt_tokens");
+			expect(json.usage).toHaveProperty("completion_tokens");
+			expect(json.usage).toHaveProperty("total_tokens");
+			expect(typeof json.usage.prompt_tokens).toBe("number");
+			expect(typeof json.usage.completion_tokens).toBe("number");
+			expect(typeof json.usage.total_tokens).toBe("number");
+			expect(json.usage.prompt_tokens).toBeGreaterThan(0);
+			expect(json.usage.completion_tokens).toBeGreaterThan(0);
+			expect(json.usage.total_tokens).toBeGreaterThan(0);
+
 			// expect(log.inputCost).not.toBeNull();
 			// expect(log.outputCost).not.toBeNull();
 			// expect(log.cost).not.toBeNull();
 		},
-		getTestOptions(),
 	);
 
 	test.each(streamingModels)(
 		"/v1/chat/completions streaming with $model",
+		getTestOptions(),
 		async ({ model }) => {
 			const res = await app.request("/v1/chat/completions", {
 				method: "POST",
@@ -218,6 +237,11 @@ describe("e2e tests with real provider keys", () => {
 				}),
 			});
 
+			if (res.status !== 200) {
+				console.log("response:", await res.text());
+				throw new Error(`Request failed with status ${res.status}`);
+			}
+
 			expect(res.status).toBe(200);
 			expect(res.headers.get("content-type")).toContain("text/event-stream");
 
@@ -225,8 +249,54 @@ describe("e2e tests with real provider keys", () => {
 
 			expect(streamResult.hasValidSSE).toBe(true);
 			expect(streamResult.eventCount).toBeGreaterThan(0);
-
 			expect(streamResult.hasContent).toBe(true);
+
+			// Verify that all streaming responses are transformed to OpenAI format
+			expect(streamResult.hasOpenAIFormat).toBe(true);
+
+			// Verify that chunks have the correct OpenAI streaming format
+			const contentChunks = streamResult.chunks.filter(
+				(chunk) => chunk.choices?.[0]?.delta?.content,
+			);
+			expect(contentChunks.length).toBeGreaterThan(0);
+
+			// Verify each content chunk has proper OpenAI format
+			for (const chunk of contentChunks) {
+				expect(chunk).toHaveProperty("id");
+				expect(chunk).toHaveProperty("object", "chat.completion.chunk");
+				expect(chunk).toHaveProperty("created");
+				expect(chunk).toHaveProperty("model");
+				expect(chunk).toHaveProperty("choices");
+				expect(chunk.choices).toHaveLength(1);
+				expect(chunk.choices[0]).toHaveProperty("index", 0);
+				expect(chunk.choices[0]).toHaveProperty("delta");
+				expect(chunk.choices[0]).toHaveProperty("delta.role", "assistant");
+				expect(chunk.choices[0].delta).toHaveProperty("content");
+				expect(typeof chunk.choices[0].delta.content).toBe("string");
+			}
+
+			// Verify that usage object is returned in streaming mode
+			const usageChunks = streamResult.chunks.filter(
+				(chunk) =>
+					chunk.usage &&
+					(chunk.usage.prompt_tokens !== null ||
+						chunk.usage.completion_tokens !== null ||
+						chunk.usage.total_tokens !== null),
+			);
+			expect(usageChunks.length).toBeGreaterThan(0);
+
+			// Verify the usage chunk has proper format
+			const usageChunk = usageChunks[usageChunks.length - 1]; // Get the last usage chunk
+			expect(usageChunk).toHaveProperty("usage");
+			expect(usageChunk.usage).toHaveProperty("prompt_tokens");
+			expect(usageChunk.usage).toHaveProperty("completion_tokens");
+			expect(usageChunk.usage).toHaveProperty("total_tokens");
+			expect(typeof usageChunk.usage.prompt_tokens).toBe("number");
+			expect(typeof usageChunk.usage.completion_tokens).toBe("number");
+			expect(typeof usageChunk.usage.total_tokens).toBe("number");
+			expect(usageChunk.usage.prompt_tokens).toBeGreaterThan(0);
+			expect(usageChunk.usage.completion_tokens).toBeGreaterThan(0);
+			expect(usageChunk.usage.total_tokens).toBeGreaterThan(0);
 
 			const log = await validateLogs();
 			expect(log.streamed).toBe(true);
@@ -234,7 +304,6 @@ describe("e2e tests with real provider keys", () => {
 			// expect(log.cost).not.toBeNull();
 			// expect(log.cost).toBeGreaterThanOrEqual(0);
 		},
-		getTestOptions(),
 	);
 
 	test.each(
@@ -244,6 +313,7 @@ describe("e2e tests with real provider keys", () => {
 		}),
 	)(
 		"/v1/chat/completions with JSON output mode for $model",
+		getTestOptions(),
 		async ({ model }) => {
 			const res = await app.request("/v1/chat/completions", {
 				method: "POST",
@@ -279,12 +349,12 @@ describe("e2e tests with real provider keys", () => {
 			const parsedContent = JSON.parse(content);
 			expect(parsedContent).toHaveProperty("message");
 		},
-		getTestOptions(),
 	);
 
 	test("JSON output mode error for unsupported model", async () => {
-		const envVar = getProviderEnvVar("anthropic");
-		if (!envVar) {
+		const envVarName = getProviderEnvVar("anthropic");
+		const envVarValue = envVarName ? process.env[envVarName] : undefined;
+		if (!envVarValue) {
 			console.log(
 				"Skipping JSON output error test - no Anthropic API key provided",
 			);
@@ -322,8 +392,9 @@ describe("e2e tests with real provider keys", () => {
 	test("/v1/chat/completions with llmgateway/auto in credits mode", async () => {
 		// require all provider keys to be set
 		for (const provider of providers) {
-			const envVar = getProviderEnvVar(provider.id);
-			if (!envVar) {
+			const envVarName = getProviderEnvVar(provider.id);
+			const envVarValue = envVarName ? process.env[envVarName] : undefined;
+			if (!envVarValue) {
 				console.log(
 					`Skipping llmgateway/auto in credits mode test - no API key provided for ${provider.id}`,
 				);
@@ -417,8 +488,9 @@ describe("e2e tests with real provider keys", () => {
 	});
 
 	test.skip("/v1/chat/completions with bare 'custom' model", async () => {
-		const envVar = getProviderEnvVar("openai");
-		if (!envVar) {
+		const envVarName = getProviderEnvVar("openai");
+		const envVarValue = envVarName ? process.env[envVarName] : undefined;
+		if (!envVarValue) {
 			console.log("Skipping custom model test - no OpenAI API key provided");
 			return;
 		}
@@ -436,7 +508,7 @@ describe("e2e tests with real provider keys", () => {
 		await db.insert(tables.providerKey).values({
 			id: "provider-key-custom",
 			provider: "llmgateway",
-			token: envVar,
+			token: envVarValue,
 			baseUrl: "https://api.openai.com", // Use real OpenAI endpoint for testing
 			status: "active",
 			organizationId: "org-id",
@@ -543,9 +615,19 @@ async function readAll(stream: ReadableStream<Uint8Array> | null): Promise<{
 	hasContent: boolean;
 	eventCount: number;
 	hasValidSSE: boolean;
+	hasOpenAIFormat: boolean;
+	chunks: any[];
+	hasUsage: boolean;
 }> {
 	if (!stream) {
-		return { hasContent: false, eventCount: 0, hasValidSSE: false };
+		return {
+			hasContent: false,
+			eventCount: 0,
+			hasValidSSE: false,
+			hasOpenAIFormat: false,
+			chunks: [],
+			hasUsage: false,
+		};
 	}
 
 	const reader = stream.getReader();
@@ -553,6 +635,9 @@ async function readAll(stream: ReadableStream<Uint8Array> | null): Promise<{
 	let eventCount = 0;
 	let hasValidSSE = false;
 	let hasContent = false;
+	let hasOpenAIFormat = true; // Assume true until proven otherwise
+	let hasUsage = false;
+	const chunks: any[] = [];
 
 	try {
 		while (true) {
@@ -576,18 +661,35 @@ async function readAll(stream: ReadableStream<Uint8Array> | null): Promise<{
 
 					try {
 						const data = JSON.parse(line.substring(6));
+						chunks.push(data);
+
+						// Check if this chunk has OpenAI format
+						if (
+							!data.id ||
+							!data.object ||
+							data.object !== "chat.completion.chunk"
+						) {
+							hasOpenAIFormat = false;
+						}
+
+						// Check for content in OpenAI format (should be the primary format after transformation)
 						if (
 							data.choices?.[0]?.delta?.content ||
-							data.delta?.text ||
-							data.candidates?.[0]?.content?.parts?.[0]?.text ||
-							data.choices?.[0]?.finish_reason ||
-							data.stop_reason ||
-							data.delta?.stop_reason ||
-							data.candidates?.[0]?.finishReason
+							data.choices?.[0]?.finish_reason
 						) {
 							hasContent = true;
 						}
-					} catch (_e) {}
+
+						// Check for usage information
+						if (
+							data.usage &&
+							(data.usage.prompt_tokens !== null ||
+								data.usage.completion_tokens !== null ||
+								data.usage.total_tokens !== null)
+						) {
+							hasUsage = true;
+						}
+					} catch {}
 				}
 			}
 		}
@@ -595,5 +697,13 @@ async function readAll(stream: ReadableStream<Uint8Array> | null): Promise<{
 		reader.releaseLock();
 	}
 
-	return { fullContent, hasContent, eventCount, hasValidSSE };
+	return {
+		fullContent,
+		hasContent,
+		eventCount,
+		hasValidSSE,
+		hasOpenAIFormat,
+		chunks,
+		hasUsage,
+	};
 }

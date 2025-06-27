@@ -10,3 +10,5 @@ apps/**/*.js
 openapi.json
 .DS_Store
 .envrc
+llmgateway_data
+.claude/settings.local.json

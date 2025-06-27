@@ -447,6 +447,7 @@ export interface paths {
 			parameters: {
 				query: {
 					days: string;
+					projectId?: string;
 				};
 				header?: never;
 				path?: never;
@@ -1767,6 +1768,341 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/chat/completion": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: {
+				content: {
+					"application/json": {
+						messages: {
+							/** @enum {string} */
+							role: "user" | "assistant" | "system";
+							content: string;
+						}[];
+						model: string;
+						/** @default false */
+						stream?: boolean;
+						apiKey?: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Chat completion response */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content?: never;
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/chats": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description List of user's chats */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							chats: {
+								id: string;
+								title: string;
+								model: string;
+								/** @enum {string} */
+								status: "active" | "archived" | "deleted";
+								/** Format: date-time */
+								createdAt: string;
+								/** Format: date-time */
+								updatedAt: string;
+								messageCount: number;
+							}[];
+						};
+					};
+				};
+			};
+		};
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: {
+				content: {
+					"application/json": {
+						title: string;
+						model: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Chat created successfully */
+				201: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							chat: {
+								id: string;
+								title: string;
+								model: string;
+								/** @enum {string} */
+								status: "active" | "archived" | "deleted";
+								/** Format: date-time */
+								createdAt: string;
+								/** Format: date-time */
+								updatedAt: string;
+								messageCount: number;
+							};
+						};
+					};
+				};
+				/** @description Chat limit reached or validation error */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							message: string;
+						};
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/chats/{id}": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					id: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Chat with messages */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							chat: {
+								id: string;
+								title: string;
+								model: string;
+								/** @enum {string} */
+								status: "active" | "archived" | "deleted";
+								/** Format: date-time */
+								createdAt: string;
+								/** Format: date-time */
+								updatedAt: string;
+								messageCount: number;
+							};
+							messages: {
+								id: string;
+								/** @enum {string} */
+								role: "user" | "assistant" | "system";
+								content: string;
+								sequence: number;
+								/** Format: date-time */
+								createdAt: string;
+							}[];
+						};
+					};
+				};
+				/** @description Chat not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							message: string;
+						};
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					id: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Chat deleted successfully */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							message: string;
+						};
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					id: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: {
+				content: {
+					"application/json": {
+						title?: string;
+						/** @enum {string} */
+						status?: "active" | "archived";
+					};
+				};
+			};
+			responses: {
+				/** @description Chat updated successfully */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							chat: {
+								id: string;
+								title: string;
+								model: string;
+								/** @enum {string} */
+								status: "active" | "archived" | "deleted";
+								/** Format: date-time */
+								createdAt: string;
+								/** Format: date-time */
+								updatedAt: string;
+								messageCount: number;
+							};
+						};
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
+	"/chats/{id}/messages": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					id: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: {
+				content: {
+					"application/json": {
+						/** @enum {string} */
+						role: "user" | "assistant" | "system";
+						content: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Message added successfully */
+				201: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							message: {
+								id: string;
+								/** @enum {string} */
+								role: "user" | "assistant" | "system";
+								content: string;
+								sequence: number;
+								/** Format: date-time */
+								createdAt: string;
+							};
+						};
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/subscriptions/create-pro-subscription": {
 		parameters: {
 			query?: never;
@@ -1783,17 +2119,26 @@ export interface paths {
 				path?: never;
 				cookie?: never;
 			};
-			requestBody?: never;
+			requestBody?: {
+				content: {
+					"application/json": {
+						/**
+						 * @default monthly
+						 * @enum {string}
+						 */
+						billingCycle?: "monthly" | "yearly";
+					};
+				};
+			};
 			responses: {
-				/** @description Pro subscription created successfully */
+				/** @description Stripe Checkout session created successfully */
 				200: {
 					headers: {
 						[name: string]: unknown;
 					};
 					content: {
 						"application/json": {
-							clientSecret: string | null;
-							subscriptionId: string;
+							checkoutUrl: string;
 						};
 					};
 				};
@@ -1879,6 +2224,43 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/subscriptions/upgrade-to-yearly": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Subscription upgraded to yearly successfully */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							success: boolean;
+						};
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/subscriptions/status": {
 		parameters: {
 			query?: never;
@@ -1907,6 +2289,8 @@ export interface paths {
 							subscriptionId: string | null;
 							planExpiresAt: string | null;
 							subscriptionCancelled: boolean;
+							/** @enum {string|null} */
+							billingCycle: "monthly" | "yearly" | null;
 						};
 					};
 				};

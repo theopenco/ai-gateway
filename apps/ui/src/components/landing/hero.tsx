@@ -1,11 +1,22 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import React from "react";
 
 import { AnimatedGroup } from "./animated-group";
 import { Navbar } from "./navbar";
-import heroImageLight from "@/assets/hero-light.png";
-import heroImageDark from "@/assets/hero.png";
+import { AuthLink } from "../shared/auth-link";
+import AnthropicLogo from "@/assets/models/anthropic.svg?react";
+import CloudriftLogo from "@/assets/models/cloudrift.svg?react";
+import GoogleVertexAILogo from "@/assets/models/google-vertex-ai.svg?react";
+import GroqLogo from "@/assets/models/groq.svg?react";
+import InferenceNetLogo from "@/assets/models/inference-net.svg?react";
+import KlusterAILogo from "@/assets/models/kluster-ai.svg?react";
+import MistralLogo from "@/assets/models/mistral.svg?react";
+import OpenAILogo from "@/assets/models/openai.svg?react";
+import TogetherAILogo from "@/assets/models/together-ai.svg?react";
+import XaiLogo from "@/assets/models/xai.svg?react";
+import heroImageLight from "@/assets/new-hero-light.png";
+import heroImageDark from "@/assets/new-hero.png";
 import { Button } from "@/lib/components/button";
 import { DOCS_URL } from "@/lib/env";
 
@@ -28,6 +39,20 @@ const transitionVariants = {
 		},
 	},
 };
+
+// Provider logos configuration
+const PROVIDER_LOGOS = [
+	{ name: "OpenAI", component: OpenAILogo },
+	{ name: "Anthropic", component: AnthropicLogo },
+	{ name: "Google Vertex AI", component: GoogleVertexAILogo },
+	{ name: "Mistral", component: MistralLogo },
+	{ name: "Together AI", component: TogetherAILogo },
+	{ name: "Cloudrift", component: CloudriftLogo },
+	{ name: "Kluster AI", component: KlusterAILogo },
+	{ name: "Inference Net", component: InferenceNetLogo },
+	{ name: "Groq", component: GroqLogo },
+	{ name: "xAI", component: XaiLogo },
+] as const;
 
 export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 	return (
@@ -95,12 +120,12 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 								<div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
 									<AnimatedGroup variants={transitionVariants}>
 										<a
-											href={DOCS_URL}
+											href="https://github.com/theopenco/llmgateway"
 											target="_blank"
 											className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
 										>
 											<span className="text-foreground text-sm">
-												The Open LLM Gateway
+												LLM Gateway is fully open source
 											</span>
 											<span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700" />
 
@@ -148,9 +173,9 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 												size="lg"
 												className="rounded-xl px-5 text-base"
 											>
-												<Link to="/signup">
+												<AuthLink>
 													<span className="text-nowrap">Start Building</span>
-												</Link>
+												</AuthLink>
 											</Button>
 										</div>
 										<Button
@@ -206,95 +231,29 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 							</AnimatedGroup>
 						</div>
 					</section>
-					{/* <section className="bg-background pb-16 pt-16 md:pb-32">
-                    <div className="group relative m-auto max-w-5xl px-6">
-                        <div className="absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100">
-                            <Link
-                                to="/"
-                                className="block text-sm duration-150 hover:opacity-75">
-                                <span> Meet Our Customers</span>
-
-                                <ChevronRight className="ml-1 inline-block size-3" />
-                            </Link>
-                        </div>
-                        <div className="group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-4 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14">
-                            <div className="flex">
-                                <img
-                                    className="mx-auto h-5 w-fit dark:invert"
-                                    src="https://html.tailus.io/blocks/customers/nvidia.svg"
-                                    alt="Nvidia Logo"
-                                    height="20"
-                                    width="auto"
-                                />
-                            </div>
-
-                            <div className="flex">
-                                <img
-                                    className="mx-auto h-4 w-fit dark:invert"
-                                    src="https://html.tailus.io/blocks/customers/column.svg"
-                                    alt="Column Logo"
-                                    height="16"
-                                    width="auto"
-                                />
-                            </div>
-                            <div className="flex">
-                                <img
-                                    className="mx-auto h-4 w-fit dark:invert"
-                                    src="https://html.tailus.io/blocks/customers/github.svg"
-                                    alt="GitHub Logo"
-                                    height="16"
-                                    width="auto"
-                                />
-                            </div>
-                            <div className="flex">
-                                <img
-                                    className="mx-auto h-5 w-fit dark:invert"
-                                    src="https://html.tailus.io/blocks/customers/nike.svg"
-                                    alt="Nike Logo"
-                                    height="20"
-                                    width="auto"
-                                />
-                            </div>
-                            <div className="flex">
-                                <img
-                                    className="mx-auto h-5 w-fit dark:invert"
-                                    src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg"
-                                    alt="Lemon Squeezy Logo"
-                                    height="20"
-                                    width="auto"
-                                />
-                            </div>
-                            <div className="flex">
-                                <img
-                                    className="mx-auto h-4 w-fit dark:invert"
-                                    src="https://html.tailus.io/blocks/customers/laravel.svg"
-                                    alt="Laravel Logo"
-                                    height="16"
-                                    width="auto"
-                                />
-                            </div>
-                            <div className="flex">
-                                <img
-                                    className="mx-auto h-7 w-fit dark:invert"
-                                    src="https://html.tailus.io/blocks/customers/lilly.svg"
-                                    alt="Lilly Logo"
-                                    height="28"
-                                    width="auto"
-                                />
-                            </div>
-
-                            <div className="flex">
-                                <img
-                                    className="mx-auto h-6 w-fit dark:invert"
-                                    src="https://html.tailus.io/blocks/customers/openai.svg"
-                                    alt="OpenAI Logo"
-                                    height="24"
-                                    width="auto"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </section> */}
+					<section className="bg-background pb-16 pt-16 md:pb-32">
+						<div className="group relative m-auto max-w-5xl px-6">
+							<div className="absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100">
+								<Link
+									to="/models"
+									className="block text-sm duration-150 hover:opacity-75"
+								>
+									<span>View All Providers</span>
+									<ChevronRight className="ml-1 inline-block size-3" />
+								</Link>
+							</div>
+							<div className="group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-5 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14">
+								{PROVIDER_LOGOS.map((provider) => {
+									const LogoComponent = provider.component;
+									return (
+										<div key={provider.name} className="flex">
+											<LogoComponent className="mx-auto h-16 w-fit" />
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					</section>
 				</main>
 			)}
 		</>

@@ -1,18 +1,6 @@
 import { $api } from "@/lib/fetch-client";
 
-export interface Organization {
-	id: string;
-	name: string;
-	credits: number;
-	plan: "free" | "pro";
-	planExpiresAt: string | null;
-	retentionLevel: "retain" | "none";
-	createdAt: string;
-	updatedAt: string;
-	autoTopUpEnabled?: boolean;
-	autoTopUpThreshold?: string | null;
-	autoTopUpAmount?: string | null;
-}
+import type { Organization } from "@/lib/types";
 
 export interface OrganizationsResponse {
 	organizations: Organization[];

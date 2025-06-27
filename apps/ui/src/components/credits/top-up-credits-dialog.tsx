@@ -7,7 +7,6 @@ import {
 import { CreditCard, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { useDefaultOrganization } from "@/hooks/useOrganization";
 import { Button } from "@/lib/components/button";
 import { Checkbox } from "@/lib/components/checkbox";
 import {
@@ -22,6 +21,7 @@ import {
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { useToast } from "@/lib/components/use-toast";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 import Spinner from "@/lib/icons/Spinner";
 import { useStripe } from "@/lib/stripe";
@@ -43,7 +43,7 @@ interface TopUpCreditsDialogProps {
 	children: React.ReactNode;
 }
 
-function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
+export function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [step, setStep] = useState<
 		"amount" | "payment" | "select-payment" | "confirm-payment" | "success"
@@ -154,7 +154,7 @@ function AmountStep({
 	onCancel: () => void;
 }) {
 	const presetAmounts = [10, 25, 50, 100];
-	const { data: organization } = useDefaultOrganization();
+	const { selectedOrganization } = useDashboardContext();
 	const { data: feeData, isLoading: feeDataLoading } = $api.useQuery(
 		"post",
 		"/payments/calculate-fees",
@@ -232,7 +232,7 @@ function AmountStep({
 										<span>${feeData.planFee.toFixed(2)}</span>
 									</div>
 								)}
-								{organization?.plan === "pro" && (
+								{selectedOrganization?.plan === "pro" && (
 									<div className="flex justify-between text-green-600">
 										<span>Service fee (Pro plan)</span>
 										<span>$0.00</span>
@@ -548,7 +548,7 @@ function ConfirmPaymentStep({
 	setLoading: (loading: boolean) => void;
 }) {
 	const { toast } = useToast();
-	const { data: organization } = useDefaultOrganization();
+	const { selectedOrganization } = useDashboardContext();
 	const { mutateAsync: topUpMutation } = $api.useMutation(
 		"post",
 		"/payments/top-up-with-saved-method",
@@ -621,12 +621,13 @@ function ConfirmPaymentStep({
 									<span>${feeData.planFee.toFixed(2)}</span>
 								</div>
 							)}
-							{organization?.plan === "pro" && feeData.planFee === 0 && (
-								<div className="flex justify-between text-green-600">
-									<span>Service fee (Pro plan)</span>
-									<span>$0.00</span>
-								</div>
-							)}
+							{selectedOrganization?.plan === "pro" &&
+								feeData.planFee === 0 && (
+									<div className="flex justify-between text-green-600">
+										<span>Service fee (Pro plan)</span>
+										<span>$0.00</span>
+									</div>
+								)}
 							<div className="border-t pt-2 flex justify-between font-medium">
 								<span>Total</span>
 								<span>${feeData.totalAmount.toFixed(2)}</span>

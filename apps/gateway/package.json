@@ -17,9 +17,9 @@
 		"@hono/node-server": "^1.14.1",
 		"@hono/swagger-ui": "^0.5.1",
 		"@hono/zod-openapi": "^0.19.6",
-		"@hono/zod-validator": "^0.5.0",
-		"@openllm/db": "workspace:*",
-		"@openllm/models": "workspace:*",
+		"@hono/zod-validator": "^0.7.0",
+		"@llmgateway/db": "workspace:*",
+		"@llmgateway/models": "workspace:*",
 		"gpt-tokenizer": "2.9.0",
 		"hono": "^4.7.6",
 		"hono-openapi": "^0.4.6",
@@ -29,7 +29,7 @@
 		"zod-openapi": "^4.2.4"
 	},
 	"devDependencies": {
-		"@types/node": "^22.15.17",
+		"@types/node": "^24.0.3",
 		"tsx": "^4.19.3"
 	}
 }

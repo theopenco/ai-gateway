@@ -1,3 +1,4 @@
+import contentCollections from "@content-collections/vinxi";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "@tanstack/react-start/config";
 import copy from "rollup-plugin-copy";
@@ -7,14 +8,16 @@ import tsConfigPaths from "vite-tsconfig-paths";
 // noinspection JSUnusedGlobalSymbols
 export default defineConfig({
 	server: {
-		devProxy: {
-			"/api": {
-				target: "http://localhost:4002",
-			},
-		},
 		prerender: {
-			// render /dashboard as an app entrypoint, crawl will discover the rest
-			routes: ["/", "/dashboard"],
+			routes: [
+				"/",
+				"/dashboard",
+				"/onboarding",
+				"/changelog",
+				"/models",
+				"/changelog/$slug",
+				"/providers/$id",
+			],
 			crawlLinks: true,
 		},
 		preset: process.env.SERVER_PRESET || "static",
@@ -23,10 +26,8 @@ export default defineConfig({
 		appDirectory: "./src",
 	},
 	vite: {
-		server: {
-			allowedHosts: ["dev.llmgateway.io"],
-		},
 		plugins: [
+			contentCollections(),
 			tsConfigPaths({
 				projects: ["./tsconfig.json"],
 			}),
@@ -35,7 +36,7 @@ export default defineConfig({
 			copy({
 				targets: [{ src: "static/*", dest: ".output/static" }],
 				hook: "writeBundle",
-			}),
+			}) as any,
 		],
 	},
 });

@@ -1,7 +1,9 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { eq, db, shortid, tables } from "@openllm/db";
+import { eq, db, shortid, tables } from "@llmgateway/db";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+
+import { maskToken } from "../lib/maskToken";
 
 import type { ServerTypes } from "../vars";
 
@@ -77,7 +79,7 @@ keysApi.openapi(create, async (c) => {
 		});
 	}
 
-	const { description, projectId } = await c.req.json();
+	const { description, projectId } = c.req.valid("json");
 
 	// Get the user's organizations
 	const userOrgs = await db.query.userOrganization.findMany({
@@ -115,7 +117,9 @@ keysApi.openapi(create, async (c) => {
 	}
 
 	// Generate a token with a prefix for better identification
-	const token = `llmgtwy_` + shortid(40);
+	const prefix =
+		process.env.NODE_ENV === "development" ? `llmgdev_` : "llmgtwy_";
+	const token = prefix + shortid(40);
 
 	// Create the API key
 	const [apiKey] = await db
@@ -219,7 +223,7 @@ keysApi.openapi(list, async (c) => {
 	return c.json({
 		apiKeys: apiKeys.map((key) => ({
 			...key,
-			maskedToken: `${key.token.substring(0, 10)}•••••••••••`,
+			maskedToken: maskToken(key.token),
 			token: undefined,
 		})),
 	});
@@ -396,7 +400,7 @@ keysApi.openapi(updateStatus, async (c) => {
 	}
 
 	const { id } = c.req.param();
-	const { status } = await c.req.json();
+	const { status } = c.req.valid("json");
 
 	// Get the user's projects
 	const userOrgs = await db.query.userOrganization.findMany({
@@ -452,7 +456,7 @@ keysApi.openapi(updateStatus, async (c) => {
 		message: `API key status updated to ${status}`,
 		apiKey: {
 			...updatedApiKey,
-			maskedToken: `${updatedApiKey.token.substring(0, 8)}•••••••••••`,
+			maskedToken: maskToken(updatedApiKey.token),
 			token: undefined,
 		},
 	});

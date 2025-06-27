@@ -1,4 +1,4 @@
-import { type Model, type ModelDefinition, models } from "@openllm/models";
+import { type Model, type ModelDefinition, models } from "@llmgateway/models";
 import { encode, encodeChat } from "gpt-tokenizer";
 
 // Define ChatMessage type to match what gpt-tokenizer expects
@@ -26,8 +26,14 @@ export function calculateCosts(
 		completion?: string;
 	},
 ) {
-	// Find the model info
-	const modelInfo = models.find((m) => m.model === model) as ModelDefinition;
+	// Find the model info - try both base model name and provider model name
+	let modelInfo = models.find((m) => m.model === model) as ModelDefinition;
+
+	if (!modelInfo) {
+		modelInfo = models.find((m) =>
+			m.providers.some((p) => p.modelName === model),
+		) as ModelDefinition;
+	}
 
 	if (!modelInfo) {
 		return {

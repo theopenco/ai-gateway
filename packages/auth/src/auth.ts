@@ -1,10 +1,10 @@
-import { db, tables } from "@openllm/db";
+import { db, tables } from "@llmgateway/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
 import { passkey } from "better-auth/plugins/passkey";
 
-const apiUrl = process.env.API_URL || "/api";
+const apiUrl = process.env.API_URL || "http://localhost:4002";
 const uiUrl = process.env.UI_URL || "http://localhost:3002";
 const originUrls =
 	process.env.ORIGIN_URL || "http://localhost:3002,http://localhost:4002";
@@ -12,13 +12,11 @@ const originUrls =
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	advanced: {
 		crossSubDomainCookies: {
-			enabled: apiUrl.startsWith("http"),
-			domain: apiUrl.startsWith("http") ? new URL(apiUrl).hostname : undefined,
+			enabled: true,
+			domain: new URL(apiUrl).hostname,
 		},
 		defaultCookieAttributes: {
-			domain: apiUrl.startsWith("http") ? new URL(apiUrl).hostname : undefined,
-			// when we use a proxy with the API on the relative path /api, set the cookie path accordingly
-			path: apiUrl.startsWith("http") ? "/" : "/api",
+			domain: new URL(apiUrl).hostname,
 		},
 	},
 	session: {
@@ -82,6 +80,7 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 					await db.insert(tables.project).values({
 						name: "Default Project",
 						organizationId: organization.id,
+						mode: process.env.HOSTED === "true" ? "credits" : "api-keys",
 					});
 				}
 			}

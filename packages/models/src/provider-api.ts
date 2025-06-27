@@ -21,6 +21,9 @@ export function getProviderHeaders(
 		case "kluster.ai":
 		case "openai":
 		case "inference.net":
+		case "xai":
+		case "groq":
+		case "deepseek":
 		default:
 			return {
 				Authorization: `Bearer ${token}`,
@@ -42,6 +45,8 @@ export function prepareRequestBody(
 	frequency_penalty: number | undefined,
 	presence_penalty: number | undefined,
 	response_format: any,
+	tools?: any[],
+	tool_choice?: string | { type: string; function: { name: string } },
 ) {
 	const requestBody: any = {
 		model: usedModel,
@@ -49,8 +54,20 @@ export function prepareRequestBody(
 		stream: stream,
 	};
 
+	// Add tools and tool_choice if provided
+	if (tools && tools.length > 0) {
+		requestBody.tools = tools;
+	}
+
+	if (tool_choice) {
+		requestBody.tool_choice = tool_choice;
+	}
+
 	switch (usedProvider) {
-		case "openai": {
+		case "openai":
+		case "xai":
+		case "groq":
+		case "deepseek": {
 			if (stream) {
 				requestBody.stream_options = {
 					include_usage: true,
@@ -228,6 +245,21 @@ export function getProviderEndpoint(
 			case "together.ai":
 				url = "https://api.together.ai";
 				break;
+			case "cloudrift":
+				url = "https://inference.cloudrift.ai";
+				break;
+			case "mistral":
+				url = "https://api.mistral.ai";
+				break;
+			case "xai":
+				url = "https://api.x.ai";
+				break;
+			case "groq":
+				url = "https://api.groq.com/openai";
+				break;
+			case "deepseek":
+				url = "https://api.deepseek.com";
+				break;
 			default:
 				throw new Error(`Provider ${provider} requires a baseUrl`);
 		}
@@ -251,9 +283,80 @@ export function getProviderEndpoint(
 		case "kluster.ai":
 		case "openai":
 		case "llmgateway":
+		case "cloudrift":
+		case "xai":
+		case "groq":
+		case "deepseek":
 		default:
 			return `${url}/v1/chat/completions`;
 	}
+}
+
+/**
+ * Get the cheapest model for a given provider based on input + output pricing
+ */
+export function getCheapestModelForProvider(
+	provider: ProviderId,
+): string | null {
+	const availableModels = models
+		.filter((model) => model.providers.some((p) => p.providerId === provider))
+		.filter((model) => !model.deprecatedAt || new Date() <= model.deprecatedAt)
+		.map((model) => ({
+			model: model.model,
+			provider: model.providers.find((p) => p.providerId === provider)!,
+		}))
+		.filter(
+			({ provider: providerInfo }) =>
+				providerInfo.inputPrice !== undefined &&
+				providerInfo.outputPrice !== undefined,
+		);
+
+	if (availableModels.length === 0) {
+		return null;
+	}
+
+	let cheapestModel = availableModels[0].provider.modelName;
+	let lowestPrice = Number.MAX_VALUE;
+
+	for (const { provider: providerInfo } of availableModels) {
+		const totalPrice =
+			(providerInfo.inputPrice! + providerInfo.outputPrice!) / 2;
+		if (totalPrice < lowestPrice) {
+			lowestPrice = totalPrice;
+			cheapestModel = providerInfo.modelName;
+		}
+	}
+
+	return cheapestModel;
+}
+
+/**
+ * Get the cheapest provider and model from a list of available model providers
+ */
+export function getCheapestFromAvailableProviders<
+	T extends { providerId: string; modelName: string },
+>(availableModelProviders: T[], modelWithPricing: any): T | null {
+	if (availableModelProviders.length === 0) {
+		return null;
+	}
+
+	let cheapestProvider = availableModelProviders[0];
+	let lowestPrice = Number.MAX_VALUE;
+
+	for (const provider of availableModelProviders) {
+		const providerInfo = modelWithPricing.providers.find(
+			(p: any) => p.providerId === provider.providerId,
+		);
+		const totalPrice =
+			((providerInfo?.inputPrice || 0) + (providerInfo?.outputPrice || 0)) / 2;
+
+		if (totalPrice < lowestPrice) {
+			lowestPrice = totalPrice;
+			cheapestProvider = provider;
+		}
+	}
+
+	return cheapestProvider;
 }
 
 /**
@@ -264,7 +367,7 @@ export async function validateProviderKey(
 	token: string,
 	baseUrl?: string,
 	skipValidation = false,
-): Promise<{ valid: boolean; error?: string }> {
+): Promise<{ valid: boolean; error?: string; statusCode?: number }> {
 	// Skip validation if requested (e.g. in test environment)
 	if (skipValidation) {
 		return { valid: true };
@@ -286,30 +389,12 @@ export async function validateProviderKey(
 		const minimalMessage = { role: "user", content: "Hello" };
 		const messages = [systemMessage, minimalMessage];
 
-		// Determine the model to use for validation
-		let validationModel: string;
-		switch (provider) {
-			case "openai":
-				validationModel = "gpt-4o-mini";
-				break;
-			case "anthropic":
-				validationModel = "claude-3-haiku-20240307";
-				break;
-			case "google-vertex":
-			case "google-ai-studio":
-				validationModel = "gemini-2.0-flash";
-				break;
-			case "inference.net":
-				validationModel = "meta-llama/llama-3.1-8b-instruct/fp-8";
-				break;
-			case "kluster.ai":
-				validationModel = "klusterai/Meta-Llama-3.1-8B-Instruct-Turbo";
-				break;
-			case "together.ai":
-				validationModel = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo";
-				break;
-			default:
-				throw new Error(`Provider ${provider} not supported for validation`);
+		const validationModel = getCheapestModelForProvider(provider);
+
+		if (!validationModel) {
+			throw new Error(
+				`No model with pricing information found for provider ${provider}`,
+			);
 		}
 
 		const payload = prepareRequestBody(
@@ -335,16 +420,6 @@ export async function validateProviderKey(
 		});
 
 		if (!response.ok) {
-			if (response.status >= 500) {
-				throw new Error(
-					`Server error: ${response.status} ${response.statusText}`,
-				);
-			}
-
-			if (response.status === 401) {
-				return { valid: false, error: "invalid api key" };
-			}
-
 			const errorText = await response.text();
 			let errorMessage = `Error from provider: ${response.status} ${response.statusText}`;
 
@@ -357,7 +432,14 @@ export async function validateProviderKey(
 				}
 			} catch (_err) {}
 
-			return { valid: false, error: errorMessage };
+			if (response.status === 401) {
+				return {
+					valid: false,
+					statusCode: response.status,
+				};
+			}
+
+			return { valid: false, error: errorMessage, statusCode: response.status };
 		}
 
 		return { valid: true };

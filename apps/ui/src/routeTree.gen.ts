@@ -14,11 +14,17 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as SignupImport } from './routes/signup'
+import { Route as PlaygroundImport } from './routes/playground'
 import { Route as OnboardingImport } from './routes/onboarding'
 import { Route as ModelsImport } from './routes/models'
 import { Route as LoginImport } from './routes/login'
+import { Route as ChatImport } from './routes/chat'
 import { Route as IndexImport } from './routes/index'
+import { Route as ChangelogIndexImport } from './routes/changelog/index'
+import { Route as ProvidersIdImport } from './routes/providers/$id'
 import { Route as DashboardLayoutImport } from './routes/dashboard/_layout'
+import { Route as CompareOpenRouterImport } from './routes/compare/open-router'
+import { Route as ChangelogSlugImport } from './routes/changelog/$slug'
 import { Route as DashboardLayoutIndexImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutUsageImport } from './routes/dashboard/_layout/usage'
 import { Route as DashboardLayoutSettingsImport } from './routes/dashboard/_layout/settings'
@@ -30,8 +36,8 @@ import { Route as DashboardLayoutSettingsIndexImport } from './routes/dashboard/
 import { Route as DashboardLayoutSettingsTransactionsImport } from './routes/dashboard/_layout/settings/transactions'
 import { Route as DashboardLayoutSettingsSecurityImport } from './routes/dashboard/_layout/settings/security'
 import { Route as DashboardLayoutSettingsPreferencesImport } from './routes/dashboard/_layout/settings/preferences'
+import { Route as DashboardLayoutSettingsPoliciesImport } from './routes/dashboard/_layout/settings/policies'
 import { Route as DashboardLayoutSettingsBillingImport } from './routes/dashboard/_layout/settings/billing'
-import { Route as DashboardLayoutSettingsAdvancedImport } from './routes/dashboard/_layout/settings/advanced'
 import { Route as DashboardLayoutSettingsAccountImport } from './routes/dashboard/_layout/settings/account'
 
 // Create Virtual Routes
@@ -49,6 +55,12 @@ const DashboardRoute = DashboardImport.update({
 const SignupRoute = SignupImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const PlaygroundRoute = PlaygroundImport.update({
+  id: '/playground',
+  path: '/playground',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -70,15 +82,45 @@ const LoginRoute = LoginImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ChatRoute = ChatImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
 } as any)
 
+const ChangelogIndexRoute = ChangelogIndexImport.update({
+  id: '/changelog/',
+  path: '/changelog/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ProvidersIdRoute = ProvidersIdImport.update({
+  id: '/providers/$id',
+  path: '/providers/$id',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const DashboardLayoutRoute = DashboardLayoutImport.update({
   id: '/_layout',
   getParentRoute: () => DashboardRoute,
+} as any)
+
+const CompareOpenRouterRoute = CompareOpenRouterImport.update({
+  id: '/compare/open-router',
+  path: '/compare/open-router',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ChangelogSlugRoute = ChangelogSlugImport.update({
+  id: '/changelog/$slug',
+  path: '/changelog/$slug',
+  getParentRoute: () => rootRoute,
 } as any)
 
 const DashboardLayoutIndexRoute = DashboardLayoutIndexImport.update({
@@ -152,17 +194,17 @@ const DashboardLayoutSettingsPreferencesRoute =
     getParentRoute: () => DashboardLayoutSettingsRoute,
   } as any)
 
+const DashboardLayoutSettingsPoliciesRoute =
+  DashboardLayoutSettingsPoliciesImport.update({
+    id: '/policies',
+    path: '/policies',
+    getParentRoute: () => DashboardLayoutSettingsRoute,
+  } as any)
+
 const DashboardLayoutSettingsBillingRoute =
   DashboardLayoutSettingsBillingImport.update({
     id: '/billing',
     path: '/billing',
-    getParentRoute: () => DashboardLayoutSettingsRoute,
-  } as any)
-
-const DashboardLayoutSettingsAdvancedRoute =
-  DashboardLayoutSettingsAdvancedImport.update({
-    id: '/advanced',
-    path: '/advanced',
     getParentRoute: () => DashboardLayoutSettingsRoute,
   } as any)
 
@@ -182,6 +224,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatImport
       parentRoute: typeof rootRoute
     }
     '/login': {
@@ -205,11 +254,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingImport
       parentRoute: typeof rootRoute
     }
+    '/playground': {
+      id: '/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof PlaygroundImport
+      parentRoute: typeof rootRoute
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupImport
+      parentRoute: typeof rootRoute
+    }
+    '/changelog/$slug': {
+      id: '/changelog/$slug'
+      path: '/changelog/$slug'
+      fullPath: '/changelog/$slug'
+      preLoaderRoute: typeof ChangelogSlugImport
+      parentRoute: typeof rootRoute
+    }
+    '/compare/open-router': {
+      id: '/compare/open-router'
+      path: '/compare/open-router'
+      fullPath: '/compare/open-router'
+      preLoaderRoute: typeof CompareOpenRouterImport
       parentRoute: typeof rootRoute
     }
     '/dashboard': {
@@ -225,6 +295,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardLayoutImport
       parentRoute: typeof DashboardRoute
+    }
+    '/providers/$id': {
+      id: '/providers/$id'
+      path: '/providers/$id'
+      fullPath: '/providers/$id'
+      preLoaderRoute: typeof ProvidersIdImport
+      parentRoute: typeof rootRoute
+    }
+    '/changelog/': {
+      id: '/changelog/'
+      path: '/changelog'
+      fullPath: '/changelog'
+      preLoaderRoute: typeof ChangelogIndexImport
+      parentRoute: typeof rootRoute
     }
     '/dashboard/_layout/activity': {
       id: '/dashboard/_layout/activity'
@@ -282,18 +366,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutSettingsAccountImport
       parentRoute: typeof DashboardLayoutSettingsImport
     }
-    '/dashboard/_layout/settings/advanced': {
-      id: '/dashboard/_layout/settings/advanced'
-      path: '/advanced'
-      fullPath: '/dashboard/settings/advanced'
-      preLoaderRoute: typeof DashboardLayoutSettingsAdvancedImport
-      parentRoute: typeof DashboardLayoutSettingsImport
-    }
     '/dashboard/_layout/settings/billing': {
       id: '/dashboard/_layout/settings/billing'
       path: '/billing'
       fullPath: '/dashboard/settings/billing'
       preLoaderRoute: typeof DashboardLayoutSettingsBillingImport
+      parentRoute: typeof DashboardLayoutSettingsImport
+    }
+    '/dashboard/_layout/settings/policies': {
+      id: '/dashboard/_layout/settings/policies'
+      path: '/policies'
+      fullPath: '/dashboard/settings/policies'
+      preLoaderRoute: typeof DashboardLayoutSettingsPoliciesImport
       parentRoute: typeof DashboardLayoutSettingsImport
     }
     '/dashboard/_layout/settings/preferences': {
@@ -331,8 +415,8 @@ declare module '@tanstack/react-router' {
 
 interface DashboardLayoutSettingsRouteChildren {
   DashboardLayoutSettingsAccountRoute: typeof DashboardLayoutSettingsAccountRoute
-  DashboardLayoutSettingsAdvancedRoute: typeof DashboardLayoutSettingsAdvancedRoute
   DashboardLayoutSettingsBillingRoute: typeof DashboardLayoutSettingsBillingRoute
+  DashboardLayoutSettingsPoliciesRoute: typeof DashboardLayoutSettingsPoliciesRoute
   DashboardLayoutSettingsPreferencesRoute: typeof DashboardLayoutSettingsPreferencesRoute
   DashboardLayoutSettingsSecurityRoute: typeof DashboardLayoutSettingsSecurityRoute
   DashboardLayoutSettingsTransactionsRoute: typeof DashboardLayoutSettingsTransactionsRoute
@@ -342,8 +426,8 @@ interface DashboardLayoutSettingsRouteChildren {
 const DashboardLayoutSettingsRouteChildren: DashboardLayoutSettingsRouteChildren =
   {
     DashboardLayoutSettingsAccountRoute: DashboardLayoutSettingsAccountRoute,
-    DashboardLayoutSettingsAdvancedRoute: DashboardLayoutSettingsAdvancedRoute,
     DashboardLayoutSettingsBillingRoute: DashboardLayoutSettingsBillingRoute,
+    DashboardLayoutSettingsPoliciesRoute: DashboardLayoutSettingsPoliciesRoute,
     DashboardLayoutSettingsPreferencesRoute:
       DashboardLayoutSettingsPreferencesRoute,
     DashboardLayoutSettingsSecurityRoute: DashboardLayoutSettingsSecurityRoute,
@@ -395,11 +479,17 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/login': typeof LoginRoute
   '/models': typeof ModelsRoute
   '/onboarding': typeof OnboardingRoute
+  '/playground': typeof PlaygroundRoute
   '/signup': typeof SignupRoute
+  '/changelog/$slug': typeof ChangelogSlugRoute
+  '/compare/open-router': typeof CompareOpenRouterRoute
   '/dashboard': typeof DashboardLayoutRouteWithChildren
+  '/providers/$id': typeof ProvidersIdRoute
+  '/changelog': typeof ChangelogIndexRoute
   '/dashboard/activity': typeof DashboardLayoutActivityRoute
   '/dashboard/api-keys': typeof DashboardLayoutApiKeysRoute
   '/dashboard/models': typeof DashboardLayoutModelsRoute
@@ -408,8 +498,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/usage': typeof DashboardLayoutUsageRoute
   '/dashboard/': typeof DashboardLayoutIndexRoute
   '/dashboard/settings/account': typeof DashboardLayoutSettingsAccountRoute
-  '/dashboard/settings/advanced': typeof DashboardLayoutSettingsAdvancedRoute
   '/dashboard/settings/billing': typeof DashboardLayoutSettingsBillingRoute
+  '/dashboard/settings/policies': typeof DashboardLayoutSettingsPoliciesRoute
   '/dashboard/settings/preferences': typeof DashboardLayoutSettingsPreferencesRoute
   '/dashboard/settings/security': typeof DashboardLayoutSettingsSecurityRoute
   '/dashboard/settings/transactions': typeof DashboardLayoutSettingsTransactionsRoute
@@ -418,19 +508,25 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/login': typeof LoginRoute
   '/models': typeof ModelsRoute
   '/onboarding': typeof OnboardingRoute
+  '/playground': typeof PlaygroundRoute
   '/signup': typeof SignupRoute
+  '/changelog/$slug': typeof ChangelogSlugRoute
+  '/compare/open-router': typeof CompareOpenRouterRoute
   '/dashboard': typeof DashboardLayoutIndexRoute
+  '/providers/$id': typeof ProvidersIdRoute
+  '/changelog': typeof ChangelogIndexRoute
   '/dashboard/activity': typeof DashboardLayoutActivityRoute
   '/dashboard/api-keys': typeof DashboardLayoutApiKeysRoute
   '/dashboard/models': typeof DashboardLayoutModelsRoute
   '/dashboard/provider-keys': typeof DashboardLayoutProviderKeysRoute
   '/dashboard/usage': typeof DashboardLayoutUsageRoute
   '/dashboard/settings/account': typeof DashboardLayoutSettingsAccountRoute
-  '/dashboard/settings/advanced': typeof DashboardLayoutSettingsAdvancedRoute
   '/dashboard/settings/billing': typeof DashboardLayoutSettingsBillingRoute
+  '/dashboard/settings/policies': typeof DashboardLayoutSettingsPoliciesRoute
   '/dashboard/settings/preferences': typeof DashboardLayoutSettingsPreferencesRoute
   '/dashboard/settings/security': typeof DashboardLayoutSettingsSecurityRoute
   '/dashboard/settings/transactions': typeof DashboardLayoutSettingsTransactionsRoute
@@ -440,12 +536,18 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/login': typeof LoginRoute
   '/models': typeof ModelsRoute
   '/onboarding': typeof OnboardingRoute
+  '/playground': typeof PlaygroundRoute
   '/signup': typeof SignupRoute
+  '/changelog/$slug': typeof ChangelogSlugRoute
+  '/compare/open-router': typeof CompareOpenRouterRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/_layout': typeof DashboardLayoutRouteWithChildren
+  '/providers/$id': typeof ProvidersIdRoute
+  '/changelog/': typeof ChangelogIndexRoute
   '/dashboard/_layout/activity': typeof DashboardLayoutActivityRoute
   '/dashboard/_layout/api-keys': typeof DashboardLayoutApiKeysRoute
   '/dashboard/_layout/models': typeof DashboardLayoutModelsRoute
@@ -454,8 +556,8 @@ export interface FileRoutesById {
   '/dashboard/_layout/usage': typeof DashboardLayoutUsageRoute
   '/dashboard/_layout/': typeof DashboardLayoutIndexRoute
   '/dashboard/_layout/settings/account': typeof DashboardLayoutSettingsAccountRoute
-  '/dashboard/_layout/settings/advanced': typeof DashboardLayoutSettingsAdvancedRoute
   '/dashboard/_layout/settings/billing': typeof DashboardLayoutSettingsBillingRoute
+  '/dashboard/_layout/settings/policies': typeof DashboardLayoutSettingsPoliciesRoute
   '/dashboard/_layout/settings/preferences': typeof DashboardLayoutSettingsPreferencesRoute
   '/dashboard/_layout/settings/security': typeof DashboardLayoutSettingsSecurityRoute
   '/dashboard/_layout/settings/transactions': typeof DashboardLayoutSettingsTransactionsRoute
@@ -466,11 +568,17 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/chat'
     | '/login'
     | '/models'
     | '/onboarding'
+    | '/playground'
     | '/signup'
+    | '/changelog/$slug'
+    | '/compare/open-router'
     | '/dashboard'
+    | '/providers/$id'
+    | '/changelog'
     | '/dashboard/activity'
     | '/dashboard/api-keys'
     | '/dashboard/models'
@@ -479,8 +587,8 @@ export interface FileRouteTypes {
     | '/dashboard/usage'
     | '/dashboard/'
     | '/dashboard/settings/account'
-    | '/dashboard/settings/advanced'
     | '/dashboard/settings/billing'
+    | '/dashboard/settings/policies'
     | '/dashboard/settings/preferences'
     | '/dashboard/settings/security'
     | '/dashboard/settings/transactions'
@@ -488,19 +596,25 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/chat'
     | '/login'
     | '/models'
     | '/onboarding'
+    | '/playground'
     | '/signup'
+    | '/changelog/$slug'
+    | '/compare/open-router'
     | '/dashboard'
+    | '/providers/$id'
+    | '/changelog'
     | '/dashboard/activity'
     | '/dashboard/api-keys'
     | '/dashboard/models'
     | '/dashboard/provider-keys'
     | '/dashboard/usage'
     | '/dashboard/settings/account'
-    | '/dashboard/settings/advanced'
     | '/dashboard/settings/billing'
+    | '/dashboard/settings/policies'
     | '/dashboard/settings/preferences'
     | '/dashboard/settings/security'
     | '/dashboard/settings/transactions'
@@ -508,12 +622,18 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/chat'
     | '/login'
     | '/models'
     | '/onboarding'
+    | '/playground'
     | '/signup'
+    | '/changelog/$slug'
+    | '/compare/open-router'
     | '/dashboard'
     | '/dashboard/_layout'
+    | '/providers/$id'
+    | '/changelog/'
     | '/dashboard/_layout/activity'
     | '/dashboard/_layout/api-keys'
     | '/dashboard/_layout/models'
@@ -522,8 +642,8 @@ export interface FileRouteTypes {
     | '/dashboard/_layout/usage'
     | '/dashboard/_layout/'
     | '/dashboard/_layout/settings/account'
-    | '/dashboard/_layout/settings/advanced'
     | '/dashboard/_layout/settings/billing'
+    | '/dashboard/_layout/settings/policies'
     | '/dashboard/_layout/settings/preferences'
     | '/dashboard/_layout/settings/security'
     | '/dashboard/_layout/settings/transactions'
@@ -533,20 +653,32 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChatRoute: typeof ChatRoute
   LoginRoute: typeof LoginRoute
   ModelsRoute: typeof ModelsRoute
   OnboardingRoute: typeof OnboardingRoute
+  PlaygroundRoute: typeof PlaygroundRoute
   SignupRoute: typeof SignupRoute
+  ChangelogSlugRoute: typeof ChangelogSlugRoute
+  CompareOpenRouterRoute: typeof CompareOpenRouterRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  ProvidersIdRoute: typeof ProvidersIdRoute
+  ChangelogIndexRoute: typeof ChangelogIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChatRoute: ChatRoute,
   LoginRoute: LoginRoute,
   ModelsRoute: ModelsRoute,
   OnboardingRoute: OnboardingRoute,
+  PlaygroundRoute: PlaygroundRoute,
   SignupRoute: SignupRoute,
+  ChangelogSlugRoute: ChangelogSlugRoute,
+  CompareOpenRouterRoute: CompareOpenRouterRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  ProvidersIdRoute: ProvidersIdRoute,
+  ChangelogIndexRoute: ChangelogIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -560,15 +692,24 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/chat",
         "/login",
         "/models",
         "/onboarding",
+        "/playground",
         "/signup",
-        "/dashboard"
+        "/changelog/$slug",
+        "/compare/open-router",
+        "/dashboard",
+        "/providers/$id",
+        "/changelog/"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/chat": {
+      "filePath": "chat.tsx"
     },
     "/login": {
       "filePath": "login.tsx"
@@ -579,8 +720,17 @@ export const routeTree = rootRoute
     "/onboarding": {
       "filePath": "onboarding.tsx"
     },
+    "/playground": {
+      "filePath": "playground.tsx"
+    },
     "/signup": {
       "filePath": "signup.tsx"
+    },
+    "/changelog/$slug": {
+      "filePath": "changelog/$slug.tsx"
+    },
+    "/compare/open-router": {
+      "filePath": "compare/open-router.tsx"
     },
     "/dashboard": {
       "filePath": "dashboard",
@@ -600,6 +750,12 @@ export const routeTree = rootRoute
         "/dashboard/_layout/usage",
         "/dashboard/_layout/"
       ]
+    },
+    "/providers/$id": {
+      "filePath": "providers/$id.tsx"
+    },
+    "/changelog/": {
+      "filePath": "changelog/index.tsx"
     },
     "/dashboard/_layout/activity": {
       "filePath": "dashboard/_layout/activity.tsx",
@@ -622,8 +778,8 @@ export const routeTree = rootRoute
       "parent": "/dashboard/_layout",
       "children": [
         "/dashboard/_layout/settings/account",
-        "/dashboard/_layout/settings/advanced",
         "/dashboard/_layout/settings/billing",
+        "/dashboard/_layout/settings/policies",
         "/dashboard/_layout/settings/preferences",
         "/dashboard/_layout/settings/security",
         "/dashboard/_layout/settings/transactions",
@@ -642,12 +798,12 @@ export const routeTree = rootRoute
       "filePath": "dashboard/_layout/settings/account.tsx",
       "parent": "/dashboard/_layout/settings"
     },
-    "/dashboard/_layout/settings/advanced": {
-      "filePath": "dashboard/_layout/settings/advanced.tsx",
-      "parent": "/dashboard/_layout/settings"
-    },
     "/dashboard/_layout/settings/billing": {
       "filePath": "dashboard/_layout/settings/billing.tsx",
+      "parent": "/dashboard/_layout/settings"
+    },
+    "/dashboard/_layout/settings/policies": {
+      "filePath": "dashboard/_layout/settings/policies.tsx",
       "parent": "/dashboard/_layout/settings"
     },
     "/dashboard/_layout/settings/preferences": {

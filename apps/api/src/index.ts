@@ -1,6 +1,6 @@
 import { swaggerUI } from "@hono/swagger-ui";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { db } from "@openllm/db";
+import { db } from "@llmgateway/db";
 import "dotenv/config";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
@@ -15,10 +15,7 @@ import type { ServerTypes } from "./vars";
 export const config = {
 	servers: [
 		{
-			url:
-				process.env.NODE_ENV === "production"
-					? process.env.UI_URL + "/api"
-					: "http://localhost:3002/api",
+			url: "http://localhost:4002",
 		},
 	],
 	openapi: "3.0.0",
@@ -33,9 +30,9 @@ export const app = new OpenAPIHono<ServerTypes>();
 app.use(
 	"*",
 	cors({
-		origin: process.env.UI_URL || "http://localhost:3002,http://localhost:4002",
+		origin: process.env.UI_URL || "http://localhost:3002",
 		allowHeaders: ["Content-Type", "Authorization", "Cache-Control"],
-		allowMethods: ["POST", "GET", "OPTIONS"],
+		allowMethods: ["POST", "GET", "OPTIONS", "PUT", "PATCH", "DELETE"],
 		exposeHeaders: ["Content-Length"],
 		maxAge: 600,
 		credentials: true,

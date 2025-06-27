@@ -1,6 +1,6 @@
 import { swaggerUI } from "@hono/swagger-ui";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { db } from "@openllm/db";
+import { db } from "@llmgateway/db";
 import "dotenv/config";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
@@ -15,10 +15,7 @@ import type { ServerTypes } from "./vars";
 export const config = {
 	servers: [
 		{
-			url:
-				process.env.NODE_ENV === "production"
-					? process.env.UI_URL || "https://api.llmgateway.io"
-					: "http://localhost:4001",
+			url: process.env.API_URL || "http://localhost:4001",
 		},
 	],
 	openapi: "3.0.0",
@@ -64,7 +61,9 @@ app.onError((error, c) => {
 		const status = error.status;
 
 		if (status >= 500) {
-			console.log("HTTPException", error);
+			console.error("500 HTTPException", error);
+		} else {
+			console.log("non-500 HTTPException", error);
 		}
 
 		return c.json(
@@ -91,6 +90,9 @@ app.onError((error, c) => {
 });
 
 const root = createRoute({
+	summary: "Health check",
+	description: "Health check endpoint.",
+	operationId: "health",
 	method: "get",
 	path: "/",
 	request: {},

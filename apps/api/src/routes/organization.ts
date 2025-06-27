@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { db, eq, tables } from "@openllm/db";
+import { db, eq, tables } from "@llmgateway/db";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
@@ -210,7 +210,31 @@ organization.openapi(createOrganization, async (c) => {
 		});
 	}
 
-	const { name } = await c.req.json();
+	const { name } = c.req.valid("json");
+
+	// Get user's existing organizations to check limits
+	const userOrganizations = await db.query.userOrganization.findMany({
+		where: {
+			userId: user.id,
+		},
+		with: {
+			organization: true,
+		},
+	});
+
+	// Filter out deleted organizations
+	const activeOrganizations = userOrganizations
+		.filter((uo) => uo.organization?.status !== "deleted")
+		.map((uo) => uo.organization!);
+
+	const orgsLimit = 3;
+
+	// If user only has free plan, they can have only 1 organization
+	if (activeOrganizations.length >= orgsLimit) {
+		throw new HTTPException(403, {
+			message: `You have reached the limit of ${orgsLimit} organizations. Please reach out to support to increase this limit.`,
+		});
+	}
 
 	const [newOrganization] = await db
 		.insert(tables.organization)
@@ -294,7 +318,7 @@ organization.openapi(updateOrganization, async (c) => {
 		autoTopUpEnabled,
 		autoTopUpThreshold,
 		autoTopUpAmount,
-	} = await c.req.json();
+	} = c.req.valid("json");
 
 	const userOrganization = await db.query.userOrganization.findFirst({
 		where: {

@@ -2,7 +2,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { KeyIcon, MoreHorizontal, PlusIcon } from "lucide-react";
 
 import { CreateApiKeyDialog } from "./create-api-key-dialog";
-import { useDefaultProject } from "@/hooks/useDefaultProject";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -35,14 +34,35 @@ import {
 import { toast } from "@/lib/components/use-toast";
 import { $api } from "@/lib/fetch-client";
 
-export function ApiKeysList() {
+import type { Project } from "@/lib/types";
+
+interface ApiKeysListProps {
+	selectedProject: Project | null;
+}
+
+export function ApiKeysList({ selectedProject }: ApiKeysListProps) {
 	const queryClient = useQueryClient();
-	const { data: defaultProject } = useDefaultProject();
+
+	// Show message if no project is selected
+	if (!selectedProject) {
+		return (
+			<div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-center">
+				<div className="mb-4">
+					<KeyIcon className="h-10 w-10 text-gray-500" />
+				</div>
+				<p className="text-gray-400 mb-6">
+					Please select a project to view API keys.
+				</p>
+			</div>
+		);
+	}
+
 	const { data } = $api.useSuspenseQuery("get", "/keys/api", {
 		params: {
-			query: { projectId: defaultProject?.id },
+			query: { projectId: selectedProject.id },
 		},
 	});
+
 	const { mutate: deleteMutation } = $api.useMutation(
 		"delete",
 		"/keys/api/{id}",
@@ -65,7 +85,7 @@ export function ApiKeysList() {
 				onSuccess: () => {
 					const queryKey = $api.queryOptions("get", "/keys/api", {
 						params: {
-							query: { projectId: defaultProject?.id },
+							query: { projectId: selectedProject.id },
 						},
 					}).queryKey;
 
@@ -99,7 +119,7 @@ export function ApiKeysList() {
 				onSuccess: () => {
 					const queryKey = $api.queryOptions("get", "/keys/api", {
 						params: {
-							query: { projectId: defaultProject?.id },
+							query: { projectId: selectedProject.id },
 						},
 					}).queryKey;
 
@@ -124,7 +144,7 @@ export function ApiKeysList() {
 					<KeyIcon className="h-10 w-10 text-gray-500" />
 				</div>
 				<p className="text-gray-400 mb-6">No API keys have been created yet.</p>
-				<CreateApiKeyDialog>
+				<CreateApiKeyDialog selectedProject={selectedProject}>
 					<Button
 						type="button"
 						className="cursor-pointer flex items-center gap-2 bg-white text-black px-4 py-2 rounded-md hover:bg-gray-200"
@@ -201,8 +221,11 @@ export function ApiKeysList() {
 									<DropdownMenuSeparator />
 									<AlertDialog>
 										<AlertDialogTrigger asChild>
-											<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-												<span className="text-destructive">Delete Key</span>
+											<DropdownMenuItem
+												onSelect={(e) => e.preventDefault()}
+												className="text-destructive focus:text-destructive"
+											>
+												Delete
 											</DropdownMenuItem>
 										</AlertDialogTrigger>
 										<AlertDialogContent>
@@ -212,16 +235,13 @@ export function ApiKeysList() {
 												</AlertDialogTitle>
 												<AlertDialogDescription>
 													This action cannot be undone. This will permanently
-													delete the API key and any applications using it will
-													no longer be able to access the API.
+													delete the API key and it will no longer be able to
+													access your account.
 												</AlertDialogDescription>
 											</AlertDialogHeader>
 											<AlertDialogFooter>
 												<AlertDialogCancel>Cancel</AlertDialogCancel>
-												<AlertDialogAction
-													onClick={() => deleteKey(key.id)}
-													className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-												>
+												<AlertDialogAction onClick={() => deleteKey(key.id)}>
 													Delete
 												</AlertDialogAction>
 											</AlertDialogFooter>

@@ -26,6 +26,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/lib/components/select";
+import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 
 import type { ActivityModelUsage, DailyActivity } from "@/types/activity";
@@ -156,31 +157,98 @@ export function ActivityChart() {
 	const [breakdownField, setBreakdownField] = useState<
 		"requests" | "cost" | "tokens"
 	>("requests");
-	const { data, isLoading, error } = $api.useSuspenseQuery("get", "/activity", {
-		params: { query: { days: String(days) } },
-	});
+	const { selectedProject } = useDashboardContext();
+
+	const { data, isLoading, error } = $api.useQuery(
+		"get",
+		"/activity",
+		{
+			params: {
+				query: {
+					days: String(days),
+					...(selectedProject?.id ? { projectId: selectedProject.id } : {}),
+				},
+			},
+		},
+		{
+			enabled: !!selectedProject?.id,
+		},
+	);
+
+	if (!selectedProject) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Model Usage Overview</CardTitle>
+					<CardDescription>
+						Please select a project to view activity data
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="flex h-[350px] items-center justify-center">
+						<p className="text-muted-foreground">No project selected</p>
+					</div>
+				</CardContent>
+			</Card>
+		);
+	}
 
 	if (isLoading) {
 		return (
-			<div className="flex h-[350px] items-center justify-center">
-				Loading activity data...
-			</div>
+			<Card>
+				<CardHeader>
+					<CardTitle>Model Usage Overview</CardTitle>
+					<CardDescription>
+						Stacked model {breakdownField} over the last {days} days
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="flex h-[350px] items-center justify-center">
+						Loading activity data...
+					</div>
+				</CardContent>
+			</Card>
 		);
 	}
 
 	if (error) {
 		return (
-			<div className="flex h-[350px] items-center justify-center">
-				<p className="text-destructive">Error loading activity data</p>
-			</div>
+			<Card>
+				<CardHeader>
+					<CardTitle>Model Usage Overview</CardTitle>
+					<CardDescription>
+						Stacked model {breakdownField} over the last {days} days
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="flex h-[350px] items-center justify-center">
+						<p className="text-destructive">Error loading activity data</p>
+					</div>
+				</CardContent>
+			</Card>
 		);
 	}
 
 	if (!data || data.activity.length === 0) {
 		return (
-			<div className="flex h-[350px] items-center justify-center">
-				<p className="text-muted-foreground">No activity data available</p>
-			</div>
+			<Card>
+				<CardHeader>
+					<CardTitle>Model Usage Overview</CardTitle>
+					<CardDescription>
+						Stacked model {breakdownField} over the last {days} days
+						{selectedProject && (
+							<span className="block mt-1 text-sm">
+								Project: {selectedProject.name}
+							</span>
+						)}
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="flex h-[350px] items-center justify-center">
+						<p className="text-muted-foreground">No activity data available</p>
+					</div>
+				</CardContent>
+			</Card>
 		);
 	}
 
@@ -248,6 +316,11 @@ export function ActivityChart() {
 					<CardTitle>Model Usage Overview</CardTitle>
 					<CardDescription>
 						Stacked model {breakdownField} over the last {days} days
+						{selectedProject && (
+							<span className="block mt-1 text-sm">
+								Project: {selectedProject.name}
+							</span>
+						)}
 					</CardDescription>
 				</div>
 				<div className="flex items-center space-x-2">

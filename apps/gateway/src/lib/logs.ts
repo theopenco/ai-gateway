@@ -1,9 +1,9 @@
-import { UnifiedFinishReason } from "@openllm/db";
+import { UnifiedFinishReason } from "@llmgateway/db";
 
 import { publishToQueue, LOG_QUEUE } from "./redis";
 
-import type { InferInsertModel } from "@openllm/db";
-import type { log } from "@openllm/db";
+import type { InferInsertModel } from "@llmgateway/db";
+import type { log } from "@llmgateway/db";
 
 /**
  * Maps provider-specific finish reasons to unified finish reasons
@@ -78,10 +78,14 @@ export type LogData = InferInsertModel<typeof log>;
 
 export async function insertLog(logData: LogInsertData): Promise<unknown> {
 	if (logData.unifiedFinishReason === undefined) {
-		logData.unifiedFinishReason = getUnifiedFinishReason(
-			logData.finishReason,
-			logData.usedProvider,
-		);
+		if (logData.canceled) {
+			logData.unifiedFinishReason = UnifiedFinishReason.CANCELED;
+		} else {
+			logData.unifiedFinishReason = getUnifiedFinishReason(
+				logData.finishReason,
+				logData.usedProvider,
+			);
+		}
 	}
 	await publishToQueue(LOG_QUEUE, logData);
 	return 1; // Return 1 to match test expectations

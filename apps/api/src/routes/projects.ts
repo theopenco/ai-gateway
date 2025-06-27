@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { db, eq, tables } from "@openllm/db";
+import { db, eq, tables } from "@llmgateway/db";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
@@ -93,7 +93,7 @@ projects.openapi(updateProject, async (c) => {
 	}
 
 	const { id } = c.req.param();
-	const { cachingEnabled, cacheDurationSeconds, mode } = await c.req.json();
+	const { cachingEnabled, cacheDurationSeconds, mode } = c.req.valid("json");
 
 	const userOrgs = await db.query.userOrganization.findMany({
 		where: {
@@ -205,7 +205,7 @@ projects.openapi(createProject, async (c) => {
 		});
 	}
 
-	const body = await c.req.json();
+	const body = c.req.valid("json");
 	const {
 		name,
 		organizationId,
@@ -234,6 +234,32 @@ projects.openapi(createProject, async (c) => {
 	) {
 		throw new HTTPException(403, {
 			message: "You do not have access to this organization",
+		});
+	}
+
+	// Check project limits based on plan
+	const existingProjects = await db.query.project.findMany({
+		where: {
+			organizationId: {
+				eq: organizationId,
+			},
+			status: {
+				ne: "deleted",
+			},
+		},
+	});
+
+	const projectCount = existingProjects.length;
+	const isPro = userOrganization.organization?.plan === "pro";
+	const proLimit = 10;
+	const freeLimit = 2;
+	const projectLimit = isPro ? proLimit : freeLimit;
+
+	if (projectCount >= projectLimit) {
+		throw new HTTPException(403, {
+			message: isPro
+				? `You have reached the limit of ${proLimit} projects for the Pro plan`
+				: `You have reached the limit of ${freeLimit} projects for the Free plan. Please upgrade to Pro for up to ${proLimit} projects`,
 		});
 	}
 

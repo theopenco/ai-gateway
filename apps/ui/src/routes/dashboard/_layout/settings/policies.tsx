@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { OrganizationRetentionSettings } from "@/components/settings/organization-retention-settings";
 import { SettingsLoading } from "@/components/settings/settings-loading";
 import {
 	Card,
@@ -9,7 +10,7 @@ import {
 	CardTitle,
 } from "@/lib/components/card";
 
-export const Route = createFileRoute("/dashboard/_layout/settings/advanced")({
+export const Route = createFileRoute("/dashboard/_layout/settings/policies")({
 	component: RouteComponent,
 	pendingComponent: () => <SettingsLoading />,
 	errorComponent: ({ error }) => <div>{error.message}</div>,
@@ -20,21 +21,17 @@ function RouteComponent() {
 		<div className="flex flex-col">
 			<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
 				<div className="flex items-center justify-between">
-					<h2 className="text-3xl font-bold tracking-tight">
-						Advanced Settings
-					</h2>
+					<h2 className="text-3xl font-bold tracking-tight">Policies</h2>
 				</div>
 				<Card>
 					<CardHeader>
-						<CardTitle>Advanced Settings</CardTitle>
+						<CardTitle>Policies</CardTitle>
 						<CardDescription>
-							Configure advanced system settings
+							Manage your organization's data retention settings.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
-						<p className="text-muted-foreground text-sm">
-							Advanced settings are available in the configuration file.
-						</p>
+						<OrganizationRetentionSettings />
 					</CardContent>
 				</Card>
 			</div>
