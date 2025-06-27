@@ -93,7 +93,6 @@ export let models = [
 				outputPrice: 0.6 / 1e6,
 				contextSize: 128000,
 				streaming: true,
-				reasoning: true,
 			},
 		],
 		jsonOutput: true,
