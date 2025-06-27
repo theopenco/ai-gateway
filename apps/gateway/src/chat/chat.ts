@@ -18,6 +18,7 @@ import {
 	type Provider,
 	providers,
 } from "@llmgateway/models";
+import { encode, encodeChat } from "gpt-tokenizer";
 import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 
@@ -38,6 +39,15 @@ import {
 } from "../lib/provider";
 
 import type { ServerTypes } from "../vars";
+
+// Define ChatMessage type to match what gpt-tokenizer expects
+interface ChatMessage {
+	role: "user" | "system" | "assistant" | undefined;
+	content: string;
+	name?: string;
+}
+
+const DEFAULT_TOKENIZER_MODEL = "gpt-4";
 
 /**
  * Determines the appropriate finish reason based on HTTP status code
@@ -205,7 +215,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 }
 
 /**
- * Estimates token counts when not provided by the API
+ * Estimates token counts when not provided by the API using gpt-tokenizer
  */
 function estimateTokens(
 	usedProvider: Provider,
@@ -217,22 +227,38 @@ function estimateTokens(
 	let calculatedPromptTokens = promptTokens;
 	let calculatedCompletionTokens = completionTokens;
 
-	// Estimate tokens if not provided by the API
-	if (
-		(usedProvider === "anthropic" ||
-			usedProvider === "inference.net" ||
-			usedProvider === "kluster.ai" ||
-			usedProvider === "together.ai" ||
-			usedProvider === "groq") &&
-		(!promptTokens || !completionTokens)
-	) {
-		if (!promptTokens) {
-			calculatedPromptTokens =
-				messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) / 4;
+	// Always estimate missing tokens for any provider
+	if (!promptTokens || !completionTokens) {
+		// Estimate prompt tokens using encodeChat for better accuracy
+		if (!promptTokens && messages && messages.length > 0) {
+			try {
+				// Convert messages to the format expected by gpt-tokenizer
+				const chatMessages: ChatMessage[] = messages.map((m) => ({
+					role: m.role,
+					content: m.content || "",
+					name: m.name,
+				}));
+				calculatedPromptTokens = encodeChat(
+					chatMessages,
+					DEFAULT_TOKENIZER_MODEL,
+				).length;
+			} catch (error) {
+				// Fallback to simple estimation if encoding fails
+				console.error(`Failed to encode chat messages: ${error}`);
+				calculatedPromptTokens =
+					messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) / 4;
+			}
 		}
 
+		// Estimate completion tokens using encode for better accuracy
 		if (!completionTokens && content) {
-			calculatedCompletionTokens = content.length / 4;
+			try {
+				calculatedCompletionTokens = encode(content).length;
+			} catch (error) {
+				// Fallback to simple estimation if encoding fails
+				console.error(`Failed to encode completion text: ${error}`);
+				calculatedCompletionTokens = content.length / 4;
+			}
 		}
 	}
 
@@ -1712,14 +1738,39 @@ chat.openapi(completions, async (c) => {
 
 				// Estimate tokens for providers that don't provide them during streaming
 				if (!promptTokens || !completionTokens) {
-					if (!promptTokens) {
-						calculatedPromptTokens =
-							messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) /
-							4;
+					if (!promptTokens && messages && messages.length > 0) {
+						try {
+							// Convert messages to the format expected by gpt-tokenizer
+							const chatMessages: any[] = messages.map((m) => ({
+								role: m.role as "user" | "assistant" | "system" | undefined,
+								content: m.content || "",
+								name: m.name,
+							}));
+							calculatedPromptTokens = encodeChat(
+								chatMessages,
+								DEFAULT_TOKENIZER_MODEL,
+							).length;
+						} catch (error) {
+							// Fallback to simple estimation if encoding fails
+							console.error(
+								`Failed to encode chat messages in streaming: ${error}`,
+							);
+							calculatedPromptTokens =
+								messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) /
+								4;
+						}
 					}
 
-					if (!completionTokens) {
-						calculatedCompletionTokens = fullContent.length / 4;
+					if (!completionTokens && fullContent) {
+						try {
+							calculatedCompletionTokens = encode(fullContent).length;
+						} catch (error) {
+							// Fallback to simple estimation if encoding fails
+							console.error(
+								`Failed to encode completion text in streaming: ${error}`,
+							);
+							calculatedCompletionTokens = fullContent.length / 4;
+						}
 					}
 
 					calculatedTotalTokens =
@@ -1804,9 +1855,9 @@ chat.openapi(completions, async (c) => {
 					responseSize: fullContent.length,
 					content: fullContent,
 					finishReason: finishReason,
-					promptTokens: calculatedPromptTokens,
-					completionTokens: calculatedCompletionTokens,
-					totalTokens: calculatedTotalTokens,
+					promptTokens: calculatedPromptTokens?.toString() || null,
+					completionTokens: calculatedCompletionTokens?.toString() || null,
+					totalTokens: calculatedTotalTokens?.toString() || null,
 					reasoningTokens: reasoningTokens,
 					hasError: false,
 					errorDetails: null,
@@ -2036,9 +2087,13 @@ chat.openapi(completions, async (c) => {
 		responseSize: responseText.length,
 		content: content,
 		finishReason: finishReason,
-		promptTokens: promptTokens,
-		completionTokens: completionTokens,
-		totalTokens: totalTokens,
+		promptTokens: calculatedPromptTokens?.toString() || null,
+		completionTokens: calculatedCompletionTokens?.toString() || null,
+		totalTokens:
+			totalTokens ||
+			(
+				(calculatedPromptTokens || 0) + (calculatedCompletionTokens || 0)
+			).toString(),
 		reasoningTokens: reasoningTokens,
 		hasError: false,
 		streamed: false,
@@ -2058,9 +2113,9 @@ chat.openapi(completions, async (c) => {
 		json,
 		content,
 		finishReason,
-		promptTokens,
-		completionTokens,
-		totalTokens,
+		calculatedPromptTokens,
+		calculatedCompletionTokens,
+		(calculatedPromptTokens || 0) + (calculatedCompletionTokens || 0),
 		reasoningTokens,
 	);
 
