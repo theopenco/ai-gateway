@@ -31,6 +31,10 @@ export interface ProviderModelMapping {
 	 * Whether this specific model supports vision (image inputs) for this provider
 	 */
 	vision?: boolean;
+	/**
+	 * Whether this model supports reasoning mode
+	 */
+	reasoning?: boolean;
 }
 
 export interface ModelDefinition {
@@ -182,10 +186,29 @@ export let models = [
 				contextSize: 200000,
 				streaming: true,
 				vision: true,
+				reasoning: true,
 			},
 		],
 		jsonOutput: true,
 	},
+	// TODO this model does not support the system role in the messages array (jeez openai)
+	// {
+	// 	model: "o1-mini",
+	// 	deprecatedAt: undefined,
+	// 	deactivatedAt: undefined,
+	// 	providers: [
+	// 		{
+	// 			providerId: "openai",
+	// 			modelName: "o1-mini",
+	// 			inputPrice: 1.1 / 1e6,
+	// 			outputPrice: 4.4 / 1e6,
+	// 			contextSize: 128000,
+	// 			streaming: true,
+	// 			reasoning: true,
+	// 		},
+	// 	],
+	// 	jsonOutput: true,
+	// },
 	{
 		model: "gpt-4.1-mini",
 		deprecatedAt: undefined,
@@ -267,6 +290,7 @@ export let models = [
 				contextSize: 200000,
 				streaming: true,
 				vision: false,
+				reasoning: true,
 			},
 		],
 	},
@@ -450,6 +474,22 @@ export let models = [
 		],
 	},
 	{
+		model: "gemini-2.5-pro",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemini-2.5-pro",
+				inputPrice: 1.25 / 1e6,
+				outputPrice: 10.0 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				vision: false,
+			},
+		],
+	},
+	{
 		model: "gemini-2.5-pro-preview-05-06",
 		deprecatedAt: undefined,
 		deactivatedAt: undefined,
@@ -514,6 +554,22 @@ export let models = [
 		],
 	},
 	{
+		model: "gemini-2.5-flash",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemini-2.5-flash",
+				inputPrice: 0.15 / 1e6,
+				outputPrice: 0.6 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				vision: false,
+			},
+		],
+	},
+	{
 		model: "gemini-2.5-flash-preview-04-17-thinking",
 		deprecatedAt: undefined,
 		deactivatedAt: undefined,
@@ -523,6 +579,38 @@ export let models = [
 				modelName: "gemini-2.5-flash-preview-04-17-thinking",
 				inputPrice: 0.15 / 1e6,
 				outputPrice: 0.6 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				vision: false,
+			},
+		],
+	},
+	{
+		model: "gemini-1.5-pro",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemini-1.5-pro",
+				inputPrice: 0.0375 / 1e6,
+				outputPrice: 0.15 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				vision: false,
+			},
+		],
+	},
+	{
+		model: "gemini-1.5-flash",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemini-1.5-flash",
+				inputPrice: 0.0375 / 1e6,
+				outputPrice: 0.15 / 1e6,
 				contextSize: 1000000,
 				streaming: false,
 				vision: false,
@@ -557,6 +645,88 @@ export let models = [
 				outputPrice: 0.3 / 1e6,
 				contextSize: 1000000,
 				streaming: false,
+				vision: false,
+			},
+		],
+	},
+	{
+		model: "gemma-3n-e2b-it",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemma-3n-e2b-it",
+				inputPrice: 0.075 / 1e6,
+				outputPrice: 0.3 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				vision: false,
+			},
+		],
+	},
+	{
+		model: "gemma-3n-e4b-it",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemma-3n-e4b-it",
+				inputPrice: 0.075 / 1e6,
+				outputPrice: 0.3 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				vision: false,
+			},
+		],
+	},
+	{
+		model: "gemma-3-1b-it",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemma-3-1b-it",
+				inputPrice: 0.075 / 1e6,
+				outputPrice: 0.3 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				vision: false,
+			},
+		],
+	},
+	{
+		model: "gemma-3-4b-it",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemma-3-4b-it",
+				inputPrice: 0.075 / 1e6,
+				outputPrice: 0.3 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				reasoning: true,
+				vision: false,
+			},
+		],
+	},
+	{
+		model: "gemma-3-12b-it",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "google-ai-studio",
+				modelName: "gemma-3-12b-it",
+				inputPrice: 0.075 / 1e6,
+				outputPrice: 0.3 / 1e6,
+				contextSize: 1000000,
+				streaming: false,
+				reasoning: true,
 				vision: false,
 			},
 		],

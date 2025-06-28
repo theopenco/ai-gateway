@@ -47,6 +47,7 @@ export function prepareRequestBody(
 	response_format: any,
 	tools?: any[],
 	tool_choice?: string | { type: string; function: { name: string } },
+	reasoning_effort?: "low" | "medium" | "high",
 ) {
 	// filter out empty messages
 	const messages = messagesInput.map((m) => ({
@@ -105,6 +106,9 @@ export function prepareRequestBody(
 			}
 			if (presence_penalty !== undefined) {
 				requestBody.presence_penalty = presence_penalty;
+			}
+			if (reasoning_effort !== undefined) {
+				requestBody.reasoning_effort = reasoning_effort;
 			}
 			break;
 		}
@@ -435,6 +439,9 @@ export async function validateProviderKey(
 			undefined, // frequency_penalty
 			undefined, // presence_penalty
 			undefined, // response_format
+			undefined, // tools
+			undefined, // tool_choice
+			undefined, // reasoning_effort
 		);
 
 		const headers = getProviderHeaders(provider, token);

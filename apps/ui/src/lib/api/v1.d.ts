@@ -390,6 +390,7 @@ export interface paths {
 								promptTokens: string | null;
 								completionTokens: string | null;
 								totalTokens: string | null;
+								reasoningTokens: string | null;
 								messages?: unknown;
 								temperature: number | null;
 								maxTokens: number | null;

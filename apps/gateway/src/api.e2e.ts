@@ -71,6 +71,10 @@ const streamingModels = testModels.filter((m) =>
 	}),
 );
 
+const reasoningModels = testModels.filter((m) =>
+	m.providers.some((p: any) => p.reasoning === true),
+);
+
 describe("e2e tests with real provider keys", () => {
 	beforeEach(async () => {
 		await clearCache();
@@ -163,7 +167,7 @@ describe("e2e tests with real provider keys", () => {
 		const logs = await waitForLogs(1);
 		expect(logs.length).toBeGreaterThan(0);
 
-		console.log("logs", logs);
+		console.log("logs", JSON.stringify(logs, null, 2));
 
 		const log = logs[0];
 		expect(log.usedProvider).toBeTruthy();
@@ -321,6 +325,61 @@ describe("e2e tests with real provider keys", () => {
 
 			// expect(log.cost).not.toBeNull();
 			// expect(log.cost).toBeGreaterThanOrEqual(0);
+		},
+	);
+
+	test.each(reasoningModels)(
+		"/v1/chat/completions with reasoning for $model",
+		getTestOptions(),
+		async ({ model }) => {
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer real-token`,
+				},
+				body: JSON.stringify({
+					model: model,
+					messages: [
+						{
+							role: "system",
+							content:
+								"You are a helpful assistant. Think step by step and show your reasoning.",
+						},
+						{
+							role: "user",
+							content: "What is 2+2? Think through this step by step.",
+						},
+					],
+					reasoning_effort: "medium",
+				}),
+			});
+
+			const json = await res.json();
+			console.log("reasoning response:", JSON.stringify(json, null, 2));
+
+			expect(res.status).toBe(200);
+			validateResponse(json);
+
+			const log = await validateLogs();
+			expect(log.streamed).toBe(false);
+
+			expect(json).toHaveProperty("usage");
+			expect(json.usage).toHaveProperty("prompt_tokens");
+			expect(json.usage).toHaveProperty("completion_tokens");
+			expect(json.usage).toHaveProperty("total_tokens");
+			expect(typeof json.usage.prompt_tokens).toBe("number");
+			expect(typeof json.usage.completion_tokens).toBe("number");
+			expect(typeof json.usage.total_tokens).toBe("number");
+			expect(json.usage.prompt_tokens).toBeGreaterThan(0);
+			expect(json.usage.completion_tokens).toBeGreaterThan(0);
+			expect(json.usage.total_tokens).toBeGreaterThan(0);
+
+			// Check for reasoning tokens if available
+			if (json.usage.reasoning_tokens !== undefined) {
+				expect(typeof json.usage.reasoning_tokens).toBe("number");
+				expect(json.usage.reasoning_tokens).toBeGreaterThanOrEqual(0);
+			}
 		},
 	);
 
@@ -669,31 +728,6 @@ describe("e2e tests with real provider keys", () => {
 		const log = await validateLogs();
 		expect(log.streamed).toBe(false);
 	});
-});
-
-test("Error when requesting provider-specific model name without prefix", async () => {
-	// Create a fake model name that would be a provider-specific model name
-	const res = await app.request("/v1/chat/completions", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `Bearer real-token`,
-		},
-		body: JSON.stringify({
-			model: "claude-3-sonnet-20240229",
-			messages: [
-				{
-					role: "user",
-					content: "Hello",
-				},
-			],
-		}),
-	});
-
-	expect(res.status).toBe(400);
-	const json = await res.json();
-	console.log("Provider-specific model error:", JSON.stringify(json, null, 2));
-	expect(json.message).toContain("not supported");
 });
 
 async function readAll(stream: ReadableStream<Uint8Array> | null): Promise<{

@@ -18,6 +18,7 @@ import {
 	type Provider,
 	providers,
 } from "@llmgateway/models";
+import { encode, encodeChat } from "gpt-tokenizer";
 import { HTTPException } from "hono/http-exception";
 import { streamSSE } from "hono/streaming";
 
@@ -38,6 +39,15 @@ import {
 } from "../lib/provider";
 
 import type { ServerTypes } from "../vars";
+
+// Define ChatMessage type to match what gpt-tokenizer expects
+interface ChatMessage {
+	role: "user" | "system" | "assistant" | undefined;
+	content: string;
+	name?: string;
+}
+
+const DEFAULT_TOKENIZER_MODEL = "gpt-4";
 
 /**
  * Determines the appropriate finish reason based on HTTP status code
@@ -117,6 +127,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 	let promptTokens = null;
 	let completionTokens = null;
 	let totalTokens = null;
+	let reasoningTokens = null;
 
 	switch (usedProvider) {
 		case "anthropic":
@@ -124,6 +135,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.stop_reason || null;
 			promptTokens = json.usage?.input_tokens || null;
 			completionTokens = json.usage?.output_tokens || null;
+			reasoningTokens = json.usage?.reasoning_output_tokens || null;
 			totalTokens =
 				json.usage?.input_tokens && json.usage?.output_tokens
 					? json.usage.input_tokens + json.usage.output_tokens
@@ -135,6 +147,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.candidates?.[0]?.finishReason || null;
 			promptTokens = json.usageMetadata?.promptTokenCount || null;
 			completionTokens = json.usageMetadata?.candidatesTokenCount || null;
+			reasoningTokens = json.usageMetadata?.thoughtsTokenCount || null;
 			totalTokens =
 				promptTokens !== null && completionTokens !== null
 					? promptTokens + completionTokens
@@ -149,6 +162,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
+			reasoningTokens = json.usage?.reasoning_tokens || null;
 			totalTokens =
 				promptTokens !== null && completionTokens !== null
 					? promptTokens + completionTokens
@@ -159,6 +173,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
+			reasoningTokens = json.usage?.reasoning_tokens || null;
 			totalTokens = json.usage?.total_tokens || null;
 
 			// Handle Mistral's JSON output mode which wraps JSON in markdown code blocks
@@ -191,6 +206,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
+			reasoningTokens = json.usage?.reasoning_tokens || null;
 			totalTokens = json.usage?.total_tokens || null;
 	}
 
@@ -200,11 +216,12 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 		promptTokens,
 		completionTokens,
 		totalTokens,
+		reasoningTokens,
 	};
 }
 
 /**
- * Estimates token counts when not provided by the API
+ * Estimates token counts when not provided by the API using gpt-tokenizer
  */
 function estimateTokens(
 	usedProvider: Provider,
@@ -216,22 +233,38 @@ function estimateTokens(
 	let calculatedPromptTokens = promptTokens;
 	let calculatedCompletionTokens = completionTokens;
 
-	// Estimate tokens if not provided by the API
-	if (
-		(usedProvider === "anthropic" ||
-			usedProvider === "inference.net" ||
-			usedProvider === "kluster.ai" ||
-			usedProvider === "together.ai" ||
-			usedProvider === "groq") &&
-		(!promptTokens || !completionTokens)
-	) {
-		if (!promptTokens) {
-			calculatedPromptTokens =
-				messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) / 4;
+	// Always estimate missing tokens for any provider
+	if (!promptTokens || !completionTokens) {
+		// Estimate prompt tokens using encodeChat for better accuracy
+		if (!promptTokens && messages && messages.length > 0) {
+			try {
+				// Convert messages to the format expected by gpt-tokenizer
+				const chatMessages: ChatMessage[] = messages.map((m) => ({
+					role: m.role,
+					content: m.content || "",
+					name: m.name,
+				}));
+				calculatedPromptTokens = encodeChat(
+					chatMessages,
+					DEFAULT_TOKENIZER_MODEL,
+				).length;
+			} catch (error) {
+				// Fallback to simple estimation if encoding fails
+				console.error(`Failed to encode chat messages: ${error}`);
+				calculatedPromptTokens =
+					messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) / 4;
+			}
 		}
 
+		// Estimate completion tokens using encode for better accuracy
 		if (!completionTokens && content) {
-			calculatedCompletionTokens = content.length / 4;
+			try {
+				calculatedCompletionTokens = encode(content).length;
+			} catch (error) {
+				// Fallback to simple estimation if encoding fails
+				console.error(`Failed to encode completion text: ${error}`);
+				calculatedCompletionTokens = content.length / 4;
+			}
 		}
 	}
 
@@ -253,6 +286,7 @@ function transformToOpenAIFormat(
 	promptTokens: number | null,
 	completionTokens: number | null,
 	totalTokens: number | null,
+	reasoningTokens: number | null,
 ) {
 	let transformedResponse = json;
 
@@ -281,6 +315,9 @@ function transformToOpenAIFormat(
 					prompt_tokens: promptTokens,
 					completion_tokens: completionTokens,
 					total_tokens: totalTokens,
+					...(reasoningTokens !== null && {
+						reasoning_tokens: reasoningTokens,
+					}),
 				},
 			};
 			break;
@@ -308,6 +345,9 @@ function transformToOpenAIFormat(
 					prompt_tokens: promptTokens,
 					completion_tokens: completionTokens,
 					total_tokens: totalTokens,
+					...(reasoningTokens !== null && {
+						reasoning_tokens: reasoningTokens,
+					}),
 				},
 			};
 			break;
@@ -336,6 +376,9 @@ function transformToOpenAIFormat(
 						prompt_tokens: promptTokens,
 						completion_tokens: completionTokens,
 						total_tokens: totalTokens,
+						...(reasoningTokens !== null && {
+							reasoning_tokens: reasoningTokens,
+						}),
 					},
 				};
 			}
@@ -649,6 +692,14 @@ const completions = createRoute({
 								}),
 							])
 							.optional(),
+						reasoning_effort: z
+							.enum(["low", "medium", "high"])
+							.optional()
+							.openapi({
+								description:
+									"Controls the reasoning effort for reasoning-capable models",
+								example: "medium",
+							}),
 					}),
 				},
 			},
@@ -689,6 +740,7 @@ const completions = createRoute({
 							prompt_tokens: z.number(),
 							completion_tokens: z.number(),
 							total_tokens: z.number(),
+							reasoning_tokens: z.number().optional(),
 						}),
 					}),
 				},
@@ -732,6 +784,7 @@ chat.openapi(completions, async (c) => {
 		stream,
 		tools,
 		tool_choice,
+		reasoning_effort,
 	} = c.req.valid("json");
 
 	// Extract or generate request ID
@@ -840,6 +893,33 @@ chat.openapi(completions, async (c) => {
 		if (!(modelInfo as any).jsonOutput) {
 			throw new HTTPException(400, {
 				message: `Model ${requestedModel} does not support JSON output mode`,
+			});
+		}
+	}
+
+	// Check if reasoning_effort is specified but model doesn't support reasoning
+	if (reasoning_effort !== undefined) {
+		// Check if any provider for this model supports reasoning
+		const supportsReasoning = modelInfo.providers.some(
+			(provider) => (provider as any).reasoning === true,
+		);
+
+		if (!supportsReasoning) {
+			console.error(
+				`Reasoning effort specified for non-reasoning model: ${requestedModel}`,
+				{
+					requestedModel,
+					requestedProvider,
+					reasoning_effort,
+					modelProviders: modelInfo.providers.map((p) => ({
+						providerId: p.providerId,
+						reasoning: (p as any).reasoning,
+					})),
+				},
+			);
+
+			throw new HTTPException(400, {
+				message: `Model ${requestedModel} does not support reasoning. Remove the reasoning_effort parameter or use a reasoning-capable model.`,
 			});
 		}
 	}
@@ -1201,6 +1281,7 @@ chat.openapi(completions, async (c) => {
 				promptTokens: cachedResponse.usage?.prompt_tokens || null,
 				completionTokens: cachedResponse.usage?.completion_tokens || null,
 				totalTokens: cachedResponse.usage?.total_tokens || null,
+				reasoningTokens: cachedResponse.usage?.reasoning_tokens || null,
 				hasError: false,
 				streamed: false,
 				canceled: false,
@@ -1242,6 +1323,7 @@ chat.openapi(completions, async (c) => {
 		response_format,
 		tools,
 		tool_choice,
+		reasoning_effort,
 	);
 
 	const startTime = Date.now();
@@ -1308,6 +1390,7 @@ chat.openapi(completions, async (c) => {
 						promptTokens: null,
 						completionTokens: null,
 						totalTokens: null,
+						reasoningTokens: null,
 						hasError: false,
 						streamed: true,
 						canceled: true,
@@ -1383,6 +1466,7 @@ chat.openapi(completions, async (c) => {
 					promptTokens: null,
 					completionTokens: null,
 					totalTokens: null,
+					reasoningTokens: null,
 					hasError: true,
 					streamed: true,
 					canceled: false,
@@ -1424,6 +1508,7 @@ chat.openapi(completions, async (c) => {
 			let promptTokens = null;
 			let completionTokens = null;
 			let totalTokens = null;
+			let reasoningTokens = null;
 
 			try {
 				while (true) {
@@ -1696,14 +1781,39 @@ chat.openapi(completions, async (c) => {
 
 				// Estimate tokens for providers that don't provide them during streaming
 				if (!promptTokens || !completionTokens) {
-					if (!promptTokens) {
-						calculatedPromptTokens =
-							messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) /
-							4;
+					if (!promptTokens && messages && messages.length > 0) {
+						try {
+							// Convert messages to the format expected by gpt-tokenizer
+							const chatMessages: any[] = messages.map((m) => ({
+								role: m.role as "user" | "assistant" | "system" | undefined,
+								content: m.content || "",
+								name: m.name,
+							}));
+							calculatedPromptTokens = encodeChat(
+								chatMessages,
+								DEFAULT_TOKENIZER_MODEL,
+							).length;
+						} catch (error) {
+							// Fallback to simple estimation if encoding fails
+							console.error(
+								`Failed to encode chat messages in streaming: ${error}`,
+							);
+							calculatedPromptTokens =
+								messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) /
+								4;
+						}
 					}
 
-					if (!completionTokens) {
-						calculatedCompletionTokens = fullContent.length / 4;
+					if (!completionTokens && fullContent) {
+						try {
+							calculatedCompletionTokens = encode(fullContent).length;
+						} catch (error) {
+							// Fallback to simple estimation if encoding fails
+							console.error(
+								`Failed to encode completion text in streaming: ${error}`,
+							);
+							calculatedCompletionTokens = fullContent.length / 4;
+						}
 					}
 
 					calculatedTotalTokens =
@@ -1788,9 +1898,10 @@ chat.openapi(completions, async (c) => {
 					responseSize: fullContent.length,
 					content: fullContent,
 					finishReason: finishReason,
-					promptTokens: calculatedPromptTokens,
-					completionTokens: calculatedCompletionTokens,
-					totalTokens: calculatedTotalTokens,
+					promptTokens: calculatedPromptTokens?.toString() || null,
+					completionTokens: calculatedCompletionTokens?.toString() || null,
+					totalTokens: calculatedTotalTokens?.toString() || null,
+					reasoningTokens: reasoningTokens,
 					hasError: false,
 					errorDetails: null,
 					streamed: true,
@@ -1870,6 +1981,7 @@ chat.openapi(completions, async (c) => {
 			promptTokens: null,
 			completionTokens: null,
 			totalTokens: null,
+			reasoningTokens: null,
 			hasError: false,
 			streamed: false,
 			canceled: true,
@@ -1924,6 +2036,7 @@ chat.openapi(completions, async (c) => {
 			promptTokens: null,
 			completionTokens: null,
 			totalTokens: null,
+			reasoningTokens: null,
 			hasError: true,
 			streamed: false,
 			canceled: false,
@@ -1960,13 +2073,19 @@ chat.openapi(completions, async (c) => {
 
 	const json = await res.json();
 	if (process.env.NODE_ENV !== "production") {
-		console.log("response", json);
+		console.log("response", JSON.stringify(json, null, 2));
 	}
 	const responseText = JSON.stringify(json);
 
 	// Extract content and token usage based on provider
-	const { content, finishReason, promptTokens, completionTokens, totalTokens } =
-		parseProviderResponse(usedProvider, json);
+	const {
+		content,
+		finishReason,
+		promptTokens,
+		completionTokens,
+		totalTokens,
+		reasoningTokens,
+	} = parseProviderResponse(usedProvider, json);
 
 	// Estimate tokens if not provided by the API
 	const { calculatedPromptTokens, calculatedCompletionTokens } = estimateTokens(
@@ -2011,9 +2130,14 @@ chat.openapi(completions, async (c) => {
 		responseSize: responseText.length,
 		content: content,
 		finishReason: finishReason,
-		promptTokens: promptTokens,
-		completionTokens: completionTokens,
-		totalTokens: totalTokens,
+		promptTokens: calculatedPromptTokens?.toString() || null,
+		completionTokens: calculatedCompletionTokens?.toString() || null,
+		totalTokens:
+			totalTokens ||
+			(
+				(calculatedPromptTokens || 0) + (calculatedCompletionTokens || 0)
+			).toString(),
+		reasoningTokens: reasoningTokens,
 		hasError: false,
 		streamed: false,
 		canceled: false,
@@ -2032,9 +2156,10 @@ chat.openapi(completions, async (c) => {
 		json,
 		content,
 		finishReason,
-		promptTokens,
-		completionTokens,
-		totalTokens,
+		calculatedPromptTokens,
+		calculatedCompletionTokens,
+		(calculatedPromptTokens || 0) + (calculatedCompletionTokens || 0),
+		reasoningTokens,
 	);
 
 	if (cachingEnabled && cacheKey && !stream) {

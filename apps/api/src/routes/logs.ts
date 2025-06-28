@@ -29,6 +29,7 @@ const logSchema = z.object({
 	promptTokens: z.string().nullable(),
 	completionTokens: z.string().nullable(),
 	totalTokens: z.string().nullable(),
+	reasoningTokens: z.string().nullable(),
 	messages: z.any(),
 	temperature: z.number().nullable(),
 	maxTokens: z.number().nullable(),

@@ -137,6 +137,59 @@ describe("test", () => {
 		expect(logs[0].content).toMatch(/Hello!/);
 	});
 
+	test("Reasoning effort error for unsupported model", async () => {
+		const res = await app.request("/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer real-token`,
+			},
+			body: JSON.stringify({
+				model: "gpt-4o-mini",
+				messages: [
+					{
+						role: "user",
+						content: "Hello",
+					},
+				],
+				reasoning_effort: "medium",
+			}),
+		});
+
+		expect(res.status).toBe(400);
+
+		const json = await res.json();
+		expect(json.message).toContain("does not support reasoning");
+	});
+
+	test("Error when requesting provider-specific model name without prefix", async () => {
+		// Create a fake model name that would be a provider-specific model name
+		const res = await app.request("/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer real-token`,
+			},
+			body: JSON.stringify({
+				model: "claude-3-sonnet-20240229",
+				messages: [
+					{
+						role: "user",
+						content: "Hello",
+					},
+				],
+			}),
+		});
+
+		expect(res.status).toBe(400);
+		const json = await res.json();
+		console.log(
+			"Provider-specific model error:",
+			JSON.stringify(json, null, 2),
+		);
+		expect(json.message).toContain("not supported");
+	});
+
 	// invalid model test
 	test("/v1/chat/completions invalid model", async () => {
 		const res = await app.request("/v1/chat/completions", {
