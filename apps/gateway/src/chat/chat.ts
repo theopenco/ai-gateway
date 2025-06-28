@@ -1531,59 +1531,39 @@ chat.openapi(completions, async (c) => {
 						// We need to parse complete JSON objects from the accumulated buffer
 						let processedData = false;
 
-						// Try to find and parse complete JSON objects
-						while (buffer.length > 0) {
-							let jsonStartIndex = -1;
-							let jsonEndIndex = -1;
-							let braceCount = 0;
-							let inString = false;
-							let escaped = false;
-
-							// Find the start of a JSON object
-							for (let i = 0; i < buffer.length; i++) {
-								const char = buffer[i];
-
-								if (escaped) {
-									escaped = false;
+						// Helper function to try parsing JSON from different positions
+						const tryParseJSON = (str: string, startIndex: number) => {
+							for (let i = startIndex; i < str.length; i++) {
+								try {
+									const substr = str.substring(startIndex, i + 1);
+									return { data: JSON.parse(substr), endIndex: i };
+								} catch {
 									continue;
-								}
-
-								if (char === "\\" && inString) {
-									escaped = true;
-									continue;
-								}
-
-								if (char === '"') {
-									inString = !inString;
-									continue;
-								}
-
-								if (!inString) {
-									if (char === "{") {
-										if (jsonStartIndex === -1) {
-											jsonStartIndex = i;
-										}
-										braceCount++;
-									} else if (char === "}") {
-										braceCount--;
-										if (braceCount === 0 && jsonStartIndex !== -1) {
-											jsonEndIndex = i;
-											break;
-										}
-									}
 								}
 							}
+							return null;
+						};
 
-							// If we found a complete JSON object, parse it
-							if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-								const jsonStr = buffer.substring(
-									jsonStartIndex,
-									jsonEndIndex + 1,
-								);
-								buffer = buffer.substring(jsonEndIndex + 1);
+						// Try to find and parse complete JSON objects
+						while (buffer.length > 0) {
+							// Find the first occurrence of '{'
+							const jsonStartIndex = buffer.indexOf('{');
+							if (jsonStartIndex === -1) {
+								// No JSON start found, clear buffer and break
+								buffer = "";
+								break;
+							}
+
+							// Try to parse JSON starting from this position
+							const parseResult = tryParseJSON(buffer, jsonStartIndex);
+							
+							if (parseResult) {
+								// Successfully parsed a JSON object
+								const jsonStr = buffer.substring(jsonStartIndex, parseResult.endIndex + 1);
+								buffer = buffer.substring(parseResult.endIndex + 1);
 
 								try {
-									const data = JSON.parse(jsonStr);
+									const data = parseResult.data;
 									processedData = true;
 
 									// Transform streaming responses to OpenAI format
@@ -1625,7 +1605,11 @@ chat.openapi(completions, async (c) => {
 									}
 								} catch (e) {
 									// If JSON parsing fails, skip this chunk and continue
-									console.warn("Failed to parse Google streaming JSON:", e);
+									console.warn("Failed to parse Google streaming JSON:", {
+										error: e.message,
+										jsonStr: jsonStr.substring(0, 100), // First 100 chars for debugging
+										bufferLength: buffer.length
+									});
 								}
 							} else {
 								// No complete JSON object found, break and wait for more data
