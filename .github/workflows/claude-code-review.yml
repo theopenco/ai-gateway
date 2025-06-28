@@ -33,9 +33,9 @@ jobs:
         id: check-author
         run: |
           # Get the most recent actual commit (HEAD~1 to skip the merge commit)
-          AUTHOR_EMAIL=$(git log HEAD -1 --pretty=format:'%ae')
-          AUTHOR_NAME=$(git log HEAD -1 --pretty=format:'%an')
-          COMMIT_TITLE=$(git log HEAD -1 --pretty=format:'%s')
+          AUTHOR_EMAIL=$(git log --no-merges -1 --pretty=format:'%ae')
+          AUTHOR_NAME=$(git log --no-merges -1 --pretty=format:'%an')
+          COMMIT_TITLE=$(git log --no-merges -1 --pretty=format:'%s')
 
           echo "Most recent commit author: $AUTHOR_NAME <$AUTHOR_EMAIL>"
           echo "Most recent commit title: $COMMIT_TITLE"
