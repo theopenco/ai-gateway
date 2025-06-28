@@ -17,13 +17,15 @@ function getTestOptions() {
 
 console.log("running with test options:", getTestOptions());
 
+const fullMode = process.env.FULL_MODE;
+
 const testModels = models
 	.filter((model) => !["custom", "auto"].includes(model.model))
 	.flatMap((model) => {
 		const testCases = [];
 
-		if (process.env.FULL_MODE) {
-			// test all models
+		if (fullMode) {
+			// test root model without a specific provider
 			testCases.push({
 				model: model.model,
 				providers: model.providers,
@@ -35,6 +37,22 @@ const testModels = models
 			testCases.push({
 				model: `${provider.providerId}/${model.model}`,
 				providers: [provider],
+				originalModel: model.model, // Keep track of the original model for reference
+			});
+		}
+
+		return testCases;
+	});
+
+const providerModels = models
+	.filter((model) => !["custom", "auto"].includes(model.model))
+	.flatMap((model) => {
+		const testCases = [];
+
+		for (const provider of model.providers) {
+			testCases.push({
+				model: `${provider.providerId}/${model.model}`,
+				provider,
 				originalModel: model.model, // Keep track of the original model for reference
 			});
 		}
@@ -409,6 +427,71 @@ describe("e2e tests with real provider keys", () => {
 			expect(parsedContent).toHaveProperty("message");
 		},
 	);
+
+	if (fullMode) {
+		test.each(providerModels)(
+			"/v1/chat/completions with complex content array for $model",
+			getTestOptions(),
+			async ({ model, provider }) => {
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer real-token`,
+					},
+					body: JSON.stringify({
+						model: model,
+						messages: [
+							{
+								role: "user",
+								content: [
+									{
+										type: "text",
+										text: "<task>\ndescribe this image\n</task>",
+									},
+									{
+										type: "text",
+										text: "",
+									},
+									// provide image url if vision is supported
+									...(provider.vision
+										? [
+												{
+													type: "image_url",
+													image_url: {
+														url: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://google.com&size=128",
+													},
+												},
+											]
+										: []),
+								],
+							},
+						],
+					}),
+				});
+
+				const json = await res.json();
+				console.log("response:", JSON.stringify(json, null, 2));
+
+				expect(res.status).toBe(200);
+				validateResponse(json);
+
+				const log = await validateLogs();
+				expect(log.streamed).toBe(false);
+
+				expect(json).toHaveProperty("usage");
+				expect(json.usage).toHaveProperty("prompt_tokens");
+				expect(json.usage).toHaveProperty("completion_tokens");
+				expect(json.usage).toHaveProperty("total_tokens");
+				expect(typeof json.usage.prompt_tokens).toBe("number");
+				expect(typeof json.usage.completion_tokens).toBe("number");
+				expect(typeof json.usage.total_tokens).toBe("number");
+				expect(json.usage.prompt_tokens).toBeGreaterThan(0);
+				expect(json.usage.completion_tokens).toBeGreaterThan(0);
+				expect(json.usage.total_tokens).toBeGreaterThan(0);
+			},
+		);
+	}
 
 	test("JSON output mode error for unsupported model", async () => {
 		const envVarName = getProviderEnvVar("anthropic");

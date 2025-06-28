@@ -37,7 +37,7 @@ export function getProviderHeaders(
 export function prepareRequestBody(
 	usedProvider: ProviderId,
 	usedModel: string,
-	messages: any[],
+	messagesInput: any[],
 	stream: boolean,
 	temperature: number | undefined,
 	max_tokens: number | undefined,
@@ -49,6 +49,19 @@ export function prepareRequestBody(
 	tool_choice?: string | { type: string; function: { name: string } },
 	reasoning_effort?: "low" | "medium" | "high",
 ) {
+	// filter out empty messages
+	const messages = messagesInput.map((m) => ({
+		role: m.role,
+		content: Array.isArray(m.content)
+			? m.content.filter((c: any) => {
+					if (c.type === "text" && Object.keys(c).length === 2) {
+						return c.text.trim() !== "";
+					}
+					return true;
+				})
+			: m.content,
+	}));
+
 	const requestBody: any = {
 		model: usedModel,
 		messages,
@@ -108,7 +121,20 @@ export function prepareRequestBody(
 						: m.role === "system"
 							? "user"
 							: "user",
-				content: m.role === "system" ? `System: ${m.content}` : m.content,
+				content: Array.isArray(m.content)
+					? m.content.map((i: any) => {
+							switch (i.type) {
+								// anthropic does not support image URLs, only base64
+								// TODO fetch url and provide as base64 instead
+								case "image_url":
+									return {
+										type: "text",
+										text: `image URL: ${i.image_url.url}`,
+									};
+							}
+							return i;
+						})
+					: m.content,
 			}));
 
 			// Add optional parameters if they are provided
@@ -141,6 +167,7 @@ export function prepareRequestBody(
 					: "";
 
 			requestBody.contents = nonSystemMessages.map((m, index) => ({
+				role: m.role === "assistant" ? "model" : "user",
 				parts: [
 					{
 						text:
