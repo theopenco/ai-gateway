@@ -10,7 +10,12 @@ import {
 } from "@llmgateway/db";
 
 import { getProject, getOrganization } from "./lib/cache";
-import { consumeFromQueue, LOG_QUEUE } from "./lib/redis";
+import {
+	consumeFromQueue,
+	acknowledgeItems,
+	rejectItems,
+	LOG_QUEUE,
+} from "./lib/redis";
 import { calculateFees } from "../../api/src/lib/fee-calculator";
 import { stripe } from "../../api/src/routes/payments";
 
@@ -231,11 +236,13 @@ async function processAutoTopUp(): Promise<void> {
 }
 
 export async function processLogQueue(): Promise<void> {
-	const message = await consumeFromQueue(LOG_QUEUE);
+	const result = await consumeFromQueue(LOG_QUEUE);
 
-	if (!message) {
+	if (!result) {
 		return;
 	}
+
+	const { items: message, processingKeys } = result;
 
 	try {
 		const logData = message.map((i) => JSON.parse(i) as LogInsertData);
@@ -257,8 +264,10 @@ export async function processLogQueue(): Promise<void> {
 			}),
 		);
 
+		// Insert logs into database
 		await db.insert(log).values(processedLogData as any);
 
+		// Update organization credits
 		for (const data of logData) {
 			if (!data.cost || data.cached) {
 				continue;
@@ -275,8 +284,17 @@ export async function processLogQueue(): Promise<void> {
 					.where(eq(organization.id, data.organizationId));
 			}
 		}
+
+		// Only acknowledge items after successful database operations
+		await acknowledgeItems(processingKeys);
 	} catch (error) {
 		console.error("Error processing log message:", error);
+		// Reject items to move them back to the main queue for retry
+		try {
+			await rejectItems(LOG_QUEUE, processingKeys);
+		} catch (rejectError) {
+			console.error("Error rejecting items:", rejectError);
+		}
 	}
 }
 
