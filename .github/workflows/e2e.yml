@@ -2,7 +2,8 @@ name: ci
 on:
   push:
     paths:
-      - "packages/models/"
+      - "apps/gateway/**"
+      - "packages/models/**"
       - ".github/workflows/e2e.yml"
 jobs:
   e2e:
