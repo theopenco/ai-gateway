@@ -2,6 +2,37 @@ import { models } from "./models";
 
 import type { ProviderId } from "./providers";
 
+async function fetchImageAsBase64(url: string) {
+	const response = await fetch(url);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch image ${url}`);
+	}
+	const arrayBuffer = await response.arrayBuffer();
+	const data = Buffer.from(arrayBuffer).toString("base64");
+	const media_type = response.headers.get("content-type") || "image/png";
+	return { type: "image", source: { type: "base64", media_type, data } };
+}
+
+async function transformAnthropicMessages(messages: any[]) {
+	const results = [] as any[];
+	for (const m of messages) {
+		if (Array.isArray(m.content)) {
+			const newContent = [] as any[];
+			for (const part of m.content) {
+				if (part.type === "image_url" && part.image_url?.url) {
+					newContent.push(await fetchImageAsBase64(part.image_url.url));
+				} else {
+					newContent.push(part);
+				}
+			}
+			results.push({ ...m, content: newContent });
+		} else {
+			results.push(m);
+		}
+	}
+	return results;
+}
+
 /**
  * Get the appropriate headers for a given provider API call
  */
@@ -34,7 +65,7 @@ export function getProviderHeaders(
 /**
  * Prepares the request body for different providers
  */
-export function prepareRequestBody(
+export async function prepareRequestBody(
 	usedProvider: ProviderId,
 	usedModel: string,
 	messagesInput: any[],
@@ -113,29 +144,8 @@ export function prepareRequestBody(
 			break;
 		}
 		case "anthropic": {
-			requestBody.max_tokens = max_tokens || 1024; // Set a default if not provided
-			requestBody.messages = messages.map((m) => ({
-				role:
-					m.role === "assistant"
-						? "assistant"
-						: m.role === "system"
-							? "user"
-							: "user",
-				content: Array.isArray(m.content)
-					? m.content.map((i: any) => {
-							switch (i.type) {
-								// anthropic does not support image URLs, only base64
-								// TODO fetch url and provide as base64 instead
-								case "image_url":
-									return {
-										type: "text",
-										text: `image URL: ${i.image_url.url}`,
-									};
-							}
-							return i;
-						})
-					: m.content,
-			}));
+			requestBody.max_tokens = max_tokens || 1024;
+			requestBody.messages = await transformAnthropicMessages(messages);
 
 			// Add optional parameters if they are provided
 			if (temperature !== undefined) {
@@ -428,7 +438,7 @@ export async function validateProviderKey(
 			);
 		}
 
-		const payload = prepareRequestBody(
+		const payload = await prepareRequestBody(
 			provider,
 			validationModel,
 			messages,

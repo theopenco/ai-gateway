@@ -1310,7 +1310,7 @@ chat.openapi(completions, async (c) => {
 	const requestCanBeCanceled =
 		providers.find((p) => p.id === usedProvider)?.cancellation === true;
 
-	const requestBody = prepareRequestBody(
+	const requestBody = await prepareRequestBody(
 		usedProvider,
 		usedModel,
 		messages,
