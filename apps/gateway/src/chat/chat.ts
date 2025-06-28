@@ -1852,9 +1852,12 @@ chat.openapi(completions, async (c) => {
 											completionTokens = data.usage.completion_tokens;
 											totalTokens = data.usage.total_tokens;
 										}
-										// eslint-disable-next-line unused-imports/no-unused-vars
-									} catch (_e) {
-										// Ignore parsing errors for incomplete JSON
+									} catch (e) {
+										console.warn("Failed to parse streaming JSON:", {
+											error: e instanceof Error ? e.message : String(e),
+											lineContent: line.substring(0, 100), // First 100 chars for debugging
+											provider: usedProvider
+										});
 									}
 								}
 							}
