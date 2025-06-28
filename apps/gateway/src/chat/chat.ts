@@ -1509,6 +1509,7 @@ chat.openapi(completions, async (c) => {
 			let completionTokens = null;
 			let totalTokens = null;
 			let reasoningTokens = null;
+			let buffer = ""; // Buffer for accumulating partial data across chunks
 
 			try {
 				while (true) {
@@ -1519,243 +1520,361 @@ chat.openapi(completions, async (c) => {
 
 					// Convert the Uint8Array to a string
 					const chunk = new TextDecoder().decode(value);
+					buffer += chunk;
 
-					// Process the chunk to extract content for logging and forward to client
-					const lines = chunk.split("\n");
-					for (const line of lines) {
-						if (line.startsWith("data: ")) {
-							if (line === "data: [DONE]") {
-								// Calculate final usage if we don't have complete data
-								let finalPromptTokens = promptTokens;
-								let finalCompletionTokens = completionTokens;
-								let finalTotalTokens = totalTokens;
+					// For Google providers, handle raw JSON objects across newlines
+					if (
+						usedProvider === "google-vertex" ||
+						usedProvider === "google-ai-studio"
+					) {
+						// Google sends raw JSON objects across multiple newlines, not SSE format
+						// We need to parse complete JSON objects from the accumulated buffer
+						let processedData = false;
 
-								// Estimate missing tokens if needed
-								if (finalPromptTokens === null) {
-									finalPromptTokens = Math.round(
-										messages.reduce(
-											(acc, m) => acc + (m.content?.length || 0),
-											0,
-										) / 4,
-									);
+						// Try to find and parse complete JSON objects
+						while (buffer.length > 0) {
+							let jsonStartIndex = -1;
+							let jsonEndIndex = -1;
+							let braceCount = 0;
+							let inString = false;
+							let escaped = false;
+
+							// Find the start of a JSON object
+							for (let i = 0; i < buffer.length; i++) {
+								const char = buffer[i];
+
+								if (escaped) {
+									escaped = false;
+									continue;
 								}
 
-								if (finalCompletionTokens === null) {
-									finalCompletionTokens = Math.round(fullContent.length / 4);
+								if (char === "\\" && inString) {
+									escaped = true;
+									continue;
 								}
 
-								if (finalTotalTokens === null) {
-									finalTotalTokens =
-										(finalPromptTokens || 0) + (finalCompletionTokens || 0);
+								if (char === '"') {
+									inString = !inString;
+									continue;
 								}
 
-								// Send final usage chunk before [DONE] if we have any usage data
-								if (
-									finalPromptTokens !== null ||
-									finalCompletionTokens !== null ||
-									finalTotalTokens !== null
-								) {
-									const finalUsageChunk = {
-										id: `chatcmpl-${Date.now()}`,
-										object: "chat.completion.chunk",
-										created: Math.floor(Date.now() / 1000),
-										model: usedModel,
-										choices: [
-											{
-												index: 0,
-												delta: {},
-												finish_reason: null,
-											},
-										],
-										usage: {
-											prompt_tokens: finalPromptTokens || 0,
-											completion_tokens: finalCompletionTokens || 0,
-											total_tokens: finalTotalTokens || 0,
-										},
-									};
-
-									await stream.writeSSE({
-										data: JSON.stringify(finalUsageChunk),
-										id: String(eventId++),
-									});
+								if (!inString) {
+									if (char === "{") {
+										if (jsonStartIndex === -1) {
+											jsonStartIndex = i;
+										}
+										braceCount++;
+									} else if (char === "}") {
+										braceCount--;
+										if (braceCount === 0 && jsonStartIndex !== -1) {
+											jsonEndIndex = i;
+											break;
+										}
+									}
 								}
+							}
 
-								await stream.writeSSE({
-									event: "done",
-									data: "[DONE]",
-									id: String(eventId++),
-								});
-							} else {
+							// If we found a complete JSON object, parse it
+							if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+								const jsonStr = buffer.substring(
+									jsonStartIndex,
+									jsonEndIndex + 1,
+								);
+								buffer = buffer.substring(jsonEndIndex + 1);
+
 								try {
-									const data = JSON.parse(line.substring(6));
+									const data = JSON.parse(jsonStr);
+									processedData = true;
 
-									// Transform streaming responses to OpenAI format for all providers
+									// Transform streaming responses to OpenAI format
 									const transformedData = transformStreamingChunkToOpenAIFormat(
 										usedProvider,
 										usedModel,
 										data,
 									);
 
-									// For Anthropic, if we have partial usage data, complete it
-									if (usedProvider === "anthropic" && transformedData.usage) {
-										const usage = transformedData.usage;
-										if (
-											usage.output_tokens !== undefined &&
-											usage.prompt_tokens === undefined
-										) {
-											// Estimate prompt tokens if not provided
-											const estimatedPromptTokens = Math.round(
-												messages.reduce(
-													(acc, m) => acc + (m.content?.length || 0),
-													0,
-												) / 4,
-											);
-											transformedData.usage = {
-												prompt_tokens: estimatedPromptTokens,
-												completion_tokens: usage.output_tokens,
-												total_tokens:
-													estimatedPromptTokens + usage.output_tokens,
-											};
-										}
-									}
-
 									await stream.writeSSE({
 										data: JSON.stringify(transformedData),
 										id: String(eventId++),
 									});
 
-									// Extract content for logging based on provider
-									switch (usedProvider) {
-										case "anthropic":
-											// Handle different Anthropic event types
+									// Extract content for logging for Google providers
+									if (
+										data.candidates &&
+										data.candidates[0]?.content?.parts[0]?.text
+									) {
+										fullContent += data.candidates[0].content.parts[0].text;
+									}
+									if (data.candidates && data.candidates[0]?.finishReason) {
+										finishReason = data.candidates[0].finishReason;
+
+										// Send final chunk when we get a finish reason
+										if (finishReason) {
+											await stream.writeSSE({
+												event: "done",
+												data: "[DONE]",
+												id: String(eventId++),
+											});
+										}
+									}
+
+									if (data.usageMetadata) {
+										promptTokens = data.usageMetadata.promptTokenCount;
+										completionTokens = data.usageMetadata.candidatesTokenCount;
+										totalTokens = data.usageMetadata.totalTokenCount;
+									}
+								} catch (e) {
+									// If JSON parsing fails, skip this chunk and continue
+									console.warn("Failed to parse Google streaming JSON:", e);
+								}
+							} else {
+								// No complete JSON object found, break and wait for more data
+								break;
+							}
+						}
+
+						// If we processed data but buffer is empty or very small, keep a bit for next iteration
+						if (processedData && buffer.length < 50) {
+							// Keep small remainder in buffer in case it's part of next JSON
+						}
+					} else {
+						// For non-Google providers, use the original line-by-line processing
+						const lines = buffer.split("\n");
+						// Keep the last line in buffer if it's incomplete (doesn't end with newline)
+						if (
+							buffer.length > 0 &&
+							!buffer.endsWith("\n") &&
+							lines.length > 1
+						) {
+							buffer = lines.pop() || "";
+						} else {
+							buffer = "";
+						}
+
+						for (const line of lines) {
+							if (line.startsWith("data: ")) {
+								if (line === "data: [DONE]") {
+									// Calculate final usage if we don't have complete data
+									let finalPromptTokens = promptTokens;
+									let finalCompletionTokens = completionTokens;
+									let finalTotalTokens = totalTokens;
+
+									// Estimate missing tokens if needed
+									if (finalPromptTokens === null) {
+										finalPromptTokens = Math.round(
+											messages.reduce(
+												(acc, m) => acc + (m.content?.length || 0),
+												0,
+											) / 4,
+										);
+									}
+
+									if (finalCompletionTokens === null) {
+										finalCompletionTokens = Math.round(fullContent.length / 4);
+									}
+
+									if (finalTotalTokens === null) {
+										finalTotalTokens =
+											(finalPromptTokens || 0) + (finalCompletionTokens || 0);
+									}
+
+									// Send final usage chunk before [DONE] if we have any usage data
+									if (
+										finalPromptTokens !== null ||
+										finalCompletionTokens !== null ||
+										finalTotalTokens !== null
+									) {
+										const finalUsageChunk = {
+											id: `chatcmpl-${Date.now()}`,
+											object: "chat.completion.chunk",
+											created: Math.floor(Date.now() / 1000),
+											model: usedModel,
+											choices: [
+												{
+													index: 0,
+													delta: {},
+													finish_reason: null,
+												},
+											],
+											usage: {
+												prompt_tokens: finalPromptTokens || 0,
+												completion_tokens: finalCompletionTokens || 0,
+												total_tokens: finalTotalTokens || 0,
+											},
+										};
+
+										await stream.writeSSE({
+											data: JSON.stringify(finalUsageChunk),
+											id: String(eventId++),
+										});
+									}
+
+									await stream.writeSSE({
+										event: "done",
+										data: "[DONE]",
+										id: String(eventId++),
+									});
+								} else {
+									try {
+										const data = JSON.parse(line.substring(6));
+
+										// Transform streaming responses to OpenAI format for all providers
+										const transformedData =
+											transformStreamingChunkToOpenAIFormat(
+												usedProvider,
+												usedModel,
+												data,
+											);
+
+										// For Anthropic, if we have partial usage data, complete it
+										if (usedProvider === "anthropic" && transformedData.usage) {
+											const usage = transformedData.usage;
 											if (
-												data.type === "content_block_delta" &&
-												data.delta?.text
+												usage.output_tokens !== undefined &&
+												usage.prompt_tokens === undefined
 											) {
-												fullContent += data.delta.text;
-											} else if (data.delta?.text) {
-												// Fallback for older format
-												fullContent += data.delta.text;
+												// Estimate prompt tokens if not provided
+												const estimatedPromptTokens = Math.round(
+													messages.reduce(
+														(acc, m) => acc + (m.content?.length || 0),
+														0,
+													) / 4,
+												);
+												transformedData.usage = {
+													prompt_tokens: estimatedPromptTokens,
+													completion_tokens: usage.output_tokens,
+													total_tokens:
+														estimatedPromptTokens + usage.output_tokens,
+												};
 											}
+										}
 
-											if (
-												data.type === "message_delta" &&
-												data.delta?.stop_reason
-											) {
-												finishReason = data.delta.stop_reason;
-											} else if (
-												data.type === "message_stop" ||
-												data.stop_reason
-											) {
-												finishReason = data.stop_reason || "end_turn";
-											} else if (data.delta?.stop_reason) {
-												finishReason = data.delta.stop_reason;
-											}
+										await stream.writeSSE({
+											data: JSON.stringify(transformedData),
+											id: String(eventId++),
+										});
 
-											if (data.usage) {
-												// For streaming, Anthropic might only provide output_tokens
-												if (data.usage.input_tokens !== undefined) {
-													promptTokens = data.usage.input_tokens;
-												}
-												if (data.usage.output_tokens !== undefined) {
-													completionTokens = data.usage.output_tokens;
-												}
-												totalTokens =
-													(promptTokens || 0) + (completionTokens || 0);
-											} else if (finishReason) {
-												if (!promptTokens) {
-													promptTokens =
-														messages.reduce(
-															(acc, m) => acc + (m.content?.length || 0),
-															0,
-														) / 4;
+										// Extract content for logging based on provider
+										switch (usedProvider) {
+											case "anthropic":
+												// Handle different Anthropic event types
+												if (
+													data.type === "content_block_delta" &&
+													data.delta?.text
+												) {
+													fullContent += data.delta.text;
+												} else if (data.delta?.text) {
+													// Fallback for older format
+													fullContent += data.delta.text;
 												}
 
-												if (!completionTokens) {
-													completionTokens = fullContent.length / 4;
+												if (
+													data.type === "message_delta" &&
+													data.delta?.stop_reason
+												) {
+													finishReason = data.delta.stop_reason;
+												} else if (
+													data.type === "message_stop" ||
+													data.stop_reason
+												) {
+													finishReason = data.stop_reason || "end_turn";
+												} else if (data.delta?.stop_reason) {
+													finishReason = data.delta.stop_reason;
 												}
 
-												totalTokens =
-													(promptTokens || 0) + (completionTokens || 0);
-											}
-											break;
-										case "google-vertex":
-										case "google-ai-studio":
-											if (
-												data.candidates &&
-												data.candidates[0]?.content?.parts[0]?.text
-											) {
-												fullContent += data.candidates[0].content.parts[0].text;
-											}
-											if (data.candidates && data.candidates[0]?.finishReason) {
-												finishReason = data.candidates[0].finishReason;
-											}
-											break;
-										case "inference.net":
-										case "kluster.ai":
-										case "together.ai":
-										case "groq":
-										case "deepseek":
-											if (data.choices && data.choices[0]) {
-												if (data.choices[0].delta?.content) {
-													fullContent += data.choices[0].delta.content;
-												}
-												if (data.choices[0].finish_reason) {
-													finishReason = data.choices[0].finish_reason;
-												}
-											}
+												if (data.usage) {
+													// For streaming, Anthropic might only provide output_tokens
+													if (data.usage.input_tokens !== undefined) {
+														promptTokens = data.usage.input_tokens;
+													}
+													if (data.usage.output_tokens !== undefined) {
+														completionTokens = data.usage.output_tokens;
+													}
+													totalTokens =
+														(promptTokens || 0) + (completionTokens || 0);
+												} else if (finishReason) {
+													if (!promptTokens) {
+														promptTokens =
+															messages.reduce(
+																(acc, m) => acc + (m.content?.length || 0),
+																0,
+															) / 4;
+													}
 
-											// Extract token counts if available
-											if (data.usage) {
-												if (data.usage.prompt_tokens !== undefined) {
-													promptTokens = data.usage.prompt_tokens;
-												}
-												if (data.usage.completion_tokens !== undefined) {
-													completionTokens = data.usage.completion_tokens;
-												}
-												if (data.usage.total_tokens !== undefined) {
-													totalTokens = data.usage.total_tokens;
-												} else {
+													if (!completionTokens) {
+														completionTokens = fullContent.length / 4;
+													}
+
 													totalTokens =
 														(promptTokens || 0) + (completionTokens || 0);
 												}
-											} else if (finishReason) {
-												// Estimate tokens if not provided
-												if (!promptTokens) {
-													promptTokens =
-														messages.reduce(
-															(acc, m) => acc + (m.content?.length || 0),
-															0,
-														) / 4;
+												break;
+											case "inference.net":
+											case "kluster.ai":
+											case "together.ai":
+											case "groq":
+											case "deepseek":
+												if (data.choices && data.choices[0]) {
+													if (data.choices[0].delta?.content) {
+														fullContent += data.choices[0].delta.content;
+													}
+													if (data.choices[0].finish_reason) {
+														finishReason = data.choices[0].finish_reason;
+													}
 												}
 
-												if (!completionTokens) {
-													completionTokens = fullContent.length / 4;
-												}
+												// Extract token counts if available
+												if (data.usage) {
+													if (data.usage.prompt_tokens !== undefined) {
+														promptTokens = data.usage.prompt_tokens;
+													}
+													if (data.usage.completion_tokens !== undefined) {
+														completionTokens = data.usage.completion_tokens;
+													}
+													if (data.usage.total_tokens !== undefined) {
+														totalTokens = data.usage.total_tokens;
+													} else {
+														totalTokens =
+															(promptTokens || 0) + (completionTokens || 0);
+													}
+												} else if (finishReason) {
+													// Estimate tokens if not provided
+													if (!promptTokens) {
+														promptTokens =
+															messages.reduce(
+																(acc, m) => acc + (m.content?.length || 0),
+																0,
+															) / 4;
+													}
 
-												totalTokens =
-													(promptTokens || 0) + (completionTokens || 0);
-											}
-											break;
-										default: // OpenAI format
-											if (data.choices && data.choices[0]) {
-												if (data.choices[0].delta?.content) {
-													fullContent += data.choices[0].delta.content;
+													if (!completionTokens) {
+														completionTokens = fullContent.length / 4;
+													}
+
+													totalTokens =
+														(promptTokens || 0) + (completionTokens || 0);
 												}
-												if (data.choices[0].finish_reason) {
-													finishReason = data.choices[0].finish_reason;
+												break;
+											default: // OpenAI format
+												if (data.choices && data.choices[0]) {
+													if (data.choices[0].delta?.content) {
+														fullContent += data.choices[0].delta.content;
+													}
+													if (data.choices[0].finish_reason) {
+														finishReason = data.choices[0].finish_reason;
+													}
 												}
-											}
+										}
+
+										if (data.usage) {
+											promptTokens = data.usage.prompt_tokens;
+											completionTokens = data.usage.completion_tokens;
+											totalTokens = data.usage.total_tokens;
+										}
+										// eslint-disable-next-line unused-imports/no-unused-vars
+									} catch (_e) {
+										// Ignore parsing errors for incomplete JSON
 									}
-
-									if (data.usage) {
-										promptTokens = data.usage.prompt_tokens;
-										completionTokens = data.usage.completion_tokens;
-										totalTokens = data.usage.total_tokens;
-									}
-									// eslint-disable-next-line unused-imports/no-unused-vars
-								} catch (_e) {
-									// Ignore parsing errors for incomplete JSON
 								}
 							}
 						}

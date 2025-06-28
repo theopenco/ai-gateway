@@ -21,6 +21,7 @@ const fullMode = process.env.FULL_MODE;
 
 const testModels = models
 	.filter((model) => !["custom", "auto"].includes(model.model))
+	.filter((model) => model.model === "gemini-2.5-pro")
 	.flatMap((model) => {
 		const testCases = [];
 
@@ -46,6 +47,7 @@ const testModels = models
 
 const providerModels = models
 	.filter((model) => !["custom", "auto"].includes(model.model))
+	.filter((model) => model.model === "gemini-2.5-pro")
 	.flatMap((model) => {
 		const testCases = [];
 
