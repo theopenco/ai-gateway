@@ -57,21 +57,33 @@ async function fetchImageAsBase64(url: string) {
 
 async function transformAnthropicMessages(messages: any[]) {
 	const results = [] as any[];
-	for (const m of messages) {
-		if (Array.isArray(m.content)) {
-			const newContent = [] as any[];
-			for (const part of m.content) {
-				if (part.type === "image_url" && part.image_url?.url) {
-					newContent.push(await fetchImageAsBase64(part.image_url.url));
-				} else {
-					newContent.push(part);
-				}
-			}
-			results.push({ ...m, content: newContent });
+	
+	for (const message of messages) {
+		if (Array.isArray(message.content)) {
+			// Process all images in parallel for better performance
+			const newContent = await Promise.all(
+				message.content.map(async (part) => {
+					if (part.type === "image_url" && part.image_url?.url) {
+						try {
+							return await fetchImageAsBase64(part.image_url.url);
+						} catch (error) {
+							// Log error and fallback to text representation
+							console.error(`Failed to fetch image ${part.image_url.url}:`, error);
+							return {
+								type: "text",
+								text: `[Image failed to load: ${part.image_url.url}]`
+							};
+						}
+					}
+					return part;
+				})
+			);
+			results.push({ ...message, content: newContent });
 		} else {
-			results.push(m);
+			results.push(message);
 		}
 	}
+	
 	return results;
 }
 
