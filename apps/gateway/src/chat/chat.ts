@@ -135,9 +135,8 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.candidates?.[0]?.finishReason || null;
 			promptTokens = json.usageMetadata?.promptTokenCount || null;
 			completionTokens = json.usageMetadata?.candidatesTokenCount || null;
-			// Calculate total consistently like Anthropic
 			totalTokens =
-				promptTokens && completionTokens
+				promptTokens !== null && completionTokens !== null
 					? promptTokens + completionTokens
 					: json.usageMetadata?.totalTokenCount || null;
 			break;
@@ -150,9 +149,8 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
-			// Calculate total consistently like Anthropic
 			totalTokens =
-				promptTokens && completionTokens
+				promptTokens !== null && completionTokens !== null
 					? promptTokens + completionTokens
 					: json.usage?.total_tokens || null;
 			break;
