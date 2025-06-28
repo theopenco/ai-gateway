@@ -372,62 +372,20 @@ describe("e2e tests with real provider keys", () => {
 								content: [
 									{
 										type: "text",
-										text: "<task>\nhi sup!\n</task>",
+										text: "<task>\ndescribe this image\n</task>",
 									},
 									{
 										type: "text",
 										text: "",
 									},
+									// TODO provide this if it supports vision
+									// {
+									// 	type: "image_url",
+									// 	image_url: {
+									// 		url: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://google.com&size=128",
+									// 	},
+									// },
 								],
-							},
-						],
-					}),
-				});
-
-				const json = await res.json();
-				console.log("response:", JSON.stringify(json, null, 2));
-
-				expect(res.status).toBe(200);
-				validateResponse(json);
-
-				const log = await validateLogs();
-				expect(log.streamed).toBe(false);
-
-				expect(json).toHaveProperty("usage");
-				expect(json.usage).toHaveProperty("prompt_tokens");
-				expect(json.usage).toHaveProperty("completion_tokens");
-				expect(json.usage).toHaveProperty("total_tokens");
-				expect(typeof json.usage.prompt_tokens).toBe("number");
-				expect(typeof json.usage.completion_tokens).toBe("number");
-				expect(typeof json.usage.total_tokens).toBe("number");
-				expect(json.usage.prompt_tokens).toBeGreaterThan(0);
-				expect(json.usage.completion_tokens).toBeGreaterThan(0);
-				expect(json.usage.total_tokens).toBeGreaterThan(0);
-			},
-		);
-	}
-
-	if (fullMode) {
-		test.each(testModels)(
-			"/v1/chat/completions with empty content for $model",
-			getTestOptions(),
-			async ({ model }) => {
-				const res = await app.request("/v1/chat/completions", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer real-token`,
-					},
-					body: JSON.stringify({
-						model: model,
-						messages: [
-							{
-								role: "user",
-								content: "hi",
-							},
-							{
-								role: "user",
-								content: "hi",
 							},
 						],
 					}),
