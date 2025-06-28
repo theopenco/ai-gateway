@@ -148,7 +148,10 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			promptTokens = json.usageMetadata?.promptTokenCount || null;
 			completionTokens = json.usageMetadata?.candidatesTokenCount || null;
 			reasoningTokens = json.usageMetadata?.thoughtsTokenCount || null;
-			totalTokens = json.usageMetadata?.totalTokenCount || null;
+			totalTokens =
+				promptTokens !== null && completionTokens !== null
+					? promptTokens + completionTokens
+					: json.usageMetadata?.totalTokenCount || null;
 			break;
 		case "inference.net":
 		case "kluster.ai":
@@ -160,7 +163,10 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
 			reasoningTokens = json.usage?.reasoning_tokens || null;
-			totalTokens = json.usage?.total_tokens || null;
+			totalTokens =
+				promptTokens !== null && completionTokens !== null
+					? promptTokens + completionTokens
+					: json.usage?.total_tokens || null;
 			break;
 		case "mistral":
 			content = json.choices?.[0]?.message?.content || null;
