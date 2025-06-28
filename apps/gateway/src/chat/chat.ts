@@ -136,9 +136,10 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			promptTokens = json.usageMetadata?.promptTokenCount || null;
 			completionTokens = json.usageMetadata?.candidatesTokenCount || null;
 			// Calculate total consistently like Anthropic
-			totalTokens = promptTokens && completionTokens
-				? promptTokens + completionTokens
-				: json.usageMetadata?.totalTokenCount || null;
+			totalTokens =
+				promptTokens && completionTokens
+					? promptTokens + completionTokens
+					: json.usageMetadata?.totalTokenCount || null;
 			break;
 		case "inference.net":
 		case "kluster.ai":
@@ -150,9 +151,10 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			promptTokens = json.usage?.prompt_tokens || null;
 			completionTokens = json.usage?.completion_tokens || null;
 			// Calculate total consistently like Anthropic
-			totalTokens = promptTokens && completionTokens
-				? promptTokens + completionTokens
-				: json.usage?.total_tokens || null;
+			totalTokens =
+				promptTokens && completionTokens
+					? promptTokens + completionTokens
+					: json.usage?.total_tokens || null;
 			break;
 		case "mistral":
 			content = json.choices?.[0]?.message?.content || null;
