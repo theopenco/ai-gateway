@@ -1,16 +1,54 @@
+import Redis from "ioredis";
+import crypto from "crypto";
 import { models } from "./models";
 
 import type { ProviderId } from "./providers";
 
+// Redis client for image caching
+const redisClient = new Redis({
+	host: process.env.REDIS_HOST || "localhost",
+	port: Number(process.env.REDIS_PORT) || 6379,
+});
+
+redisClient.on("error", (err) => {
+	console.error("Redis Client Error in models package:", err);
+});
+
 async function fetchImageAsBase64(url: string) {
+	// Generate cache key from URL
+	const cacheKey = `image:${crypto.createHash("sha256").update(url).digest("hex")}`;
+	
+	try {
+		// Check cache first
+		const cachedData = await redisClient.get(cacheKey);
+		if (cachedData) {
+			return JSON.parse(cachedData);
+		}
+	} catch (error) {
+		// If Redis fails, continue without caching (graceful degradation)
+		console.warn("Redis cache lookup failed for image:", error);
+	}
+
+	// Fetch image if not in cache
 	const response = await fetch(url);
 	if (!response.ok) {
-		throw new Error(`Failed to fetch image ${url}`);
+		throw new Error(`Failed to fetch image (${response.status})`);
 	}
+	
 	const arrayBuffer = await response.arrayBuffer();
 	const data = Buffer.from(arrayBuffer).toString("base64");
 	const media_type = response.headers.get("content-type") || "image/png";
-	return { type: "image", source: { type: "base64", media_type, data } };
+	const result = { type: "image", source: { type: "base64", media_type, data } };
+	
+	try {
+		// Cache the result for 5 minutes (300 seconds)
+		await redisClient.set(cacheKey, JSON.stringify(result), "EX", 300);
+	} catch (error) {
+		// If Redis fails, continue without caching (graceful degradation)
+		console.warn("Redis cache set failed for image:", error);
+	}
+	
+	return result;
 }
 
 async function transformAnthropicMessages(messages: any[]) {
