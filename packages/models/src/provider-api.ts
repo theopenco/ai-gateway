@@ -6,8 +6,13 @@ import { models } from "./models";
 import type { ProviderId } from "./providers";
 
 async function fetchImageAsBase64(url: string, redisClient?: Redis) {
-	// Generate cache key from URL
-	const cacheKey = `image:${crypto.createHash("sha256").update(url).digest("hex")}`;
+	// Configuration constants
+	const CACHE_TTL = parseInt(process.env.IMAGE_CACHE_TTL || '300'); // 5 minutes default
+	const CACHE_KEY_VERSION = 'v1'; // For cache invalidation if format changes
+	const MAX_CACHE_SIZE = 1024 * 1024; // 1MB limit for cache storage
+
+	// Generate versioned cache key from URL
+	const cacheKey = `image:${CACHE_KEY_VERSION}:${crypto.createHash("sha256").update(url).digest("hex")}`;
 
 	// Check cache first if Redis client is provided
 	if (redisClient) {
@@ -36,10 +41,17 @@ async function fetchImageAsBase64(url: string, redisClient?: Redis) {
 		source: { type: "base64", media_type, data },
 	};
 
-	// Cache the result for 5 minutes (300 seconds) if Redis client is provided
+	// Cache the result if Redis client is provided and size is within limits
 	if (redisClient) {
 		try {
-			await redisClient.set(cacheKey, JSON.stringify(result), "EX", 300);
+			const resultJson = JSON.stringify(result);
+			
+			// Check cache size to avoid storing very large images in Redis
+			if (resultJson.length > MAX_CACHE_SIZE) {
+				console.warn(`Image too large for cache (${resultJson.length} bytes, max: ${MAX_CACHE_SIZE}), skipping cache storage`);
+			} else {
+				await redisClient.set(cacheKey, resultJson, "EX", CACHE_TTL);
+			}
 		} catch (error) {
 			// If Redis fails, continue without caching (graceful degradation)
 			console.warn("Redis cache set failed for image:", error);
