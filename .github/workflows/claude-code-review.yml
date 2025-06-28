@@ -48,7 +48,11 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        if: steps.check-author.outputs.skip != 'true' && github.event.pull_request.user.login != 'dependabot[bot]'
+        if: |
+          steps.check-author.outputs.skip != 'true' &&
+          github.event.pull_request.user.login != 'dependabot[bot]' &&
+          !contains(github.event.pull_request.title, 'WIP')
+
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.CLAUDE_CODE_API_KEY }}
@@ -75,8 +79,3 @@ jobs:
             **Important**: Submit as "COMMENT" type so the review doesn't block the PR.
 
           allowed_tools: "Bash(*),mcp__github__create_pending_pull_request_review,mcp__github__add_pull_request_review_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request_diff"
-
-          # Optional: Skip review for certain conditions
-          # if: |
-          #   !contains(github.event.pull_request.title, '[skip-review]') &&
-          #   !contains(github.event.pull_request.title, '[WIP]')
