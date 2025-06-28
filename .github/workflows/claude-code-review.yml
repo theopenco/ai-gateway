@@ -33,22 +33,31 @@ jobs:
         id: check-author
         run: |
           # Get the most recent actual commit (HEAD~1 to skip the merge commit)
-          AUTHOR_EMAIL=$(git log HEAD~1 -1 --pretty=format:'%ae')
-          AUTHOR_NAME=$(git log HEAD~1 -1 --pretty=format:'%an')
+          AUTHOR_EMAIL=$(git log --no-merges -1 --pretty=format:'%ae')
+          AUTHOR_NAME=$(git log --no-merges -1 --pretty=format:'%an')
+          COMMIT_TITLE=$(git log --no-merges -1 --pretty=format:'%s')
 
           echo "Most recent commit author: $AUTHOR_NAME <$AUTHOR_EMAIL>"
+          echo "Most recent commit title: $COMMIT_TITLE"
 
           if [[ "$AUTHOR_EMAIL" == *"claude[bot]"* ]] || [[ "$AUTHOR_NAME" == *"claude[bot]"* ]]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Skipping review - most recent commit is from Claude"
+          elif [[ "$COMMIT_TITLE" == *"WIP"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping review - most recent commit title contains WIP"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
-            echo "Proceeding with review - most recent commit is not from Claude"
+            echo "Proceeding with review - most recent commit is not from Claude and doesn't contain WIP"
           fi
 
       - name: Run Claude Code Review
         id: claude-review
-        if: steps.check-author.outputs.skip != 'true' && github.event.pull_request.user.login != 'dependabot[bot]'
+        if: |
+          steps.check-author.outputs.skip != 'true' &&
+          github.event.pull_request.user.login != 'dependabot[bot]' &&
+          !contains(github.event.pull_request.title, 'WIP')
+
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.CLAUDE_CODE_API_KEY }}
@@ -74,9 +83,4 @@ jobs:
 
             **Important**: Submit as "COMMENT" type so the review doesn't block the PR.
 
-          allowed_tools: "Bash(*),mcp__github__create_pending_pull_request_review,mcp__github__add_pull_request_review_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request_diff"
-
-          # Optional: Skip review for certain conditions
-          # if: |
-          #   !contains(github.event.pull_request.title, '[skip-review]') &&
-          #   !contains(github.event.pull_request.title, '[WIP]')
+          allowed_tools: "Bash:*,Bash(*),Bash,Bash(sed:*),Bash(od:*),Bash(rg:*),Bash(pnpm format:*),Bash(pnpm build:*),Bash(pnpm push-dev:*),Bash(pnpm push-test:*),Bash(pnpm generate:*),Bash(pnpm test:*),Bash(pnpm push-test:*),Bash(pnpm run:*),Bash(pnpm -w run format),Bash(pnpm -w run test:e2e --run),WebFetch(domain:ai.google.dev),Bash(*),mcp__github__create_pending_pull_request_review,mcp__github__add_pull_request_review_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request_diff"

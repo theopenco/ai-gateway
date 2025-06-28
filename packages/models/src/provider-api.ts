@@ -205,25 +205,24 @@ export async function prepareRequestBody(
 			delete requestBody.stream; // Handled differently
 			delete requestBody.messages; // Not used in body for Google AI Studio
 
-			// Extract system messages and combine with user messages
-			const systemMessages = messages.filter((m) => m.role === "system");
-			const nonSystemMessages = messages.filter((m) => m.role !== "system");
-			const systemContext =
-				systemMessages.length > 0
-					? systemMessages.map((m) => m.content).join(" ") + " "
-					: "";
-
-			requestBody.contents = nonSystemMessages.map((m, index) => ({
-				role: m.role === "assistant" ? "model" : "user",
-				parts: [
-					{
-						text:
-							index === 0 && systemContext
-								? systemContext + m.content
-								: m.content,
-					},
-				],
+			requestBody.contents = messages.map((m) => ({
+				role: m.role === "assistant" ? "model" : "user", // get rid of system role
+				parts: Array.isArray(m.content)
+					? m.content.map((i) => {
+							if (i.type === "text") {
+								return {
+									text: i.text,
+								};
+							}
+							throw new Error("No support for non-text parts yet");
+						})
+					: [
+							{
+								text: m.content,
+							},
+						],
 			}));
+
 			requestBody.generationConfig = {};
 
 			// Add optional parameters if they are provided
