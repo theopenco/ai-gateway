@@ -1546,10 +1546,11 @@ chat.openapi(completions, async (c) => {
 
 						// Try to find and parse complete JSON objects
 						while (buffer.length > 0) {
-							// Find the first occurrence of '{'
+							// Find the start of a JSON object
 							const jsonStartIndex = buffer.indexOf('{');
+							
 							if (jsonStartIndex === -1) {
-								// No JSON start found, clear buffer and break
+								// No JSON start found, clear buffer
 								buffer = "";
 								break;
 							}
@@ -1559,61 +1560,57 @@ chat.openapi(completions, async (c) => {
 							
 							if (parseResult) {
 								// Successfully parsed a JSON object
-								const jsonStr = buffer.substring(jsonStartIndex, parseResult.endIndex + 1);
+								const data = parseResult.data;
 								buffer = buffer.substring(parseResult.endIndex + 1);
+								processedData = true;
 
-								try {
-									const data = parseResult.data;
-									processedData = true;
+								// Transform streaming responses to OpenAI format
+								const transformedData = transformStreamingChunkToOpenAIFormat(
+									usedProvider,
+									usedModel,
+									data,
+								);
 
-									// Transform streaming responses to OpenAI format
-									const transformedData = transformStreamingChunkToOpenAIFormat(
-										usedProvider,
-										usedModel,
-										data,
-									);
+								await stream.writeSSE({
+									data: JSON.stringify(transformedData),
+									id: String(eventId++),
+								});
 
-									await stream.writeSSE({
-										data: JSON.stringify(transformedData),
-										id: String(eventId++),
-									});
+								// Extract content for logging for Google providers
+								if (
+									data.candidates &&
+									data.candidates[0]?.content?.parts[0]?.text
+								) {
+									fullContent += data.candidates[0].content.parts[0].text;
+								}
+								if (data.candidates && data.candidates[0]?.finishReason) {
+									finishReason = data.candidates[0].finishReason;
 
-									// Extract content for logging for Google providers
-									if (
-										data.candidates &&
-										data.candidates[0]?.content?.parts[0]?.text
-									) {
-										fullContent += data.candidates[0].content.parts[0].text;
+									// Send final chunk when we get a finish reason
+									if (finishReason) {
+										await stream.writeSSE({
+											event: "done",
+											data: "[DONE]",
+											id: String(eventId++),
+										});
 									}
-									if (data.candidates && data.candidates[0]?.finishReason) {
-										finishReason = data.candidates[0].finishReason;
+								}
 
-										// Send final chunk when we get a finish reason
-										if (finishReason) {
-											await stream.writeSSE({
-												event: "done",
-												data: "[DONE]",
-												id: String(eventId++),
-											});
-										}
-									}
-
-									if (data.usageMetadata) {
-										promptTokens = data.usageMetadata.promptTokenCount;
-										completionTokens = data.usageMetadata.candidatesTokenCount;
-										totalTokens = data.usageMetadata.totalTokenCount;
-									}
-								} catch (e) {
-									// If JSON parsing fails, skip this chunk and continue
-									console.warn("Failed to parse Google streaming JSON:", {
-										error: e.message,
-										jsonStr: jsonStr.substring(0, 100), // First 100 chars for debugging
-										bufferLength: buffer.length
-									});
+								if (data.usageMetadata) {
+									promptTokens = data.usageMetadata.promptTokenCount;
+									completionTokens = data.usageMetadata.candidatesTokenCount;
+									totalTokens = data.usageMetadata.totalTokenCount;
 								}
 							} else {
-								// No complete JSON object found, break and wait for more data
-								break;
+								// No complete JSON object found, try to find next JSON start
+								const nextStart = buffer.indexOf('{', jsonStartIndex + 1);
+								if (nextStart !== -1) {
+									// Skip to next potential JSON start
+									buffer = buffer.substring(nextStart);
+								} else {
+									// No more JSON starts found, break and wait for more data
+									break;
+								}
 							}
 						}
 
