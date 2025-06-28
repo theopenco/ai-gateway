@@ -275,6 +275,95 @@ function estimateTokens(
 }
 
 /**
+ * Estimates tokens from content length using simple division
+ */
+function estimateTokensFromContent(content: string): number {
+	return Math.max(1, Math.round(content.length / 4));
+}
+
+/**
+ * Extracts content from streaming data based on provider format
+ */
+function extractContentFromProvider(data: any, provider: Provider): string {
+	switch (provider) {
+		case "google-vertex":
+		case "google-ai-studio":
+			return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+		case "anthropic":
+			if (data.type === "content_block_delta" && data.delta?.text) {
+				return data.delta.text;
+			} else if (data.delta?.text) {
+				return data.delta.text;
+			}
+			return "";
+		case "inference.net":
+		case "kluster.ai":
+		case "together.ai":
+		case "groq":
+		case "deepseek":
+			return data.choices?.[0]?.delta?.content || "";
+		default: // OpenAI format
+			return data.choices?.[0]?.delta?.content || "";
+	}
+}
+
+/**
+ * Extracts token usage information from streaming data based on provider format
+ */
+function extractTokenUsage(data: any, provider: Provider) {
+	let promptTokens = null;
+	let completionTokens = null;
+	let totalTokens = null;
+	let reasoningTokens = null;
+
+	switch (provider) {
+		case "google-vertex":
+		case "google-ai-studio":
+			if (data.usageMetadata) {
+				promptTokens = data.usageMetadata.promptTokenCount || null;
+				completionTokens = data.usageMetadata.candidatesTokenCount || null;
+				totalTokens = data.usageMetadata.totalTokenCount || null;
+			}
+			break;
+		case "anthropic":
+			if (data.usage) {
+				promptTokens = data.usage.input_tokens || null;
+				completionTokens = data.usage.output_tokens || null;
+				reasoningTokens = data.usage.reasoning_output_tokens || null;
+				totalTokens = (promptTokens || 0) + (completionTokens || 0);
+			}
+			break;
+		case "inference.net":
+		case "kluster.ai":
+		case "together.ai":
+		case "groq":
+		case "deepseek":
+			if (data.usage) {
+				promptTokens = data.usage.prompt_tokens || null;
+				completionTokens = data.usage.completion_tokens || null;
+				totalTokens = data.usage.total_tokens || null;
+				reasoningTokens = data.usage.reasoning_tokens || null;
+			}
+			break;
+		default: // OpenAI format
+			if (data.usage) {
+				promptTokens = data.usage.prompt_tokens || null;
+				completionTokens = data.usage.completion_tokens || null;
+				totalTokens = data.usage.total_tokens || null;
+				reasoningTokens = data.usage.reasoning_tokens || null;
+			}
+			break;
+	}
+
+	return {
+		promptTokens,
+		completionTokens,
+		totalTokens,
+		reasoningTokens,
+	};
+}
+
+/**
  * Transforms response to OpenAI format for non-OpenAI providers
  */
 function transformToOpenAIFormat(
@@ -1576,13 +1665,13 @@ chat.openapi(completions, async (c) => {
 									id: String(eventId++),
 								});
 
-								// Extract content for logging for Google providers
-								if (
-									data.candidates &&
-									data.candidates[0]?.content?.parts[0]?.text
-								) {
-									fullContent += data.candidates[0].content.parts[0].text;
+								// Extract content for logging using helper function
+								const contentChunk = extractContentFromProvider(data, usedProvider);
+								if (contentChunk) {
+									fullContent += contentChunk;
 								}
+
+								// Check for finish reason
 								if (data.candidates && data.candidates[0]?.finishReason) {
 									finishReason = data.candidates[0].finishReason;
 
@@ -1596,21 +1685,22 @@ chat.openapi(completions, async (c) => {
 									}
 								}
 
-								if (data.usageMetadata) {
-									promptTokens = data.usageMetadata.promptTokenCount;
-									completionTokens = data.usageMetadata.candidatesTokenCount;
-									totalTokens = data.usageMetadata.totalTokenCount;
+								// Extract token usage using helper function
+								const usage = extractTokenUsage(data, usedProvider);
+								if (usage.promptTokens !== null) promptTokens = usage.promptTokens;
+								if (usage.completionTokens !== null) completionTokens = usage.completionTokens;
+								if (usage.totalTokens !== null) totalTokens = usage.totalTokens;
+								if (usage.reasoningTokens !== null) reasoningTokens = usage.reasoningTokens;
 
-									// For Google AI Studio, if candidatesTokenCount is not provided,
-									// we'll calculate it later from the fullContent
-									if (
-										(usedProvider === "google-ai-studio" ||
-											usedProvider === "google-vertex") &&
-										!data.usageMetadata.candidatesTokenCount &&
-										fullContent
-									) {
-										completionTokens = null; // Mark as missing so we calculate later
-									}
+								// For Google AI Studio, if candidatesTokenCount is not provided,
+								// we'll calculate it later from the fullContent
+								if (
+									(usedProvider === "google-ai-studio" ||
+										usedProvider === "google-vertex") &&
+									!usage.completionTokens &&
+									fullContent
+								) {
+									completionTokens = null; // Mark as missing so we calculate later
 								}
 							} else {
 								// No complete JSON object found, try to find next JSON start
@@ -1651,7 +1741,7 @@ chat.openapi(completions, async (c) => {
 									let finalCompletionTokens = completionTokens;
 									let finalTotalTokens = totalTokens;
 
-									// Estimate missing tokens if needed
+									// Estimate missing tokens if needed using helper function
 									if (finalPromptTokens === null) {
 										finalPromptTokens = Math.round(
 											messages.reduce(
@@ -1662,7 +1752,7 @@ chat.openapi(completions, async (c) => {
 									}
 
 									if (finalCompletionTokens === null) {
-										finalCompletionTokens = Math.round(fullContent.length / 4);
+										finalCompletionTokens = estimateTokensFromContent(fullContent);
 									}
 
 									if (finalTotalTokens === null) {
@@ -1746,20 +1836,15 @@ chat.openapi(completions, async (c) => {
 											id: String(eventId++),
 										});
 
-										// Extract content for logging based on provider
+										// Extract content for logging using helper function
+										const contentChunk = extractContentFromProvider(data, usedProvider);
+										if (contentChunk) {
+											fullContent += contentChunk;
+										}
+
+										// Handle provider-specific finish reason extraction
 										switch (usedProvider) {
 											case "anthropic":
-												// Handle different Anthropic event types
-												if (
-													data.type === "content_block_delta" &&
-													data.delta?.text
-												) {
-													fullContent += data.delta.text;
-												} else if (data.delta?.text) {
-													// Fallback for older format
-													fullContent += data.delta.text;
-												}
-
 												if (
 													data.type === "message_delta" &&
 													data.delta?.stop_reason
@@ -1773,95 +1858,46 @@ chat.openapi(completions, async (c) => {
 												} else if (data.delta?.stop_reason) {
 													finishReason = data.delta.stop_reason;
 												}
-
-												if (data.usage) {
-													// For streaming, Anthropic might only provide output_tokens
-													if (data.usage.input_tokens !== undefined) {
-														promptTokens = data.usage.input_tokens;
-													}
-													if (data.usage.output_tokens !== undefined) {
-														completionTokens = data.usage.output_tokens;
-													}
-													totalTokens =
-														(promptTokens || 0) + (completionTokens || 0);
-												} else if (finishReason) {
-													if (!promptTokens) {
-														promptTokens =
-															messages.reduce(
-																(acc, m) => acc + (m.content?.length || 0),
-																0,
-															) / 4;
-													}
-
-													if (!completionTokens) {
-														completionTokens = fullContent.length / 4;
-													}
-
-													totalTokens =
-														(promptTokens || 0) + (completionTokens || 0);
-												}
 												break;
 											case "inference.net":
 											case "kluster.ai":
 											case "together.ai":
 											case "groq":
 											case "deepseek":
-												if (data.choices && data.choices[0]) {
-													if (data.choices[0].delta?.content) {
-														fullContent += data.choices[0].delta.content;
-													}
-													if (data.choices[0].finish_reason) {
-														finishReason = data.choices[0].finish_reason;
-													}
-												}
-
-												// Extract token counts if available
-												if (data.usage) {
-													if (data.usage.prompt_tokens !== undefined) {
-														promptTokens = data.usage.prompt_tokens;
-													}
-													if (data.usage.completion_tokens !== undefined) {
-														completionTokens = data.usage.completion_tokens;
-													}
-													if (data.usage.total_tokens !== undefined) {
-														totalTokens = data.usage.total_tokens;
-													} else {
-														totalTokens =
-															(promptTokens || 0) + (completionTokens || 0);
-													}
-												} else if (finishReason) {
-													// Estimate tokens if not provided
-													if (!promptTokens) {
-														promptTokens =
-															messages.reduce(
-																(acc, m) => acc + (m.content?.length || 0),
-																0,
-															) / 4;
-													}
-
-													if (!completionTokens) {
-														completionTokens = fullContent.length / 4;
-													}
-
-													totalTokens =
-														(promptTokens || 0) + (completionTokens || 0);
+												if (data.choices && data.choices[0]?.finish_reason) {
+													finishReason = data.choices[0].finish_reason;
 												}
 												break;
 											default: // OpenAI format
-												if (data.choices && data.choices[0]) {
-													if (data.choices[0].delta?.content) {
-														fullContent += data.choices[0].delta.content;
-													}
-													if (data.choices[0].finish_reason) {
-														finishReason = data.choices[0].finish_reason;
-													}
+												if (data.choices && data.choices[0]?.finish_reason) {
+													finishReason = data.choices[0].finish_reason;
 												}
+												break;
 										}
 
-										if (data.usage) {
-											promptTokens = data.usage.prompt_tokens;
-											completionTokens = data.usage.completion_tokens;
-											totalTokens = data.usage.total_tokens;
+										// Extract token usage using helper function
+										const usage = extractTokenUsage(data, usedProvider);
+										if (usage.promptTokens !== null) promptTokens = usage.promptTokens;
+										if (usage.completionTokens !== null) completionTokens = usage.completionTokens;
+										if (usage.totalTokens !== null) totalTokens = usage.totalTokens;
+										if (usage.reasoningTokens !== null) reasoningTokens = usage.reasoningTokens;
+
+										// Estimate tokens if not provided and we have a finish reason
+										if (finishReason && (!promptTokens || !completionTokens)) {
+											if (!promptTokens) {
+												promptTokens = Math.round(
+													messages.reduce(
+														(acc, m) => acc + (m.content?.length || 0),
+														0,
+													) / 4,
+												);
+											}
+
+											if (!completionTokens) {
+												completionTokens = estimateTokensFromContent(fullContent);
+											}
+
+											totalTokens = (promptTokens || 0) + (completionTokens || 0);
 										}
 									} catch (e) {
 										console.warn("Failed to parse streaming JSON:", {
@@ -1926,7 +1962,7 @@ chat.openapi(completions, async (c) => {
 							console.error(
 								`Failed to encode completion text in streaming: ${error}`,
 							);
-							calculatedCompletionTokens = fullContent.length / 4;
+							calculatedCompletionTokens = estimateTokensFromContent(fullContent);
 						}
 					}
 
