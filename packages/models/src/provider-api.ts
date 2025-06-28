@@ -15,7 +15,40 @@ redisClient.on("error", (err) => {
 	console.error("Redis Client Error in models package:", err);
 });
 
+function validateImageUrl(url: string): void {
+	try {
+		const parsedUrl = new URL(url);
+		
+		// Only allow HTTP/HTTPS protocols
+		if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+			throw new Error('Invalid URL protocol. Only HTTP and HTTPS are allowed.');
+		}
+		
+		// Block private/internal IP ranges to prevent SSRF attacks
+		const hostname = parsedUrl.hostname;
+		if (
+			hostname === 'localhost' ||
+			hostname === '127.0.0.1' ||
+			hostname.startsWith('10.') ||
+			hostname.startsWith('192.168.') ||
+			/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+			hostname.startsWith('169.254.') || // AWS metadata service
+			hostname === '::1' // IPv6 localhost
+		) {
+			throw new Error('Access to private networks is not allowed.');
+		}
+	} catch (error) {
+		if (error instanceof TypeError) {
+			throw new Error('Invalid URL format.');
+		}
+		throw error;
+	}
+}
+
 async function fetchImageAsBase64(url: string) {
+	// Validate URL to prevent SSRF attacks
+	validateImageUrl(url);
+
 	// Generate cache key from URL
 	const cacheKey = `image:${crypto.createHash("sha256").update(url).digest("hex")}`;
 
@@ -30,60 +63,80 @@ async function fetchImageAsBase64(url: string) {
 		console.warn("Redis cache lookup failed for image:", error);
 	}
 
-	// Fetch image if not in cache
-	const response = await fetch(url);
-	if (!response.ok) {
-		throw new Error(`Failed to fetch image (${response.status})`);
-	}
-
-	const arrayBuffer = await response.arrayBuffer();
-	const data = Buffer.from(arrayBuffer).toString("base64");
-	const media_type = response.headers.get("content-type") || "image/png";
-	const result = {
-		type: "image",
-		source: { type: "base64", media_type, data },
-	};
+	// Set up timeout and abort controller
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+	const maxSize = 10 * 1024 * 1024; // 10MB limit
 
 	try {
-		// Cache the result for 5 minutes (300 seconds)
-		await redisClient.set(cacheKey, JSON.stringify(result), "EX", 300);
-	} catch (error) {
-		// If Redis fails, continue without caching (graceful degradation)
-		console.warn("Redis cache set failed for image:", error);
-	}
+		// Fetch image if not in cache
+		const response = await fetch(url, {
+			signal: controller.signal,
+			headers: {
+				'User-Agent': 'LLMGateway/1.0'
+			}
+		});
 
-	return result;
+		if (!response.ok) {
+			throw new Error(`Failed to fetch image (${response.status})`);
+		}
+
+		// Check content length before downloading
+		const contentLength = response.headers.get('content-length');
+		if (contentLength && parseInt(contentLength) > maxSize) {
+			throw new Error(`Image too large: ${contentLength} bytes (max: ${maxSize})`);
+		}
+
+		const arrayBuffer = await response.arrayBuffer();
+		
+		// Double-check actual size
+		if (arrayBuffer.byteLength > maxSize) {
+			throw new Error(`Image too large: ${arrayBuffer.byteLength} bytes (max: ${maxSize})`);
+		}
+
+		const data = Buffer.from(arrayBuffer).toString("base64");
+		const media_type = response.headers.get("content-type") || "image/png";
+		const result = {
+			type: "image",
+			source: { type: "base64", media_type, data },
+		};
+
+		try {
+			// Cache the result for 5 minutes (300 seconds)
+			await redisClient.set(cacheKey, JSON.stringify(result), "EX", 300);
+		} catch (error) {
+			// If Redis fails, continue without caching (graceful degradation)
+			console.warn("Redis cache set failed for image:", error);
+		}
+
+		return result;
+	} catch (error) {
+		if (error.name === 'AbortError') {
+			throw new Error('Image fetch timeout (10s limit exceeded)');
+		}
+		throw error;
+	} finally {
+		clearTimeout(timeoutId);
+	}
 }
 
 async function transformAnthropicMessages(messages: any[]) {
 	const results = [] as any[];
-	
-	for (const message of messages) {
-		if (Array.isArray(message.content)) {
-			// Process all images in parallel for better performance
-			const newContent = await Promise.all(
-				message.content.map(async (part) => {
-					if (part.type === "image_url" && part.image_url?.url) {
-						try {
-							return await fetchImageAsBase64(part.image_url.url);
-						} catch (error) {
-							// Log error and fallback to text representation
-							console.error(`Failed to fetch image ${part.image_url.url}:`, error);
-							return {
-								type: "text",
-								text: `[Image failed to load: ${part.image_url.url}]`
-							};
-						}
-					}
-					return part;
-				})
-			);
-			results.push({ ...message, content: newContent });
+	for (const m of messages) {
+		if (Array.isArray(m.content)) {
+			const newContent = [] as any[];
+			for (const part of m.content) {
+				if (part.type === "image_url" && part.image_url?.url) {
+					newContent.push(await fetchImageAsBase64(part.image_url.url));
+				} else {
+					newContent.push(part);
+				}
+			}
+			results.push({ ...m, content: newContent });
 		} else {
-			results.push(message);
+			results.push(m);
 		}
 	}
-	
 	return results;
 }
 
