@@ -632,7 +632,7 @@ describe("e2e tests with real provider keys", () => {
 		expect(logs[0].usedModel).toBeTruthy();
 	});
 
-	test.skip("/v1/chat/completions with bare 'custom' model", async () => {
+	test("/v1/chat/completions with bare 'custom' model", async () => {
 		const envVarName = getProviderEnvVar("openai");
 		const envVarValue = envVarName ? process.env[envVarName] : undefined;
 		if (!envVarValue) {
