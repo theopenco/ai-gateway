@@ -6,13 +6,11 @@ import { models } from "./models";
 import type { ProviderId } from "./providers";
 
 async function fetchImageAsBase64(url: string, redisClient?: Redis) {
-	// Configuration constants
-	const CACHE_TTL = parseInt(process.env.IMAGE_CACHE_TTL || '300'); // 5 minutes default
-	const CACHE_KEY_VERSION = 'v1'; // For cache invalidation if format changes
-	const MAX_CACHE_SIZE = 1024 * 1024; // 1MB limit for cache storage
-
-	// Generate versioned cache key from URL
-	const cacheKey = `image:${CACHE_KEY_VERSION}:${crypto.createHash("sha256").update(url).digest("hex")}`;
+	// Validate URL for security
+	validateImageUrl(url);
+	
+	// Generate cache key from URL
+	const cacheKey = `image:${crypto.createHash("sha256").update(url).digest("hex")}`;
 
 	// Check cache first if Redis client is provided
 	if (redisClient) {
@@ -27,55 +25,221 @@ async function fetchImageAsBase64(url: string, redisClient?: Redis) {
 		}
 	}
 
-	// Fetch image if not in cache
-	const response = await fetch(url);
-	if (!response.ok) {
-		throw new Error(`Failed to fetch image (${response.status})`);
+	// Fetch image with timeout and size limits
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+	
+	try {
+		const response = await fetch(url, {
+			signal: controller.signal,
+			headers: {
+				'User-Agent': 'LLMGateway/1.0'
+			}
+		});
+		
+		if (!response.ok) {
+			throw new Error(`Failed to fetch image (${response.status})`);
+		}
+		
+		// Check content length before downloading
+		const contentLength = response.headers.get('content-length');
+		const maxSize = 10 * 1024 * 1024; // 10MB limit
+		if (contentLength && parseInt(contentLength) > maxSize) {
+			throw new Error(`Image too large: ${contentLength} bytes (max: ${maxSize})`);
+		}
+		
+		const arrayBuffer = await response.arrayBuffer();
+		
+		// Double-check actual size
+		if (arrayBuffer.byteLength > maxSize) {
+			throw new Error(`Image too large: ${arrayBuffer.byteLength} bytes (max: ${maxSize})`);
+		}
+		
+		const data = Buffer.from(arrayBuffer).toString("base64");
+		const media_type = response.headers.get("content-type") || "image/png";
+		const result = {
+			type: "image",
+			source: { type: "base64", media_type, data },
+		};
+
+		// Cache the result for 5 minutes (300 seconds) if Redis client is provided
+		if (redisClient) {
+			try {
+				await redisClient.set(cacheKey, JSON.stringify(result), "EX", 300);
+			} catch (error) {
+				// If Redis fails, continue without caching (graceful degradation)
+				console.warn("Redis cache set failed for image:", error);
+			}
+		}
+
+		return result;
+	} finally {
+		clearTimeout(timeoutId);
 	}
+}
 
-	const arrayBuffer = await response.arrayBuffer();
-	const data = Buffer.from(arrayBuffer).toString("base64");
-	const media_type = response.headers.get("content-type") || "image/png";
-	const result = {
-		type: "image",
-		source: { type: "base64", media_type, data },
-	};
+function validateImageUrl(url: string): void {
+	try {
+		const parsedUrl = new URL(url);
+		
+		// Only allow HTTP/HTTPS protocols
+		if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+			throw new Error('Invalid URL protocol. Only HTTP and HTTPS are allowed.');
+		}
+		
+		// Block private/internal IP ranges
+		const hostname = parsedUrl.hostname;
+		if (
+			hostname === 'localhost' ||
+			hostname === '127.0.0.1' ||
+			hostname === '::1' ||
+			hostname.startsWith('10.') ||
+			hostname.startsWith('192.168.') ||
+			/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+			hostname.startsWith('169.254.') // AWS metadata endpoint
+		) {
+			throw new Error('Access to private networks is not allowed.');
+		}
+	} catch (error) {
+		throw new Error(`Invalid URL: ${error.message}`);
+	}
+}
 
-	// Cache the result if Redis client is provided and size is within limits
+async function fetchImageForGoogle(url: string, redisClient?: Redis) {
+	// Validate URL for security
+	validateImageUrl(url);
+	
+	// Generate cache key for Google format
+	const cacheKey = `google-image:${crypto.createHash("sha256").update(url).digest("hex")}`;
+
+	// Check cache first if Redis client is provided
 	if (redisClient) {
 		try {
-			const resultJson = JSON.stringify(result);
-			
-			// Check cache size to avoid storing very large images in Redis
-			if (resultJson.length > MAX_CACHE_SIZE) {
-				console.warn(`Image too large for cache (${resultJson.length} bytes, max: ${MAX_CACHE_SIZE}), skipping cache storage`);
-			} else {
-				await redisClient.set(cacheKey, resultJson, "EX", CACHE_TTL);
+			const cachedData = await redisClient.get(cacheKey);
+			if (cachedData) {
+				return JSON.parse(cachedData);
 			}
 		} catch (error) {
 			// If Redis fails, continue without caching (graceful degradation)
-			console.warn("Redis cache set failed for image:", error);
+			console.warn("Redis cache lookup failed for Google image:", error);
 		}
 	}
 
-	return result;
+	// Fetch image with timeout and size limits
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+	
+	try {
+		const response = await fetch(url, {
+			signal: controller.signal,
+			headers: {
+				'User-Agent': 'LLMGateway/1.0'
+			}
+		});
+		
+		if (!response.ok) {
+			throw new Error(`Failed to fetch image (${response.status})`);
+		}
+		
+		// Check content length before downloading
+		const contentLength = response.headers.get('content-length');
+		const maxSize = 10 * 1024 * 1024; // 10MB limit
+		if (contentLength && parseInt(contentLength) > maxSize) {
+			throw new Error(`Image too large: ${contentLength} bytes (max: ${maxSize})`);
+		}
+		
+		const arrayBuffer = await response.arrayBuffer();
+		
+		// Double-check actual size
+		if (arrayBuffer.byteLength > maxSize) {
+			throw new Error(`Image too large: ${arrayBuffer.byteLength} bytes (max: ${maxSize})`);
+		}
+		
+		const data = Buffer.from(arrayBuffer).toString("base64");
+		const mimeType = response.headers.get("content-type") || "image/png";
+		const result = {
+			inlineData: {
+				mimeType,
+				data,
+			},
+		};
+
+		// Cache the result for 5 minutes (300 seconds) if Redis client is provided
+		if (redisClient) {
+			try {
+				await redisClient.set(cacheKey, JSON.stringify(result), "EX", 300);
+			} catch (error) {
+				// If Redis fails, continue without caching (graceful degradation)
+				console.warn("Redis cache set failed for Google image:", error);
+			}
+		}
+
+		return result;
+	} finally {
+		clearTimeout(timeoutId);
+	}
 }
 
 async function transformAnthropicMessages(messages: any[], redisClient?: Redis) {
 	const results = [] as any[];
 	for (const m of messages) {
 		if (Array.isArray(m.content)) {
-			const newContent = [] as any[];
-			for (const part of m.content) {
-				if (part.type === "image_url" && part.image_url?.url) {
-					newContent.push(await fetchImageAsBase64(part.image_url.url, redisClient));
-				} else {
-					newContent.push(part);
-				}
-			}
+			// Process all images in parallel for better performance
+			const newContent = await Promise.all(
+				m.content.map(async (part) => {
+					if (part.type === "image_url" && part.image_url?.url) {
+						try {
+							return await fetchImageAsBase64(part.image_url.url, redisClient);
+						} catch (error) {
+							console.error(`Failed to fetch image ${part.image_url.url}:`, error);
+							// Fallback to text representation
+							return {
+								type: "text",
+								text: `[Image failed to load: ${part.image_url.url}]`
+							};
+						}
+					}
+					return part;
+				})
+			);
 			results.push({ ...m, content: newContent });
 		} else {
 			results.push(m);
+		}
+	}
+	return results;
+}
+
+async function transformGoogleMessages(messages: any[], redisClient?: Redis) {
+	const results = [] as any[];
+	for (const m of messages) {
+		if (Array.isArray(m.content)) {
+			// Process all parts in parallel for better performance
+			const parts = await Promise.all(
+				m.content.map(async (part) => {
+					if (part.type === "text") {
+						return { text: part.text };
+					} else if (part.type === "image_url" && part.image_url?.url) {
+						try {
+							return await fetchImageForGoogle(part.image_url.url, redisClient);
+						} catch (error) {
+							console.error(`Failed to fetch image ${part.image_url.url}:`, error);
+							// Fallback to text representation
+							return { text: `[Image failed to load: ${part.image_url.url}]` };
+						}
+					}
+					return part; // Return other part types as-is
+				})
+			);
+			results.push({
+				role: m.role === "assistant" ? "model" : "user",
+				parts,
+			});
+		} else {
+			results.push({
+				role: m.role === "assistant" ? "model" : "user",
+				parts: [{ text: m.content }],
+			});
 		}
 	}
 	return results;
@@ -217,23 +381,7 @@ export async function prepareRequestBody(
 			delete requestBody.stream; // Handled differently
 			delete requestBody.messages; // Not used in body for Google AI Studio
 
-			requestBody.contents = messages.map((m) => ({
-				role: m.role === "assistant" ? "model" : "user", // get rid of system role
-				parts: Array.isArray(m.content)
-					? m.content.map((i) => {
-							if (i.type === "text") {
-								return {
-									text: i.text,
-								};
-							}
-							throw new Error("No support for non-text parts yet");
-						})
-					: [
-							{
-								text: m.content,
-							},
-						],
-			}));
+			requestBody.contents = await transformGoogleMessages(messages, redisClient);
 
 			requestBody.generationConfig = {};
 
