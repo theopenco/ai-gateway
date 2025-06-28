@@ -37,7 +37,7 @@ export function getProviderHeaders(
 export function prepareRequestBody(
 	usedProvider: ProviderId,
 	usedModel: string,
-	originalMessages: any[],
+	messagesInput: any[],
 	stream: boolean,
 	temperature: number | undefined,
 	max_tokens: number | undefined,
@@ -48,11 +48,16 @@ export function prepareRequestBody(
 	tools?: any[],
 	tool_choice?: string | { type: string; function: { name: string } },
 ) {
-	// transform messages.content from array to string
-	const messages = originalMessages.map((m) => ({
+	// filter out empty messages
+	const messages = messagesInput.map((m) => ({
 		role: m.role,
 		content: Array.isArray(m.content)
-			? m.content.map((c: any) => c.text).join(" ")
+			? m.content.filter((c: any) => {
+					if (c.type === "text" && Object.keys(c).length === 2) {
+						return c.text.trim() !== "";
+					}
+					return true;
+				})
 			: m.content,
 	}));
 
@@ -112,7 +117,20 @@ export function prepareRequestBody(
 						: m.role === "system"
 							? "user"
 							: "user",
-				content: m.role === "system" ? `System: ${m.content}` : m.content,
+				content: Array.isArray(m.content)
+					? m.content.map((i: any) => {
+							switch (i.type) {
+								// anthropic does not support image URLs, only base64
+								// TODO fetch url and provide as base64 instead
+								case "image_url":
+									return {
+										type: "text",
+										text: `image URL: ${i.image_url.url}`,
+									};
+							}
+							return i;
+						})
+					: m.content,
 			}));
 
 			// Add optional parameters if they are provided
