@@ -1666,7 +1666,10 @@ chat.openapi(completions, async (c) => {
 								});
 
 								// Extract content for logging using helper function
-								const contentChunk = extractContentFromProvider(data, usedProvider);
+								const contentChunk = extractContentFromProvider(
+									data,
+									usedProvider,
+								);
 								if (contentChunk) {
 									fullContent += contentChunk;
 								}
@@ -1687,10 +1690,18 @@ chat.openapi(completions, async (c) => {
 
 								// Extract token usage using helper function
 								const usage = extractTokenUsage(data, usedProvider);
-								if (usage.promptTokens !== null) promptTokens = usage.promptTokens;
-								if (usage.completionTokens !== null) completionTokens = usage.completionTokens;
-								if (usage.totalTokens !== null) totalTokens = usage.totalTokens;
-								if (usage.reasoningTokens !== null) reasoningTokens = usage.reasoningTokens;
+								if (usage.promptTokens !== null) {
+									promptTokens = usage.promptTokens;
+								}
+								if (usage.completionTokens !== null) {
+									completionTokens = usage.completionTokens;
+								}
+								if (usage.totalTokens !== null) {
+									totalTokens = usage.totalTokens;
+								}
+								if (usage.reasoningTokens !== null) {
+									reasoningTokens = usage.reasoningTokens;
+								}
 
 								// For Google AI Studio, if candidatesTokenCount is not provided,
 								// we'll calculate it later from the fullContent
@@ -1752,7 +1763,8 @@ chat.openapi(completions, async (c) => {
 									}
 
 									if (finalCompletionTokens === null) {
-										finalCompletionTokens = estimateTokensFromContent(fullContent);
+										finalCompletionTokens =
+											estimateTokensFromContent(fullContent);
 									}
 
 									if (finalTotalTokens === null) {
@@ -1837,7 +1849,10 @@ chat.openapi(completions, async (c) => {
 										});
 
 										// Extract content for logging using helper function
-										const contentChunk = extractContentFromProvider(data, usedProvider);
+										const contentChunk = extractContentFromProvider(
+											data,
+											usedProvider,
+										);
 										if (contentChunk) {
 											fullContent += contentChunk;
 										}
@@ -1877,10 +1892,18 @@ chat.openapi(completions, async (c) => {
 
 										// Extract token usage using helper function
 										const usage = extractTokenUsage(data, usedProvider);
-										if (usage.promptTokens !== null) promptTokens = usage.promptTokens;
-										if (usage.completionTokens !== null) completionTokens = usage.completionTokens;
-										if (usage.totalTokens !== null) totalTokens = usage.totalTokens;
-										if (usage.reasoningTokens !== null) reasoningTokens = usage.reasoningTokens;
+										if (usage.promptTokens !== null) {
+											promptTokens = usage.promptTokens;
+										}
+										if (usage.completionTokens !== null) {
+											completionTokens = usage.completionTokens;
+										}
+										if (usage.totalTokens !== null) {
+											totalTokens = usage.totalTokens;
+										}
+										if (usage.reasoningTokens !== null) {
+											reasoningTokens = usage.reasoningTokens;
+										}
 
 										// Estimate tokens if not provided and we have a finish reason
 										if (finishReason && (!promptTokens || !completionTokens)) {
@@ -1894,10 +1917,12 @@ chat.openapi(completions, async (c) => {
 											}
 
 											if (!completionTokens) {
-												completionTokens = estimateTokensFromContent(fullContent);
+												completionTokens =
+													estimateTokensFromContent(fullContent);
 											}
 
-											totalTokens = (promptTokens || 0) + (completionTokens || 0);
+											totalTokens =
+												(promptTokens || 0) + (completionTokens || 0);
 										}
 									} catch (e) {
 										console.warn("Failed to parse streaming JSON:", {
@@ -1962,7 +1987,8 @@ chat.openapi(completions, async (c) => {
 							console.error(
 								`Failed to encode completion text in streaming: ${error}`,
 							);
-							calculatedCompletionTokens = estimateTokensFromContent(fullContent);
+							calculatedCompletionTokens =
+								estimateTokensFromContent(fullContent);
 						}
 					}
 
