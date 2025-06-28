@@ -25,7 +25,7 @@ const testModels = models
 		const testCases = [];
 
 		if (fullMode) {
-			// test all models
+			// test root model without a specific provider
 			testCases.push({
 				model: model.model,
 				providers: model.providers,
@@ -37,6 +37,22 @@ const testModels = models
 			testCases.push({
 				model: `${provider.providerId}/${model.model}`,
 				providers: [provider],
+				originalModel: model.model, // Keep track of the original model for reference
+			});
+		}
+
+		return testCases;
+	});
+
+const providerModels = models
+	.filter((model) => !["custom", "auto"].includes(model.model))
+	.flatMap((model) => {
+		const testCases = [];
+
+		for (const provider of model.providers) {
+			testCases.push({
+				model: `${provider.providerId}/${model.model}`,
+				provider,
 				originalModel: model.model, // Keep track of the original model for reference
 			});
 		}
@@ -354,10 +370,10 @@ describe("e2e tests with real provider keys", () => {
 	);
 
 	if (fullMode) {
-		test.each(testModels)(
+		test.each(providerModels)(
 			"/v1/chat/completions with complex content array for $model",
 			getTestOptions(),
-			async ({ model }) => {
+			async ({ model, provider }) => {
 				const res = await app.request("/v1/chat/completions", {
 					method: "POST",
 					headers: {
@@ -378,13 +394,17 @@ describe("e2e tests with real provider keys", () => {
 										type: "text",
 										text: "",
 									},
-									// TODO provide this if it supports vision
-									// {
-									// 	type: "image_url",
-									// 	image_url: {
-									// 		url: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://google.com&size=128",
-									// 	},
-									// },
+									// provide image url if vision is supported
+									...(provider.vision
+										? [
+												{
+													type: "image_url",
+													image_url: {
+														url: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://google.com&size=128",
+													},
+												},
+											]
+										: []),
 								],
 							},
 						],
