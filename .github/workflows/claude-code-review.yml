@@ -79,6 +79,8 @@ jobs:
             3. **Add inline comments**: Use `mcp__github__add_pull_request_review_comment_to_pending_review` for each specific piece of feedback on particular lines, including code change suggestions where appropriate
             4. **Submit the review**: Use `mcp__github__submit_pending_pull_request_review` with event type "COMMENT" (not "REQUEST_CHANGES") to publish all comments as a non-blocking review
 
+            Before committing, make sure to run `pnpm format`. Also make sure to run `pnpm generate` if API routes were modified. Run `pnpm build` to ensure there are no errors.
+
             Provide specific, actionable feedback with inline comments for line-specific issues and include an overall summary when submitting the review.
 
             **Important**: Submit as "COMMENT" type so the review doesn't block the PR.
