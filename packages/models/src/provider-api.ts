@@ -1,133 +1,62 @@
 import crypto from "crypto";
-import Redis from "ioredis";
+import type Redis from "ioredis";
 
 import { models } from "./models";
 
 import type { ProviderId } from "./providers";
 
-// Redis client for image caching
-const redisClient = new Redis({
-	host: process.env.REDIS_HOST || "localhost",
-	port: Number(process.env.REDIS_PORT) || 6379,
-});
-
-redisClient.on("error", (err) => {
-	console.error("Redis Client Error in models package:", err);
-});
-
-function validateImageUrl(url: string): void {
-	try {
-		const parsedUrl = new URL(url);
-		
-		// Only allow HTTP/HTTPS protocols
-		if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-			throw new Error('Invalid URL protocol. Only HTTP and HTTPS are allowed.');
-		}
-		
-		// Block private/internal IP ranges to prevent SSRF attacks
-		const hostname = parsedUrl.hostname;
-		if (
-			hostname === 'localhost' ||
-			hostname === '127.0.0.1' ||
-			hostname.startsWith('10.') ||
-			hostname.startsWith('192.168.') ||
-			/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
-			hostname.startsWith('169.254.') || // AWS metadata service
-			hostname === '::1' // IPv6 localhost
-		) {
-			throw new Error('Access to private networks is not allowed.');
-		}
-	} catch (error) {
-		if (error instanceof TypeError) {
-			throw new Error('Invalid URL format.');
-		}
-		throw error;
-	}
-}
-
-async function fetchImageAsBase64(url: string) {
-	// Validate URL to prevent SSRF attacks
-	validateImageUrl(url);
-
+async function fetchImageAsBase64(url: string, redisClient?: Redis) {
 	// Generate cache key from URL
 	const cacheKey = `image:${crypto.createHash("sha256").update(url).digest("hex")}`;
 
-	try {
-		// Check cache first
-		const cachedData = await redisClient.get(cacheKey);
-		if (cachedData) {
-			return JSON.parse(cachedData);
+	// Check cache first if Redis client is provided
+	if (redisClient) {
+		try {
+			const cachedData = await redisClient.get(cacheKey);
+			if (cachedData) {
+				return JSON.parse(cachedData);
+			}
+		} catch (error) {
+			// If Redis fails, continue without caching (graceful degradation)
+			console.warn("Redis cache lookup failed for image:", error);
 		}
-	} catch (error) {
-		// If Redis fails, continue without caching (graceful degradation)
-		console.warn("Redis cache lookup failed for image:", error);
 	}
 
-	// Set up timeout and abort controller
-	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-	const maxSize = 10 * 1024 * 1024; // 10MB limit
+	// Fetch image if not in cache
+	const response = await fetch(url);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch image (${response.status})`);
+	}
 
-	try {
-		// Fetch image if not in cache
-		const response = await fetch(url, {
-			signal: controller.signal,
-			headers: {
-				'User-Agent': 'LLMGateway/1.0'
-			}
-		});
+	const arrayBuffer = await response.arrayBuffer();
+	const data = Buffer.from(arrayBuffer).toString("base64");
+	const media_type = response.headers.get("content-type") || "image/png";
+	const result = {
+		type: "image",
+		source: { type: "base64", media_type, data },
+	};
 
-		if (!response.ok) {
-			throw new Error(`Failed to fetch image (${response.status})`);
-		}
-
-		// Check content length before downloading
-		const contentLength = response.headers.get('content-length');
-		if (contentLength && parseInt(contentLength) > maxSize) {
-			throw new Error(`Image too large: ${contentLength} bytes (max: ${maxSize})`);
-		}
-
-		const arrayBuffer = await response.arrayBuffer();
-		
-		// Double-check actual size
-		if (arrayBuffer.byteLength > maxSize) {
-			throw new Error(`Image too large: ${arrayBuffer.byteLength} bytes (max: ${maxSize})`);
-		}
-
-		const data = Buffer.from(arrayBuffer).toString("base64");
-		const media_type = response.headers.get("content-type") || "image/png";
-		const result = {
-			type: "image",
-			source: { type: "base64", media_type, data },
-		};
-
+	// Cache the result for 5 minutes (300 seconds) if Redis client is provided
+	if (redisClient) {
 		try {
-			// Cache the result for 5 minutes (300 seconds)
 			await redisClient.set(cacheKey, JSON.stringify(result), "EX", 300);
 		} catch (error) {
 			// If Redis fails, continue without caching (graceful degradation)
 			console.warn("Redis cache set failed for image:", error);
 		}
-
-		return result;
-	} catch (error) {
-		if (error.name === 'AbortError') {
-			throw new Error('Image fetch timeout (10s limit exceeded)');
-		}
-		throw error;
-	} finally {
-		clearTimeout(timeoutId);
 	}
+
+	return result;
 }
 
-async function transformAnthropicMessages(messages: any[]) {
+async function transformAnthropicMessages(messages: any[], redisClient?: Redis) {
 	const results = [] as any[];
 	for (const m of messages) {
 		if (Array.isArray(m.content)) {
 			const newContent = [] as any[];
 			for (const part of m.content) {
 				if (part.type === "image_url" && part.image_url?.url) {
-					newContent.push(await fetchImageAsBase64(part.image_url.url));
+					newContent.push(await fetchImageAsBase64(part.image_url.url, redisClient));
 				} else {
 					newContent.push(part);
 				}
@@ -186,6 +115,7 @@ export async function prepareRequestBody(
 	tools?: any[],
 	tool_choice?: string | { type: string; function: { name: string } },
 	reasoning_effort?: "low" | "medium" | "high",
+	redisClient?: Redis,
 ) {
 	// filter out empty messages
 	const messages = messagesInput.map((m) => ({
@@ -252,7 +182,7 @@ export async function prepareRequestBody(
 		}
 		case "anthropic": {
 			requestBody.max_tokens = max_tokens || 1024;
-			requestBody.messages = await transformAnthropicMessages(messages);
+			requestBody.messages = await transformAnthropicMessages(messages, redisClient);
 
 			// Add optional parameters if they are provided
 			if (temperature !== undefined) {
@@ -559,6 +489,7 @@ export async function validateProviderKey(
 			undefined, // tools
 			undefined, // tool_choice
 			undefined, // reasoning_effort
+			undefined, // redisClient - no caching for validation
 		);
 
 		const headers = getProviderHeaders(provider, token);
