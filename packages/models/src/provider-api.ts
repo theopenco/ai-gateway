@@ -48,7 +48,6 @@ export function prepareRequestBody(
 	tools?: any[],
 	tool_choice?: string | { type: string; function: { name: string } },
 ) {
-	console.log("messagesInput", JSON.stringify(messagesInput, null, 2));
 	// filter out empty messages
 	const messages = messagesInput.map((m) => ({
 		role: m.role,
@@ -61,7 +60,6 @@ export function prepareRequestBody(
 				})
 			: m.content,
 	}));
-	console.log("messages", JSON.stringify(messages, null, 2));
 
 	const requestBody: any = {
 		model: usedModel,
