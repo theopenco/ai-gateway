@@ -147,7 +147,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 			finishReason = json.candidates?.[0]?.finishReason || null;
 			promptTokens = json.usageMetadata?.promptTokenCount || null;
 			completionTokens = json.usageMetadata?.candidatesTokenCount || null;
-			reasoningTokens = json.usageMetadata?.reasoningTokenCount || null;
+			reasoningTokens = json.usageMetadata?.thoughtsTokenCount || null;
 			totalTokens = json.usageMetadata?.totalTokenCount || null;
 			break;
 		case "inference.net":
