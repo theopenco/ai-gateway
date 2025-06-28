@@ -121,6 +121,7 @@ export function prepareRequestBody(
 					? m.content.map((i: any) => {
 							switch (i.type) {
 								// anthropic does not support image URLs, only base64
+								// TODO fetch url and provide as base64 instead
 								case "image_url":
 									return {
 										type: "text",

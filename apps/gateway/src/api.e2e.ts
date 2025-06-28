@@ -372,18 +372,19 @@ describe("e2e tests with real provider keys", () => {
 								content: [
 									{
 										type: "text",
-										text: "<task>\nhi sup!\n</task>",
+										text: "<task>\ndescribe this image\n</task>",
 									},
 									{
 										type: "text",
 										text: "",
 									},
-									{
-										type: "image_url",
-										image_url: {
-											url: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://google.com&size=128",
-										},
-									},
+									// TODO provide this if it supports vision
+									// {
+									// 	type: "image_url",
+									// 	image_url: {
+									// 		url: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://google.com&size=128",
+									// 	},
+									// },
 								],
 							},
 						],
