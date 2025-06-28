@@ -268,6 +268,7 @@ describe("e2e tests with real provider keys", () => {
 			expect(res.headers.get("content-type")).toContain("text/event-stream");
 
 			const streamResult = await readAll(res.body);
+			console.log("streamResult", JSON.stringify(streamResult, null, 2));
 
 			expect(streamResult.hasValidSSE).toBe(true);
 			expect(streamResult.eventCount).toBeGreaterThan(0);
