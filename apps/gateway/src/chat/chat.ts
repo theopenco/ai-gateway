@@ -1599,6 +1599,7 @@ chat.openapi(completions, async (c) => {
 			let totalTokens = null;
 			let reasoningTokens = null;
 			let buffer = ""; // Buffer for accumulating partial data across chunks
+			const MAX_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB limit
 
 			try {
 				while (true) {
@@ -1610,6 +1611,13 @@ chat.openapi(completions, async (c) => {
 					// Convert the Uint8Array to a string
 					const chunk = new TextDecoder().decode(value);
 					buffer += chunk;
+
+					// Check buffer size to prevent memory exhaustion
+					if (buffer.length > MAX_BUFFER_SIZE) {
+						console.warn("Buffer size exceeded 10MB, clearing buffer to prevent memory exhaustion");
+						buffer = "";
+						continue;
+					}
 
 					// For Google providers, handle raw JSON objects across newlines
 					if (
