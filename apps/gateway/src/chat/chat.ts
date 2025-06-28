@@ -1547,8 +1547,8 @@ chat.openapi(completions, async (c) => {
 						// Try to find and parse complete JSON objects
 						while (buffer.length > 0) {
 							// Find the start of a JSON object
-							const jsonStartIndex = buffer.indexOf('{');
-							
+							const jsonStartIndex = buffer.indexOf("{");
+
 							if (jsonStartIndex === -1) {
 								// No JSON start found, clear buffer
 								buffer = "";
@@ -1557,7 +1557,7 @@ chat.openapi(completions, async (c) => {
 
 							// Try to parse JSON starting from this position
 							const parseResult = tryParseJSON(buffer, jsonStartIndex);
-							
+
 							if (parseResult) {
 								// Successfully parsed a JSON object
 								const data = parseResult.data;
@@ -1603,7 +1603,7 @@ chat.openapi(completions, async (c) => {
 								}
 							} else {
 								// No complete JSON object found, try to find next JSON start
-								const nextStart = buffer.indexOf('{', jsonStartIndex + 1);
+								const nextStart = buffer.indexOf("{", jsonStartIndex + 1);
 								if (nextStart !== -1) {
 									// Skip to next potential JSON start
 									buffer = buffer.substring(nextStart);
