@@ -1614,7 +1614,9 @@ chat.openapi(completions, async (c) => {
 
 					// Check buffer size to prevent memory exhaustion
 					if (buffer.length > MAX_BUFFER_SIZE) {
-						console.warn("Buffer size exceeded 10MB, clearing buffer to prevent memory exhaustion");
+						console.warn(
+							"Buffer size exceeded 10MB, clearing buffer to prevent memory exhaustion",
+						);
 						buffer = "";
 						continue;
 					}
