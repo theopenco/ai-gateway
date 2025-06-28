@@ -521,14 +521,14 @@ function transformStreamingChunkToOpenAIFormat(
 							finish_reason: null,
 						},
 					],
-					usage: data.usageMetadata
-						? {
-								prompt_tokens: data.usageMetadata.promptTokenCount || null,
-								completion_tokens:
-									data.usageMetadata.candidatesTokenCount || null,
-								total_tokens: data.usageMetadata.totalTokenCount || null,
-							}
-						: null,
+					usage:
+						data.usageMetadata && data.usageMetadata.candidatesTokenCount
+							? {
+									prompt_tokens: data.usageMetadata.promptTokenCount || 0,
+									completion_tokens: data.usageMetadata.candidatesTokenCount,
+									total_tokens: data.usageMetadata.totalTokenCount || 0,
+								}
+							: null,
 				};
 			} else if (data.candidates?.[0]?.finishReason) {
 				const finishReason = data.candidates[0].finishReason;
@@ -549,14 +549,14 @@ function transformStreamingChunkToOpenAIFormat(
 									: finishReason?.toLowerCase() || "stop",
 						},
 					],
-					usage: data.usageMetadata
-						? {
-								prompt_tokens: data.usageMetadata.promptTokenCount || null,
-								completion_tokens:
-									data.usageMetadata.candidatesTokenCount || null,
-								total_tokens: data.usageMetadata.totalTokenCount || null,
-							}
-						: null,
+					usage:
+						data.usageMetadata && data.usageMetadata.candidatesTokenCount
+							? {
+									prompt_tokens: data.usageMetadata.promptTokenCount || 0,
+									completion_tokens: data.usageMetadata.candidatesTokenCount,
+									total_tokens: data.usageMetadata.totalTokenCount || 0,
+								}
+							: null,
 				};
 			}
 			break;
@@ -1600,6 +1600,17 @@ chat.openapi(completions, async (c) => {
 									promptTokens = data.usageMetadata.promptTokenCount;
 									completionTokens = data.usageMetadata.candidatesTokenCount;
 									totalTokens = data.usageMetadata.totalTokenCount;
+
+									// For Google AI Studio, if candidatesTokenCount is not provided,
+									// we'll calculate it later from the fullContent
+									if (
+										(usedProvider === "google-ai-studio" ||
+											usedProvider === "google-vertex") &&
+										!data.usageMetadata.candidatesTokenCount &&
+										fullContent
+									) {
+										completionTokens = null; // Mark as missing so we calculate later
+									}
 								}
 							} else {
 								// No complete JSON object found, try to find next JSON start
@@ -1923,14 +1934,19 @@ chat.openapi(completions, async (c) => {
 						(calculatedPromptTokens || 0) + (calculatedCompletionTokens || 0);
 				}
 
-				// Send final usage chunk if we haven't sent one yet and we have calculated usage
-				if (
-					promptTokens === null &&
-					completionTokens === null &&
-					totalTokens === null &&
-					(calculatedPromptTokens !== null ||
-						calculatedCompletionTokens !== null)
-				) {
+				// Send final usage chunk if we need to send usage data
+				// This includes cases where:
+				// 1. No usage tokens were provided at all (all null)
+				// 2. Some tokens are missing (e.g., Google AI Studio doesn't provide completion tokens during streaming)
+				const needsUsageChunk =
+					(promptTokens === null &&
+						completionTokens === null &&
+						totalTokens === null &&
+						(calculatedPromptTokens !== null ||
+							calculatedCompletionTokens !== null)) ||
+					(completionTokens === null && calculatedCompletionTokens !== null);
+
+				if (needsUsageChunk) {
 					try {
 						const finalUsageChunk = {
 							id: `chatcmpl-${Date.now()}`,
@@ -1945,9 +1961,15 @@ chat.openapi(completions, async (c) => {
 								},
 							],
 							usage: {
-								prompt_tokens: Math.round(calculatedPromptTokens || 0),
-								completion_tokens: Math.round(calculatedCompletionTokens || 0),
-								total_tokens: Math.round(calculatedTotalTokens || 0),
+								prompt_tokens: Math.round(
+									promptTokens || calculatedPromptTokens || 0,
+								),
+								completion_tokens: Math.round(
+									completionTokens || calculatedCompletionTokens || 0,
+								),
+								total_tokens: Math.round(
+									totalTokens || calculatedTotalTokens || 0,
+								),
 							},
 						};
 
