@@ -105,9 +105,7 @@ function validateImageUrl(url: string): void {
 			throw new Error("Access to private networks is not allowed.");
 		}
 	} catch (error) {
-		throw new Error(
-			`Invalid URL: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		throw new Error(`Invalid URL: ${error.message}`);
 	}
 }
 
@@ -199,7 +197,7 @@ async function transformAnthropicMessages(
 		if (Array.isArray(m.content)) {
 			// Process all images in parallel for better performance
 			const newContent = await Promise.all(
-				m.content.map(async (part: any) => {
+				m.content.map(async (part) => {
 					if (part.type === "image_url" && part.image_url?.url) {
 						try {
 							return await fetchImageAsBase64(part.image_url.url, redisClient);
@@ -232,7 +230,7 @@ async function transformGoogleMessages(messages: any[], redisClient?: Redis) {
 		if (Array.isArray(m.content)) {
 			// Process all parts in parallel for better performance
 			const parts = await Promise.all(
-				m.content.map(async (part: any) => {
+				m.content.map(async (part) => {
 					if (part.type === "text") {
 						return { text: part.text };
 					} else if (part.type === "image_url" && part.image_url?.url) {
