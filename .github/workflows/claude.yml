@@ -50,5 +50,5 @@ jobs:
             Before committing, make sure to run `pnpm format`. Also make sure to run `pnpm generate` if API routes were modified. Run `pnpm build` to ensure there are no errors.
 
           # Optional: Custom environment variables for Claude
-          # claude_env: |
-          #   NODE_ENV: test
+          claude_env: |
+            TURBO_FORCE: true
