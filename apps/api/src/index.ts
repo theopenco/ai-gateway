@@ -116,7 +116,7 @@ app.openapi(root, async (c) => {
 
 	return c.json({
 		message: "OK",
-		version: process.env.APP_VERSION || "unknown",
+		version: process.env.APP_VERSION || "v0.0.0-unknown",
 		health,
 	});
 });
