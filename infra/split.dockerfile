@@ -60,6 +60,8 @@ RUN apk add --no-cache tini && \
     cp /sbin/tini /tini
 
 FROM base AS runtime
+ARG APP_VERSION
+ENV APP_VERSION=$APP_VERSION
 COPY --from=init /tini /tini
 ENTRYPOINT ["/tini", "--"]
 COPY --from=builder /bin/pnpm /bin/pnpm
@@ -94,6 +96,8 @@ CMD ["pnpm", "start"]
 
 # Base static image with Nginx
 FROM nginx:alpine AS static-base
+ARG APP_VERSION
+ENV APP_VERSION=$APP_VERSION
 
 # Copy Nginx configuration
 COPY infra/nginx-static.conf /etc/nginx/nginx.conf
