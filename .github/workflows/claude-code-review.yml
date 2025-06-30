@@ -83,4 +83,4 @@ jobs:
 
             **Important**: Submit as "COMMENT" type so the review doesn't block the PR.
 
-          allowed_tools: "Bash:*,Bash(*),Bash,Bash(sed:*),Bash(od:*),Bash(rg:*),Bash(pnpm format:*),Bash(pnpm build:*),Bash(pnpm push-dev:*),Bash(pnpm push-test:*),Bash(pnpm generate:*),Bash(pnpm test:*),Bash(pnpm push-test:*),Bash(pnpm run:*),Bash(pnpm -w run format),Bash(pnpm -w run test:e2e --run),WebFetch(domain:ai.google.dev),Bash(*),mcp__github__create_pending_pull_request_review,mcp__github__add_pull_request_review_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request_diff"
+          allowed_tools: "Bash:*,Bash(*),Bash,mcp__github__create_pending_pull_request_review,mcp__github__add_pull_request_review_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request_diff"

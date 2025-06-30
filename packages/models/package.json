@@ -19,6 +19,8 @@
 	"scripts": {
 		"build": "tsc && tsup"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"ioredis": "5.6.1"
+	},
 	"devDependencies": {}
 }

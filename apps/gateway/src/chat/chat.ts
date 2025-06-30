@@ -37,6 +37,7 @@ import {
 	hasProviderEnvironmentToken,
 	getProviderEnvVar,
 } from "../lib/provider";
+import redisClient from "../lib/redis";
 
 import type { ServerTypes } from "../vars";
 
@@ -1399,7 +1400,7 @@ chat.openapi(completions, async (c) => {
 	const requestCanBeCanceled =
 		providers.find((p) => p.id === usedProvider)?.cancellation === true;
 
-	const requestBody = prepareRequestBody(
+	const requestBody = await prepareRequestBody(
 		usedProvider,
 		usedModel,
 		messages,
@@ -1413,6 +1414,7 @@ chat.openapi(completions, async (c) => {
 		tools,
 		tool_choice,
 		reasoning_effort,
+		redisClient,
 	);
 
 	const startTime = Date.now();

@@ -1,6 +1,268 @@
+import crypto from "crypto";
+
 import { models } from "./models";
 
 import type { ProviderId } from "./providers";
+import type Redis from "ioredis";
+
+async function fetchImageAsBase64(url: string, redisClient?: Redis) {
+	// Validate URL for security
+	validateImageUrl(url);
+
+	// Generate cache key from URL
+	const cacheKey = `image:${crypto.createHash("sha256").update(url).digest("hex")}`;
+
+	// Check cache first if Redis client is provided
+	if (redisClient) {
+		try {
+			const cachedData = await redisClient.get(cacheKey);
+			if (cachedData) {
+				return JSON.parse(cachedData);
+			}
+		} catch (error) {
+			// If Redis fails, continue without caching (graceful degradation)
+			console.warn("Redis cache lookup failed for image:", error);
+		}
+	}
+
+	// Fetch image with timeout and size limits
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+	try {
+		const response = await fetch(url, {
+			signal: controller.signal,
+			headers: {
+				"User-Agent": "LLMGateway/1.0",
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch image (${response.status})`);
+		}
+
+		// Check content length before downloading
+		const contentLength = response.headers.get("content-length");
+		const maxSize = 10 * 1024 * 1024; // 10MB limit
+		if (contentLength && parseInt(contentLength) > maxSize) {
+			throw new Error(
+				`Image too large: ${contentLength} bytes (max: ${maxSize})`,
+			);
+		}
+
+		const arrayBuffer = await response.arrayBuffer();
+
+		// Double-check actual size
+		if (arrayBuffer.byteLength > maxSize) {
+			throw new Error(
+				`Image too large: ${arrayBuffer.byteLength} bytes (max: ${maxSize})`,
+			);
+		}
+
+		const data = Buffer.from(arrayBuffer).toString("base64");
+		const media_type = response.headers.get("content-type") || "image/png";
+		const result = {
+			type: "image",
+			source: { type: "base64", media_type, data },
+		};
+
+		// Cache the result for 5 minutes (300 seconds) if Redis client is provided
+		if (redisClient) {
+			try {
+				await redisClient.set(cacheKey, JSON.stringify(result), "EX", 300);
+			} catch (error) {
+				// If Redis fails, continue without caching (graceful degradation)
+				console.warn("Redis cache set failed for image:", error);
+			}
+		}
+
+		return result;
+	} finally {
+		clearTimeout(timeoutId);
+	}
+}
+
+function validateImageUrl(url: string): void {
+	try {
+		const parsedUrl = new URL(url);
+
+		// Only allow HTTP/HTTPS protocols
+		if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+			throw new Error("Invalid URL protocol. Only HTTP and HTTPS are allowed.");
+		}
+
+		// Block private/internal IP ranges
+		const hostname = parsedUrl.hostname;
+		if (
+			hostname === "localhost" ||
+			hostname === "127.0.0.1" ||
+			hostname === "::1" ||
+			hostname.startsWith("10.") ||
+			hostname.startsWith("192.168.") ||
+			/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+			hostname.startsWith("169.254.") // AWS metadata endpoint
+		) {
+			throw new Error("Access to private networks is not allowed.");
+		}
+	} catch (error) {
+		throw new Error(
+			`Invalid URL: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
+}
+
+async function fetchImageForGoogle(url: string, redisClient?: Redis) {
+	// Validate URL for security
+	validateImageUrl(url);
+
+	// Generate cache key for Google format
+	const cacheKey = `google-image:${crypto.createHash("sha256").update(url).digest("hex")}`;
+
+	// Check cache first if Redis client is provided
+	if (redisClient) {
+		try {
+			const cachedData = await redisClient.get(cacheKey);
+			if (cachedData) {
+				return JSON.parse(cachedData);
+			}
+		} catch (error) {
+			// If Redis fails, continue without caching (graceful degradation)
+			console.warn("Redis cache lookup failed for Google image:", error);
+		}
+	}
+
+	// Fetch image with timeout and size limits
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+	try {
+		const response = await fetch(url, {
+			signal: controller.signal,
+			headers: {
+				"User-Agent": "LLMGateway/1.0",
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch image (${response.status})`);
+		}
+
+		// Check content length before downloading
+		const contentLength = response.headers.get("content-length");
+		const maxSize = 10 * 1024 * 1024; // 10MB limit
+		if (contentLength && parseInt(contentLength) > maxSize) {
+			throw new Error(
+				`Image too large: ${contentLength} bytes (max: ${maxSize})`,
+			);
+		}
+
+		const arrayBuffer = await response.arrayBuffer();
+
+		// Double-check actual size
+		if (arrayBuffer.byteLength > maxSize) {
+			throw new Error(
+				`Image too large: ${arrayBuffer.byteLength} bytes (max: ${maxSize})`,
+			);
+		}
+
+		const data = Buffer.from(arrayBuffer).toString("base64");
+		const mimeType = response.headers.get("content-type") || "image/png";
+		const result = {
+			inlineData: {
+				mimeType,
+				data,
+			},
+		};
+
+		// Cache the result for 5 minutes (300 seconds) if Redis client is provided
+		if (redisClient) {
+			try {
+				await redisClient.set(cacheKey, JSON.stringify(result), "EX", 300);
+			} catch (error) {
+				// If Redis fails, continue without caching (graceful degradation)
+				console.warn("Redis cache set failed for Google image:", error);
+			}
+		}
+
+		return result;
+	} finally {
+		clearTimeout(timeoutId);
+	}
+}
+
+async function transformAnthropicMessages(
+	messages: any[],
+	redisClient?: Redis,
+) {
+	const results = [] as any[];
+	for (const m of messages) {
+		if (Array.isArray(m.content)) {
+			// Process all images in parallel for better performance
+			const newContent = await Promise.all(
+				m.content.map(async (part: any) => {
+					if (part.type === "image_url" && part.image_url?.url) {
+						try {
+							return await fetchImageAsBase64(part.image_url.url, redisClient);
+						} catch (error) {
+							console.error(
+								`Failed to fetch image ${part.image_url.url}:`,
+								error,
+							);
+							// Fallback to text representation
+							return {
+								type: "text",
+								text: `[Image failed to load: ${part.image_url.url}]`,
+							};
+						}
+					}
+					return part;
+				}),
+			);
+			results.push({ ...m, content: newContent });
+		} else {
+			results.push(m);
+		}
+	}
+	return results;
+}
+
+async function transformGoogleMessages(messages: any[], redisClient?: Redis) {
+	const results = [] as any[];
+	for (const m of messages) {
+		if (Array.isArray(m.content)) {
+			// Process all parts in parallel for better performance
+			const parts = await Promise.all(
+				m.content.map(async (part: any) => {
+					if (part.type === "text") {
+						return { text: part.text };
+					} else if (part.type === "image_url" && part.image_url?.url) {
+						try {
+							return await fetchImageForGoogle(part.image_url.url, redisClient);
+						} catch (error) {
+							console.error(
+								`Failed to fetch image ${part.image_url.url}:`,
+								error,
+							);
+							// Fallback to text representation
+							return { text: `[Image failed to load: ${part.image_url.url}]` };
+						}
+					}
+					return part; // Return other part types as-is
+				}),
+			);
+			results.push({
+				role: m.role === "assistant" ? "model" : "user",
+				parts,
+			});
+		} else {
+			results.push({
+				role: m.role === "assistant" ? "model" : "user",
+				parts: [{ text: m.content }],
+			});
+		}
+	}
+	return results;
+}
 
 /**
  * Get the appropriate headers for a given provider API call
@@ -34,7 +296,7 @@ export function getProviderHeaders(
 /**
  * Prepares the request body for different providers
  */
-export function prepareRequestBody(
+export async function prepareRequestBody(
 	usedProvider: ProviderId,
 	usedModel: string,
 	messagesInput: any[],
@@ -48,6 +310,7 @@ export function prepareRequestBody(
 	tools?: any[],
 	tool_choice?: string | { type: string; function: { name: string } },
 	reasoning_effort?: "low" | "medium" | "high",
+	redisClient?: Redis,
 ) {
 	// filter out empty messages
 	const messages = messagesInput.map((m) => ({
@@ -113,29 +376,11 @@ export function prepareRequestBody(
 			break;
 		}
 		case "anthropic": {
-			requestBody.max_tokens = max_tokens || 1024; // Set a default if not provided
-			requestBody.messages = messages.map((m) => ({
-				role:
-					m.role === "assistant"
-						? "assistant"
-						: m.role === "system"
-							? "user"
-							: "user",
-				content: Array.isArray(m.content)
-					? m.content.map((i: any) => {
-							switch (i.type) {
-								// anthropic does not support image URLs, only base64
-								// TODO fetch url and provide as base64 instead
-								case "image_url":
-									return {
-										type: "text",
-										text: `image URL: ${i.image_url.url}`,
-									};
-							}
-							return i;
-						})
-					: m.content,
-			}));
+			requestBody.max_tokens = max_tokens || 1024;
+			requestBody.messages = await transformAnthropicMessages(
+				messages,
+				redisClient,
+			);
 
 			// Add optional parameters if they are provided
 			if (temperature !== undefined) {
@@ -158,23 +403,10 @@ export function prepareRequestBody(
 			delete requestBody.stream; // Handled differently
 			delete requestBody.messages; // Not used in body for Google AI Studio
 
-			requestBody.contents = messages.map((m) => ({
-				role: m.role === "assistant" ? "model" : "user", // get rid of system role
-				parts: Array.isArray(m.content)
-					? m.content.map((i) => {
-							if (i.type === "text") {
-								return {
-									text: i.text,
-								};
-							}
-							throw new Error("No support for non-text parts yet");
-						})
-					: [
-							{
-								text: m.content,
-							},
-						],
-			}));
+			requestBody.contents = await transformGoogleMessages(
+				messages,
+				redisClient,
+			);
 
 			requestBody.generationConfig = {};
 
@@ -427,7 +659,7 @@ export async function validateProviderKey(
 			);
 		}
 
-		const payload = prepareRequestBody(
+		const payload = await prepareRequestBody(
 			provider,
 			validationModel,
 			messages,
@@ -441,6 +673,7 @@ export async function validateProviderKey(
 			undefined, // tools
 			undefined, // tool_choice
 			undefined, // reasoning_effort
+			undefined, // redisClient - no caching for validation
 		);
 
 		const headers = getProviderHeaders(provider, token);
