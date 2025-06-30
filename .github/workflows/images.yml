@@ -1,6 +1,8 @@
 name: ci
 
 on:
+  release:
+    types: [published]
   push:
     branches:
       - main
@@ -10,7 +12,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set-tag.outputs.IMAGE_TAG }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: set-tag
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            echo "IMAGE_TAG=v0.0.0-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          else
+            # Validate that the tag only contains allowed characters
+            if [[ ! "${{ github.event.release.tag_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9_-]+)*$ ]]; then
+              echo "Invalid tag name for Docker: ${{ github.event.release.tag_name }}"
+              exit 1
+            fi
+            echo "IMAGE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+
   push-split:
+    needs: setup
+    if: needs.setup.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,23 +59,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get short SHA
-        id: get_sha
-        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
       - name: Build and push split
         uses: docker/build-push-action@v6
         with:
           context: .
           file: infra/split.dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: |
-            ghcr.io/${{ github.repository }}-${{ matrix.app }}:${{ steps.get_sha.outputs.short_sha }}
+            ghcr.io/${{ github.repository }}-${{ matrix.app }}:${{ needs.setup.outputs.image_tag }}
             ghcr.io/${{ github.repository }}-${{ matrix.app }}:latest
           target: ${{ matrix.app }}
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
           build-args: |
+            APP_VERSION=${{ needs.setup.outputs.image_tag }}
             VITE_API_URL=${{ secrets.API_URL }}
             VITE_DOCS_URL=${{ secrets.DOCS_URL }}
             VITE_CRISP_ID=${{ secrets.CRISP_ID }}
@@ -58,6 +82,8 @@ jobs:
             NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
 
   push-unified:
+    needs: setup
+    if: needs.setup.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -76,19 +102,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get short SHA
-        id: get_sha
-        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
       - name: Build and push unified
         uses: docker/build-push-action@v6
         with:
           context: .
           file: infra/unified.dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository }}-unified:${{ steps.get_sha.outputs.short_sha }}
+            ghcr.io/${{ github.repository }}-unified:${{ needs.setup.outputs.image_tag }}
             ghcr.io/${{ github.repository }}-unified:latest
           cache-from: type=gha,scope=unified
           cache-to: type=gha,mode=max,scope=unified
+          build-args: |
+            APP_VERSION=${{ needs.setup.outputs.image_tag }}
