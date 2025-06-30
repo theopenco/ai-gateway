@@ -27,3 +27,15 @@
 ### apps/ui
 
 This is a tanstack router project. Always use navigate() for navigation.
+
+### apps/docs
+
+This is a NextJS project using Fumadocs.
+
+### apps/gateway
+
+This is a hono project. Always use hono+zod+openapi for validation and typesafety.
+
+### apps/api
+
+This is a hono project. Always use hono+zod+openapi for validation and typesafety.

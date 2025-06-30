@@ -44,8 +44,8 @@ Always run `pnpm format` before committing code. Run `pnpm generate` if API rout
 
 ### Core Services
 
-- **Gateway** (`apps/gateway`) - LLM request routing and provider management (Hono)
-- **API** (`apps/api`) - Backend API for user management, billing, analytics (Hono)
+- **Gateway** (`apps/gateway`) - LLM request routing and provider management (Hono + Zod + OpenAPI)
+- **API** (`apps/api`) - Backend API for user management, billing, analytics (Hono + Zod + OpenAPI)
 - **UI** (`apps/ui`) - Frontend dashboard (React + TanStack Router + Vite)
 - **Docs** (`apps/docs`) - Documentation site (Next.js + Fumadocs)
 
