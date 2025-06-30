@@ -86,6 +86,54 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/beacon": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: {
+				content: {
+					"application/json": {
+						/** Format: uuid */
+						uuid: string;
+						type: string;
+						/** Format: date-time */
+						timestamp: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Beacon data received successfully */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							success: boolean;
+							message: string;
+						};
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/user/me": {
 		parameters: {
 			query?: never;
