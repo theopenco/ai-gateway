@@ -49,10 +49,11 @@ beacon.openapi(beaconRoute, async (c) => {
 			distinctId: beaconData.uuid,
 			event: "self_hosted_installation_beacon",
 			properties: {
-				installation_type: beaconData.type,
+				installation: beaconData.type,
 				timestamp: beaconData.timestamp,
 				// Add some additional context
 				source: "self_hosted_api",
+				version: process.env.APP_VERSION || "v0.0.0-unknown",
 			},
 		});
 
