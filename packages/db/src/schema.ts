@@ -374,3 +374,14 @@ export const message = pgTable("message", {
 	content: text().notNull(),
 	sequence: integer().notNull(), // To maintain message order
 });
+
+export const installation = pgTable("installation", {
+	id: text().primaryKey().$defaultFn(shortid),
+	createdAt: timestamp().notNull().defaultNow(),
+	updatedAt: timestamp()
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	uuid: text().notNull().unique(),
+	type: text().notNull(),
+});
