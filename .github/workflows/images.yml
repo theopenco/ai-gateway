@@ -1,9 +1,8 @@
 name: ci
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,18 +31,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get short SHA
-        id: get_sha
-        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
       - name: Build and push split
         uses: docker/build-push-action@v6
         with:
           context: .
           file: infra/split.dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: |
-            ghcr.io/${{ github.repository }}-${{ matrix.app }}:${{ steps.get_sha.outputs.short_sha }}
+            ghcr.io/${{ github.repository }}-${{ matrix.app }}:${{ github.event.release.tag_name }}
             ghcr.io/${{ github.repository }}-${{ matrix.app }}:latest
           target: ${{ matrix.app }}
           cache-from: type=gha,scope=${{ matrix.app }}
@@ -76,19 +71,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get short SHA
-        id: get_sha
-        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
       - name: Build and push unified
         uses: docker/build-push-action@v6
         with:
           context: .
           file: infra/unified.dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository }}-unified:${{ steps.get_sha.outputs.short_sha }}
+            ghcr.io/${{ github.repository }}-unified:${{ github.event.release.tag_name }}
             ghcr.io/${{ github.repository }}-unified:latest
           cache-from: type=gha,scope=unified
           cache-to: type=gha,mode=max,scope=unified
