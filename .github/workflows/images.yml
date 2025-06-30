@@ -37,6 +37,7 @@ jobs:
 
   push-split:
     needs: setup
+    if: needs.setup.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -71,6 +72,7 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
           build-args: |
+            APP_VERSION=${{ needs.setup.outputs.image_tag }}
             VITE_API_URL=${{ secrets.API_URL }}
             VITE_DOCS_URL=${{ secrets.DOCS_URL }}
             VITE_CRISP_ID=${{ secrets.CRISP_ID }}
@@ -81,6 +83,7 @@ jobs:
 
   push-unified:
     needs: setup
+    if: needs.setup.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -111,3 +114,5 @@ jobs:
             ghcr.io/${{ github.repository }}-unified:latest
           cache-from: type=gha,scope=unified
           cache-to: type=gha,mode=max,scope=unified
+          build-args: |
+            APP_VERSION=${{ needs.setup.outputs.image_tag }}
