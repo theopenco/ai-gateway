@@ -82,6 +82,7 @@ const root = createRoute({
 					schema: z
 						.object({
 							message: z.string(),
+							version: z.string(),
 							health: z.object({
 								status: z.string(),
 								database: z.object({
@@ -114,7 +115,11 @@ app.openapi(root, async (c) => {
 		console.error("Database healthcheck failed:", error);
 	}
 
-	return c.json({ message: "OK", health });
+	return c.json({
+		message: "OK",
+		version: process.env.APP_VERSION || "v0.0.0-unknown",
+		health,
+	});
 });
 
 app.route("/stripe", stripeRoutes);

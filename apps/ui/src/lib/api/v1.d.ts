@@ -28,6 +28,7 @@ export interface paths {
 					content: {
 						"application/json": {
 							message: string;
+							version: string;
 							health: {
 								status: string;
 								database: {

@@ -85,6 +85,7 @@ describe("test", () => {
 		expect(res.status).toBe(200);
 		const data = await res.json();
 		expect(data).toHaveProperty("message", "OK");
+		expect(data).toHaveProperty("version");
 		expect(data).toHaveProperty("health");
 		expect(data.health).toHaveProperty("status");
 		expect(data.health).toHaveProperty("redis");
