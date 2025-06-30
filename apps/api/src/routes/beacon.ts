@@ -41,38 +41,27 @@ const beaconRoute = createRoute({
 });
 
 beacon.openapi(beaconRoute, async (c) => {
-	try {
-		const beaconData = c.req.valid("json");
+	const beaconData = c.req.valid("json");
 
-		// Send the installation data to PostHog for anonymous tracking
-		posthog.capture({
-			distinctId: beaconData.uuid,
-			event: "self_hosted_installation_beacon",
-			properties: {
-				installation: beaconData.type,
-				timestamp: beaconData.timestamp,
-				// Add some additional context
-				source: "self_hosted_api",
-				version: process.env.APP_VERSION || "v0.0.0-unknown",
-			},
-		});
+	// Send the installation data to PostHog for anonymous tracking
+	posthog.capture({
+		distinctId: beaconData.uuid,
+		event: "self_hosted_installation_beacon",
+		properties: {
+			installation: beaconData.type,
+			timestamp: beaconData.timestamp,
+			// Add some additional context
+			source: "self_hosted_api",
+			version: process.env.APP_VERSION || "v0.0.0-unknown",
+		},
+	});
 
-		console.log(
-			`Received beacon from installation ${beaconData.uuid} (${beaconData.type})`,
-		);
+	console.log(
+		`Received beacon from installation ${beaconData.uuid} (${beaconData.type})`,
+	);
 
-		return c.json({
-			success: true,
-			message: "Beacon received successfully",
-		});
-	} catch (error) {
-		console.error("Error processing beacon:", error);
-
-		// For simplicity, let's still return 200 but with an error flag
-		// This prevents the self-hosted installation from seeing errors
-		return c.json({
-			success: false,
-			message: "Failed to process beacon data",
-		});
-	}
+	return c.json({
+		success: true,
+		message: "Beacon received successfully",
+	});
 });

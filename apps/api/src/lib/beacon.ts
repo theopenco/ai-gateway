@@ -11,23 +11,20 @@ interface BeaconData {
  * Sends installation beacon data to the tracking endpoint
  */
 async function sendBeacon(data: BeaconData): Promise<void> {
-	try {
-		const response = await fetch("https://api.llmgateway.io/beacon", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(data),
-			// Add timeout to prevent hanging
-			signal: AbortSignal.timeout(5000),
-		});
+	const response = await fetch("https://api.llmgateway.io/beacon", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(data),
+		// Add timeout to prevent hanging
+		signal: AbortSignal.timeout(5000),
+	});
 
-		if (!response.ok) {
-			console.warn(`Beacon request failed with status ${response.status}`);
-		}
-	} catch (error) {
-		// Log warning but don't throw - beacon failure should not prevent startup
-		console.warn("Failed to send beacon:", error);
+	if (!response.ok) {
+		throw new Error(
+			`Failed to send beacon: ${response.status} ${response.statusText}`,
+		);
 	}
 }
 

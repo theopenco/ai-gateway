@@ -19,9 +19,7 @@ async function startServer() {
 
 	// Send installation beacon for self-hosted tracking
 	// This runs in the background and won't block startup
-	sendInstallationBeacon().catch((error) => {
-		console.warn("Failed to send installation beacon:", error);
-	});
+	void sendInstallationBeacon();
 
 	console.log("listening on port", port);
 
