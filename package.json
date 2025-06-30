@@ -15,7 +15,7 @@
 		"postinstall": "husky && sync-editorconfig || true",
 		"lint": "eslint . && prettier --check .",
 		"migrate": "pnpm --filter db migrate",
-		"prepare-codex": "mv ~/.nvm ~/.nvm-bak && export PATH=\"${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH\" && source ~/.bashrc && sudo service postgresql start && sudo service redis-server start && sleep 20 && pnpm sync",
+		"prepare-codex": "mv ~/.nvm ~/.nvm-bak && export PATH=\"${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH\" && . ~/.bashrc && sudo service postgresql start && sudo service redis-server start && sleep 20 && pnpm sync",
 		"push-dev": "pnpm --filter db push",
 		"push-test": "cross-env-shell \"DATABASE_URL=${DATABASE_URL:-postgres://postgres:pw@localhost:5432/test}\" pnpm --filter db push",
 		"reset": "pnpm --filter db reset",
