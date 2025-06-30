@@ -100,6 +100,7 @@ subscriptions.openapi(createProSubscription, async (c) => {
 					quantity: 1,
 				},
 			],
+			allow_promotion_codes: true,
 			success_url: `${process.env.UI_URL || "http://localhost:3002"}/dashboard/settings/billing?success=true`,
 			cancel_url: `${process.env.UI_URL || "http://localhost:3002"}/dashboard/settings/billing?canceled=true`,
 			metadata: {
