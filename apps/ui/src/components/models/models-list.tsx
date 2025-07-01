@@ -43,6 +43,12 @@ export function ModelsList() {
 										Image: ${provider.imageInputPrice.toFixed(5)} / input
 									</div>
 								)}
+								{provider.requestPrice !== undefined && (
+									<div>
+										Request: ${(provider.requestPrice * 1000).toFixed(2)} / 1K
+										requests
+									</div>
+								)}
 							</div>
 						))}
 					</div>

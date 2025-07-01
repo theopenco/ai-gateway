@@ -41,6 +41,7 @@ const logSchema = z.object({
 	cost: z.number().nullable(),
 	inputCost: z.number().nullable(),
 	outputCost: z.number().nullable(),
+	requestCost: z.number().nullable(),
 	estimatedCost: z.boolean().nullable(),
 	canceled: z.boolean().nullable(),
 	streamed: z.boolean().nullable(),

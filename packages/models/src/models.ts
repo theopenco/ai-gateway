@@ -20,6 +20,10 @@ export interface ProviderModelMapping {
 	 */
 	imageInputPrice?: number;
 	/**
+	 * Price per request in USD
+	 */
+	requestPrice?: number;
+	/**
 	 * Maximum context window size in tokens
 	 */
 	contextSize?: number;
@@ -1006,6 +1010,7 @@ export let models = [
 				modelName: "sonar-pro",
 				inputPrice: 1.0 / 1e6,
 				outputPrice: 1.0 / 1e6,
+				requestPrice: 5.0 / 1000,
 				contextSize: 127072,
 				streaming: false,
 				vision: false,

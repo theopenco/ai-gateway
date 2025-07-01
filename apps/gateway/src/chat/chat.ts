@@ -1380,6 +1380,7 @@ chat.openapi(completions, async (c) => {
 				errorDetails: null,
 				inputCost: 0,
 				outputCost: 0,
+				requestCost: 0,
 				cost: 0,
 				estimatedCost: false,
 				cached: true,
@@ -1487,6 +1488,7 @@ chat.openapi(completions, async (c) => {
 						streamed: true,
 						canceled: true,
 						errorDetails: null,
+						requestCost: null,
 						cached: false,
 					});
 
@@ -1567,6 +1569,7 @@ chat.openapi(completions, async (c) => {
 						statusText: res.statusText,
 						responseText: errorResponseText,
 					},
+					requestCost: null,
 					cached: false,
 				});
 
@@ -2109,6 +2112,7 @@ chat.openapi(completions, async (c) => {
 					canceled: canceled,
 					inputCost: costs.inputCost,
 					outputCost: costs.outputCost,
+					requestCost: costs.requestCost,
 					cost: costs.totalCost,
 					estimatedCost: costs.estimatedCost,
 					cached: false,
@@ -2187,6 +2191,7 @@ chat.openapi(completions, async (c) => {
 			streamed: false,
 			canceled: true,
 			errorDetails: null,
+			requestCost: null,
 			estimatedCost: false,
 			cached: false,
 		});
@@ -2246,6 +2251,7 @@ chat.openapi(completions, async (c) => {
 				statusText: res.statusText,
 				responseText: errorResponseText,
 			},
+			requestCost: null,
 			estimatedCost: false,
 			cached: false,
 		});
@@ -2345,6 +2351,7 @@ chat.openapi(completions, async (c) => {
 		errorDetails: null,
 		inputCost: costs.inputCost,
 		outputCost: costs.outputCost,
+		requestCost: costs.requestCost,
 		cost: costs.totalCost,
 		estimatedCost: costs.estimatedCost,
 		cached: false,

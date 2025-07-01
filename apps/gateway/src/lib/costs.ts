@@ -39,6 +39,7 @@ export function calculateCosts(
 		return {
 			inputCost: null,
 			outputCost: null,
+			requestCost: null,
 			totalCost: null,
 			promptTokens,
 			completionTokens,
@@ -95,6 +96,7 @@ export function calculateCosts(
 		return {
 			inputCost: null,
 			outputCost: null,
+			requestCost: null,
 			totalCost: null,
 			promptTokens: calculatedPromptTokens,
 			completionTokens: calculatedCompletionTokens,
@@ -111,6 +113,7 @@ export function calculateCosts(
 		return {
 			inputCost: null,
 			outputCost: null,
+			requestCost: null,
 			totalCost: null,
 			promptTokens: calculatedPromptTokens,
 			completionTokens: calculatedCompletionTokens,
@@ -120,14 +123,17 @@ export function calculateCosts(
 
 	const inputPrice = providerInfo.inputPrice || 0;
 	const outputPrice = providerInfo.outputPrice || 0;
+	const requestPrice = providerInfo.requestPrice || 0;
 
 	const inputCost = calculatedPromptTokens * inputPrice;
 	const outputCost = calculatedCompletionTokens * outputPrice;
-	const totalCost = inputCost + outputCost;
+	const requestCost = requestPrice;
+	const totalCost = inputCost + outputCost + requestCost;
 
 	return {
 		inputCost,
 		outputCost,
+		requestCost,
 		totalCost,
 		promptTokens: calculatedPromptTokens,
 		completionTokens: calculatedCompletionTokens,
