@@ -32,6 +32,11 @@ const hasOnlyModels = models.some((model) =>
 
 // Log if we're using "only" mode
 if (hasOnlyModels) {
+	if (process.env.CI === "true") {
+		throw new Error(
+			"Cannot use 'only' in test configuration when running in CI. Please remove 'only' from the test configuration and try again.",
+		);
+	}
 	console.log(
 		"Running in 'only' mode - only testing models marked with test: 'only'",
 	);
