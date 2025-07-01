@@ -265,6 +265,7 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 														{model.outputPrice !== undefined &&
 															` / $${(model.outputPrice * 1e6).toFixed(2)} out`}
 														{model.requestPrice !== undefined &&
+															model.requestPrice !== 0 &&
 															` / $${(model.requestPrice * 1000).toFixed(2)} per 1K req`}
 													</p>
 												)}
