@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { toast } from "@/lib/components/use-toast";
-import { API_URL } from "@/lib/env";
+import { getConfigSync } from "@/lib/config-utils";
 
 export interface Chat {
 	id: string;
@@ -23,7 +23,8 @@ export interface ChatMessage {
 
 // Helper function for authenticated fetch
 async function authFetch(url: string, options: RequestInit = {}) {
-	const response = await fetch(`${API_URL}${url}`, {
+	const config = getConfigSync();
+	const response = await fetch(`${config.apiUrl}${url}`, {
 		...options,
 		headers: {
 			"Content-Type": "application/json",

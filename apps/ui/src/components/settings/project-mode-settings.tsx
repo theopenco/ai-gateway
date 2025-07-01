@@ -9,7 +9,6 @@ import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Separator } from "@/lib/components/separator";
 import { useToast } from "@/lib/components/use-toast";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { HOSTED } from "@/lib/env";
 import { $api } from "@/lib/fetch-client";
 
 export function ProjectModeSettings() {

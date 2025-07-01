@@ -1,7 +1,6 @@
 import { providers as providerDefinitions } from "@llmgateway/models";
 import { Link } from "@tanstack/react-router";
 
-import { DOCS_URL, GITHUB_URL } from "@/lib/env";
 import Logo from "@/lib/icons/Logo";
 
 export default function Footer() {

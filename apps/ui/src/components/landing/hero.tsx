@@ -18,7 +18,6 @@ import XaiLogo from "@/assets/models/xai.svg?react";
 import heroImageLight from "@/assets/new-hero-light.png";
 import heroImageDark from "@/assets/new-hero.png";
 import { Button } from "@/lib/components/button";
-import { DOCS_URL } from "@/lib/env";
 
 const transitionVariants = {
 	item: {

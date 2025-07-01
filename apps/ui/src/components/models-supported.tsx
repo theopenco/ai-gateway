@@ -26,7 +26,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/lib/components/card";
-import { DOCS_URL } from "@/lib/env";
 import Logo from "@/lib/icons/Logo";
 import { cn, formatContextSize } from "@/lib/utils";
 

@@ -28,7 +28,6 @@ import {
 } from "@/lib/components/form";
 import { Input } from "@/lib/components/input";
 import { toast } from "@/lib/components/use-toast";
-import { HOSTED } from "@/lib/env";
 import { $api } from "@/lib/fetch-client";
 
 const formSchema = z.object({

@@ -1,6 +1,5 @@
 import { AuthLink } from "../shared/auth-link";
 import { Button } from "@/lib/components/button";
-import { GITHUB_URL } from "@/lib/env";
 
 export default function CallToAction() {
 	return (

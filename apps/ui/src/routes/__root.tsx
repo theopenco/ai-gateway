@@ -14,21 +14,30 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "@/globals.css?url";
 import { Toaster } from "@/lib/components/toaster";
-import { CRISP_ID, POSTHOG_HOST, POSTHOG_KEY } from "@/lib/env";
+import { useAppConfigValue } from "@/lib/config";
+import { getConfig } from "@/lib/config-server";
+import { loadConfig } from "@/lib/config-utils";
 import { cn } from "@/lib/utils";
 
 import type { QueryClient } from "@tanstack/react-query";
 import type { PostHogConfig } from "posthog-js";
 
-const options: Partial<PostHogConfig> | undefined = {
-	api_host: POSTHOG_HOST,
-	capture_pageview: "history_change",
-	autocapture: true,
-};
-
 export const Route = createRootRouteWithContext<{
 	queryClient: QueryClient;
 }>()({
+	loader: async ({ context: { queryClient } }) => {
+		// Prefetch the configuration so it's available throughout the app
+		const config = await queryClient.ensureQueryData({
+			queryKey: ["app-config"],
+			queryFn: () => getConfig(),
+			staleTime: 1000 * 60 * 5, // 5 minutes
+		});
+
+		// Also populate the synchronous cache for utility functions
+		await loadConfig();
+
+		return config;
+	},
 	head: () => ({
 		links: [
 			{ rel: "stylesheet", href: appCss },
@@ -65,11 +74,13 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
+	const config = useAppConfigValue();
+
 	useEffect(() => {
-		if (CRISP_ID) {
-			Crisp.configure(CRISP_ID);
+		if (config.crispId) {
+			Crisp.configure(config.crispId);
 		}
-	}, []);
+	}, [config.crispId]);
 
 	return (
 		<RootDocument>
@@ -79,6 +90,14 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+	const config = useAppConfigValue();
+
+	const posthogOptions: Partial<PostHogConfig> | undefined = {
+		api_host: config.posthogHost,
+		capture_pageview: "history_change",
+		autocapture: true,
+	};
+
 	return (
 		<html suppressHydrationWarning>
 			<head>
@@ -97,9 +116,16 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 					enableSystem
 					storageKey="theme"
 				>
-					<PostHogProvider apiKey={POSTHOG_KEY} options={options}>
-						{children}
-					</PostHogProvider>
+					{config.posthogKey ? (
+						<PostHogProvider
+							apiKey={config.posthogKey}
+							options={posthogOptions}
+						>
+							{children}
+						</PostHogProvider>
+					) : (
+						children
+					)}
 				</ThemeProvider>
 				<Toaster />
 				{process.env.NODE_ENV !== "development" && (

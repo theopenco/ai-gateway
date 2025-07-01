@@ -16,7 +16,6 @@ import {
 } from "@/hooks/useChats";
 import { useUser } from "@/hooks/useUser";
 import { SidebarProvider } from "@/lib/components/sidebar";
-import { API_URL } from "@/lib/env";
 import { $api } from "@/lib/fetch-client";
 
 export interface Message {

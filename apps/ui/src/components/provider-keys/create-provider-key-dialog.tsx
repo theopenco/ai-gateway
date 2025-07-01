@@ -20,7 +20,6 @@ import {
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { toast } from "@/lib/components/use-toast";
-import { HOSTED } from "@/lib/env";
 import { $api } from "@/lib/fetch-client";
 
 import type { Organization } from "@/lib/types";

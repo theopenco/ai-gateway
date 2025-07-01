@@ -25,7 +25,6 @@ import {
 } from "@/lib/components/card";
 import { Tabs, TabsList, TabsTrigger } from "@/lib/components/tabs";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { DOCS_URL } from "@/lib/env";
 import { $api } from "@/lib/fetch-client";
 
 export const Route = createFileRoute("/dashboard/_layout/")({

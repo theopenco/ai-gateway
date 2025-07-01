@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Star } from "lucide-react";
 
 import { Button } from "@/lib/components/button";
-import { GITHUB_URL } from "@/lib/env";
 
 async function fetchGitHubStars(repo: string): Promise<number> {
 	const res = await fetch(`https://api.github.com/repos/${repo}`);

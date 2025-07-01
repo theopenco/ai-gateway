@@ -6,7 +6,6 @@ import { GitHubStars } from "./github-stars";
 import { ThemeToggle } from "./theme-toggle";
 import { AuthLink } from "../shared/auth-link";
 import { Button } from "@/lib/components/button";
-import { DOCS_URL } from "@/lib/env";
 import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
 

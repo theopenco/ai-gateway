@@ -65,8 +65,8 @@ import {
 	useSidebar,
 	SidebarTrigger,
 } from "@/lib/components/sidebar";
+import { useDocsUrl } from "@/lib/config";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { DOCS_URL } from "@/lib/env";
 import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
 
@@ -119,26 +119,7 @@ const ORGANIZATION_SETTINGS = [
 	},
 ] as const;
 
-const TOOLS_RESOURCES = [
-	{
-		href: "/dashboard/models",
-		label: "Models",
-		icon: BrainCircuit,
-		internal: true,
-	},
-	{
-		href: "/playground",
-		label: "Playground",
-		icon: BotMessageSquare,
-		internal: false,
-	},
-	{
-		href: DOCS_URL,
-		label: "Docs",
-		icon: FileText,
-		internal: false,
-	},
-] as const;
+// TOOLS_RESOURCES will be created dynamically inside the component
 
 const USER_MENU_ITEMS = [
 	{
@@ -346,10 +327,17 @@ function OrganizationSection({
 }
 
 function ToolsResourcesSection({
+	toolsResources,
 	isActive,
 	isMobile,
 	toggleSidebar,
 }: {
+	toolsResources: readonly {
+		href: string;
+		label: string;
+		icon: any;
+		internal: boolean;
+	}[];
 	isActive: (path: string) => boolean;
 	isMobile: boolean;
 	toggleSidebar: () => void;
@@ -361,7 +349,7 @@ function ToolsResourcesSection({
 			</SidebarGroupLabel>
 			<SidebarGroupContent className="mt-2">
 				<SidebarMenu>
-					{TOOLS_RESOURCES.map((item) => (
+					{toolsResources.map((item) => (
 						<SidebarMenuItem key={item.href}>
 							{item.internal ? (
 								<Link
@@ -621,12 +609,34 @@ export function DashboardSidebar({
 	onSelectOrganization,
 	onOrganizationCreated,
 }: DashboardSidebarProps) {
+	const docsUrl = useDocsUrl();
 	const queryClient = useQueryClient();
 	const { location } = useRouterState();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const { user } = useUser();
 	const { selectedOrganization } = useDashboardContext();
 	const navigate = useNavigate();
+
+	const toolsResources = [
+		{
+			href: "/dashboard/models",
+			label: "Models",
+			icon: BrainCircuit,
+			internal: true,
+		},
+		{
+			href: "/playground",
+			label: "Playground",
+			icon: BotMessageSquare,
+			internal: false,
+		},
+		{
+			href: docsUrl,
+			label: "Docs",
+			icon: FileText,
+			internal: false,
+		},
+	] as const;
 	const posthog = usePostHog();
 
 	const isActive = (path: string) => location.pathname === path;
@@ -704,6 +714,7 @@ export function DashboardSidebar({
 					/>
 
 					<ToolsResourcesSection
+						toolsResources={toolsResources}
 						isActive={isActive}
 						isMobile={isMobile}
 						toggleSidebar={toggleSidebar}

@@ -19,7 +19,6 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Step } from "@/lib/components/stepper";
 import { toast } from "@/lib/components/use-toast";
-import { HOSTED } from "@/lib/env";
 import { $api } from "@/lib/fetch-client";
 
 const CREDIT_OPTIONS = [

@@ -8,7 +8,7 @@ import { Card } from "@/lib/components/card";
 import { Input } from "@/lib/components/input";
 import { ScrollArea } from "@/lib/components/scroll-area";
 import { toast } from "@/lib/components/use-toast";
-import { API_URL } from "@/lib/env";
+import { useApiUrl } from "@/lib/config";
 
 interface Message {
 	role: "user" | "assistant";
@@ -16,6 +16,7 @@ interface Message {
 }
 
 export function Chat() {
+	const apiUrl = useApiUrl();
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +39,7 @@ export function Chat() {
 		setIsLoading(true);
 
 		try {
-			const response = await fetch(API_URL + "/chat/completion", {
+			const response = await fetch(apiUrl + "/chat/completion", {
 				credentials: "include",
 				method: "POST",
 				headers: {
