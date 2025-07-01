@@ -158,6 +158,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 		case "together.ai":
 		case "groq":
 		case "deepseek":
+		case "perplexity":
 			content = json.choices?.[0]?.message?.content || null;
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
@@ -301,6 +302,7 @@ function extractContentFromProvider(data: any, provider: Provider): string {
 		case "together.ai":
 		case "groq":
 		case "deepseek":
+		case "perplexity":
 			return data.choices?.[0]?.delta?.content || "";
 		default: // OpenAI format
 			return data.choices?.[0]?.delta?.content || "";
@@ -338,6 +340,7 @@ function extractTokenUsage(data: any, provider: Provider) {
 		case "together.ai":
 		case "groq":
 		case "deepseek":
+		case "perplexity":
 			if (data.usage) {
 				promptTokens = data.usage.prompt_tokens || null;
 				completionTokens = data.usage.completion_tokens || null;
@@ -1889,6 +1892,7 @@ chat.openapi(completions, async (c) => {
 											case "together.ai":
 											case "groq":
 											case "deepseek":
+											case "perplexity":
 												if (data.choices && data.choices[0]?.finish_reason) {
 													finishReason = data.choices[0].finish_reason;
 												}
