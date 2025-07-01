@@ -39,13 +39,13 @@ export const metaModels = [
 		],
 	},
 	{
-		model: "llama-3.1-70b-instruct",
+		model: "llama-3.2-11b-instruct",
 		deprecatedAt: undefined,
 		deactivatedAt: undefined,
 		providers: [
 			{
 				providerId: "inference.net",
-				modelName: "meta-llama/llama-3.1-70b-instruct/fp-16",
+				modelName: "meta-llama/llama-3.2-11b-instruct/fp-16",
 				inputPrice: 0.07 / 1e6,
 				outputPrice: 0.33 / 1e6,
 				requestPrice: 0,
