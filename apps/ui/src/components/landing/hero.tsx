@@ -190,6 +190,36 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 											</a>
 										</Button>
 									</AnimatedGroup>
+
+									<AnimatedGroup
+										variants={{
+											container: {
+												visible: {
+													transition: {
+														staggerChildren: 0.05,
+														delayChildren: 1,
+													},
+												},
+											},
+											...transitionVariants,
+										}}
+										className="mt-8 flex justify-center fixed bottom-4 left-2 z-30"
+									>
+										<a
+											href="https://www.producthunt.com/products/llm-gateway?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-llm&#0045;gateway"
+											target="_blank"
+											rel="noopener noreferrer"
+											className="transition-transform hover:scale-105"
+										>
+											<img
+												src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=986038&theme=light&t=1751353042660"
+												alt="LLM&#0032;Gateway - One&#0032;API&#0032;Gateway&#0032;for&#0032;all&#0032;your&#0032;LLM&#0032;needs | Product Hunt"
+												style={{ width: "250px", height: "54px" }}
+												width="250"
+												height="54"
+											/>
+										</a>
+									</AnimatedGroup>
 								</div>
 							</div>
 
