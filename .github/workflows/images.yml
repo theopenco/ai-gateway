@@ -73,6 +73,13 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
           build-args: |
             APP_VERSION=${{ needs.setup.outputs.image_tag }}
+            VITE_API_URL=${{ secrets.API_URL }}
+            VITE_DOCS_URL=${{ secrets.DOCS_URL }}
+            VITE_CRISP_ID=${{ secrets.CRISP_ID }}
+            VITE_POSTHOG_HOST=${{ secrets.POSTHOG_HOST }}
+            VITE_POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
+            NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.POSTHOG_HOST }}
+            NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.POSTHOG_KEY }}
 
   push-unified:
     needs: setup
