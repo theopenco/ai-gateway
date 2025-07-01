@@ -12,6 +12,7 @@ export const mistralModels = [
 				inputPrice: 0.000004,
 				outputPrice: 0.000012,
 				contextSize: 128000,
+				maxOutput: undefined,
 				streaming: true,
 				vision: false,
 			},
