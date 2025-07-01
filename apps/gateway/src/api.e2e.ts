@@ -167,7 +167,9 @@ describe("e2e tests with real provider keys", () => {
 		const logs = await waitForLogs(1);
 		expect(logs.length).toBeGreaterThan(0);
 
-		console.log("logs", JSON.stringify(logs, null, 2));
+		if (fullMode) {
+			console.log("logs", JSON.stringify(logs, null, 2));
+		}
 
 		const log = logs[0];
 		expect(log.usedProvider).toBeTruthy();
@@ -208,7 +210,9 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("response:", JSON.stringify(json, null, 2));
+			if (fullMode) {
+				console.log("response:", JSON.stringify(json, null, 2));
+			}
 
 			expect(res.status).toBe(200);
 			validateResponse(json);
@@ -268,7 +272,9 @@ describe("e2e tests with real provider keys", () => {
 			expect(res.headers.get("content-type")).toContain("text/event-stream");
 
 			const streamResult = await readAll(res.body);
-			console.log("streamResult", JSON.stringify(streamResult, null, 2));
+			if (fullMode) {
+				console.log("streamResult", JSON.stringify(streamResult, null, 2));
+			}
 
 			expect(streamResult.hasValidSSE).toBe(true);
 			expect(streamResult.eventCount).toBeGreaterThan(0);
@@ -357,7 +363,9 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("reasoning response:", JSON.stringify(json, null, 2));
+			if (fullMode) {
+				console.log("reasoning response:", JSON.stringify(json, null, 2));
+			}
 
 			expect(res.status).toBe(200);
 			validateResponse(json);
@@ -417,7 +425,9 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("json", JSON.stringify(json, null, 2));
+			if (fullMode) {
+				console.log("json", JSON.stringify(json, null, 2));
+			}
 			expect(res.status).toBe(200);
 			expect(json).toHaveProperty("choices.[0].message.content");
 
@@ -472,7 +482,9 @@ describe("e2e tests with real provider keys", () => {
 				});
 
 				const json = await res.json();
-				console.log("response:", JSON.stringify(json, null, 2));
+				if (fullMode) {
+					console.log("response:", JSON.stringify(json, null, 2));
+				}
 
 				expect(res.status).toBe(200);
 				validateResponse(json);
