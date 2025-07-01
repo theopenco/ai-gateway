@@ -1,0 +1,211 @@
+import type { ModelDefinition } from "@llmgateway/models";
+
+export const openaiModels = [
+	{
+		model: "gpt-4o-mini",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "gpt-4o-mini",
+				inputPrice: 0.15 / 1e6,
+				outputPrice: 0.6 / 1e6,
+				contextSize: 128000,
+				streaming: true,
+				vision: false,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "gpt-4",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "gpt-4",
+				inputPrice: 30.0 / 1e6,
+				outputPrice: 60.0 / 1e6,
+				contextSize: 128000,
+				streaming: true,
+				vision: false,
+			},
+		],
+		jsonOutput: false,
+	},
+	{
+		model: "gpt-4o",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "gpt-4o",
+				inputPrice: 2.5 / 1e6,
+				outputPrice: 10.0 / 1e6,
+				imageInputPrice: 0.00553,
+				contextSize: 128000,
+				streaming: true,
+				vision: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "gpt-3.5-turbo",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "gpt-3.5-turbo",
+				inputPrice: 0.5 / 1e6,
+				outputPrice: 1.5 / 1e6,
+				contextSize: 16385,
+				streaming: true,
+				vision: false,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "gpt-4-turbo",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "gpt-4-turbo",
+				inputPrice: 10.0 / 1e6,
+				outputPrice: 30.0 / 1e6,
+				contextSize: 128000,
+				streaming: true,
+				vision: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "gpt-4.1",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "gpt-4.1",
+				inputPrice: 2.0 / 1e6,
+				outputPrice: 8.0 / 1e6,
+				contextSize: 1000000,
+				streaming: true,
+				vision: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "o1",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "o1",
+				inputPrice: 15.0 / 1e6,
+				outputPrice: 60.0 / 1e6,
+				contextSize: 200000,
+				streaming: true,
+				vision: true,
+				reasoning: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	// TODO this model does not support the system role in the messages array (jeez openai)
+	// {
+	// 	model: "o1-mini",
+	// 	deprecatedAt: undefined,
+	// 	deactivatedAt: undefined,
+	// 	providers: [
+	// 		{
+	// 			providerId: "openai",
+	// 			modelName: "o1-mini",
+	// 			inputPrice: 1.1 / 1e6,
+	// 			outputPrice: 4.4 / 1e6,
+	// 			contextSize: 128000,
+	// 			streaming: true,
+	// 			reasoning: true,
+	// 		},
+	// 	],
+	// 	jsonOutput: true,
+	// },
+	{
+		model: "gpt-4.1-mini",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "gpt-4.1-mini",
+				inputPrice: 0.4 / 1e6,
+				outputPrice: 1.6 / 1e6,
+				contextSize: 1000000,
+				streaming: true,
+				vision: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "gpt-4.1-nano",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "gpt-4.1-nano",
+				inputPrice: 0.1 / 1e6,
+				outputPrice: 0.4 / 1e6,
+				contextSize: 1000000,
+				streaming: true,
+				vision: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "o3",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "o3",
+				inputPrice: 2 / 1e6,
+				outputPrice: 8 / 1e6,
+				contextSize: 200000,
+				streaming: false,
+				vision: true,
+			},
+		],
+		jsonOutput: true,
+	},
+	{
+		model: "o3-mini",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "openai",
+				modelName: "o3-mini",
+				inputPrice: 1.1 / 1e6,
+				outputPrice: 4.4 / 1e6,
+				contextSize: 200000,
+				streaming: true,
+				vision: false,
+			},
+		],
+		jsonOutput: true,
+	},
+] as const satisfies ModelDefinition[];
