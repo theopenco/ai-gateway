@@ -45,6 +45,8 @@ RUN pnpm build
 
 # Runtime stage with all services
 FROM alpine:3.19 AS runtime
+ARG APP_VERSION
+ENV APP_VERSION=$APP_VERSION
 
 # Install required packages
 RUN apk add --no-cache \
