@@ -1,3 +1,5 @@
+import { perplexityModels } from "./models/perplexity";
+
 import type { providers } from "./providers";
 
 export type Provider = (typeof providers)[number]["id"];
@@ -54,7 +56,7 @@ export interface ModelDefinition {
 	deactivatedAt?: Date;
 }
 
-export let models = [
+export const models = [
 	{
 		model: "custom", // custom provider which expects base URL to be set
 		deprecatedAt: undefined,
@@ -996,21 +998,5 @@ export let models = [
 		],
 		jsonOutput: true,
 	},
-	{
-		model: "sonar-pro",
-		deprecatedAt: undefined,
-		deactivatedAt: undefined,
-		providers: [
-			{
-				providerId: "perplexity",
-				modelName: "sonar-pro",
-				inputPrice: 1.0 / 1e6,
-				outputPrice: 1.0 / 1e6,
-				contextSize: 127072,
-				streaming: false,
-				vision: false,
-			},
-		],
-		jsonOutput: false,
-	},
+	...perplexityModels,
 ] as const satisfies ModelDefinition[];
