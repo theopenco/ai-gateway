@@ -211,7 +211,7 @@ projects.openapi(createProject, async (c) => {
 		organizationId,
 		cachingEnabled = false,
 		cacheDurationSeconds = 60,
-		mode = "api-keys",
+		mode = "credits",
 	} = body;
 
 	const userOrganization = await db.query.userOrganization.findFirst({
