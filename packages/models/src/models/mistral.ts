@@ -11,6 +11,7 @@ export const mistralModels = [
 				modelName: "mistral-large-latest",
 				inputPrice: 0.000004,
 				outputPrice: 0.000012,
+				requestPrice: 0,
 				contextSize: 128000,
 				streaming: true,
 				vision: false,

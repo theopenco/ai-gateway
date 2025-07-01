@@ -223,6 +223,10 @@ export function LogCard({ log }: { log: Log }) {
 								<div>
 									{log.outputCost ? `$${log.outputCost.toFixed(6)}` : "?"}
 								</div>
+								<div className="text-muted-foreground">Request Cost</div>
+								<div>
+									{log.requestCost ? `$${log.requestCost.toFixed(6)}` : "?"}
+								</div>
 								<div className="text-muted-foreground">Total Cost</div>
 								<div className="font-medium">
 									{log.cost ? `$${log.cost.toFixed(6)}` : "?"}
