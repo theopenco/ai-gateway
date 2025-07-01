@@ -2,6 +2,24 @@ import type { ModelDefinition } from "@llmgateway/models";
 
 export const perplexityModels = [
 	{
+		model: "sonar-reasoning-pro",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "perplexity",
+				modelName: "sonar-reasoning-pro",
+				inputPrice: 0.000003,
+				outputPrice: 0.00001,
+				imageInputPrice: 0,
+				contextSize: 128000,
+				streaming: false,
+				vision: false,
+			},
+		],
+		jsonOutput: false,
+	},
+	{
 		model: "sonar-pro",
 		deprecatedAt: undefined,
 		deactivatedAt: undefined,
@@ -9,9 +27,28 @@ export const perplexityModels = [
 			{
 				providerId: "perplexity",
 				modelName: "sonar-pro",
-				inputPrice: 1.0 / 1e6,
-				outputPrice: 1.0 / 1e6,
-				contextSize: 127072,
+				inputPrice: 0.000003,
+				outputPrice: 0.000015,
+				imageInputPrice: 0,
+				contextSize: 200000,
+				streaming: false,
+				vision: false,
+			},
+		],
+		jsonOutput: false,
+	},
+	{
+		model: "sonar",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "perplexity",
+				modelName: "sonar",
+				inputPrice: 0.000001,
+				outputPrice: 0.000001,
+				imageInputPrice: 0,
+				contextSize: 130000,
 				streaming: false,
 				vision: false,
 			},
