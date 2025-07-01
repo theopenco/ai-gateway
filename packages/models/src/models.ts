@@ -1,3 +1,5 @@
+import { perplexityModels } from "./models/perplexity";
+
 import type { providers } from "./providers";
 
 export type Provider = (typeof providers)[number]["id"];
@@ -54,7 +56,7 @@ export interface ModelDefinition {
 	deactivatedAt?: Date;
 }
 
-export let models = [
+export const models = [
 	{
 		model: "custom", // custom provider which expects base URL to be set
 		deprecatedAt: undefined,
@@ -996,4 +998,5 @@ export let models = [
 		],
 		jsonOutput: true,
 	},
+	...perplexityModels,
 ] as const satisfies ModelDefinition[];

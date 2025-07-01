@@ -24,6 +24,7 @@ export function getProviderHeaders(
 		case "xai":
 		case "groq":
 		case "deepseek":
+		case "perplexity":
 		default:
 			return {
 				Authorization: `Bearer ${token}`,
@@ -81,7 +82,8 @@ export function prepareRequestBody(
 		case "openai":
 		case "xai":
 		case "groq":
-		case "deepseek": {
+		case "deepseek":
+		case "perplexity": {
 			if (stream) {
 				requestBody.stream_options = {
 					include_usage: true,
@@ -290,6 +292,9 @@ export function getProviderEndpoint(
 			case "deepseek":
 				url = "https://api.deepseek.com";
 				break;
+			case "perplexity":
+				url = "https://api.perplexity.ai";
+				break;
 			default:
 				throw new Error(`Provider ${provider} requires a baseUrl`);
 		}
@@ -309,6 +314,8 @@ export function getProviderEndpoint(
 				: `${url}/v1beta/models/gemini-2.0-flash:generateContent`;
 			return token ? `${baseEndpoint}?key=${token}` : baseEndpoint;
 		}
+		case "perplexity":
+			return `${url}/chat/completions`;
 		case "inference.net":
 		case "kluster.ai":
 		case "openai":
