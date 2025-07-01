@@ -49,6 +49,10 @@ export interface ProviderModelMapping {
 	 * Whether this model supports reasoning mode
 	 */
 	reasoning?: boolean;
+	/**
+	 * Test skip/only functionality
+	 */
+	test?: "skip" | "only";
 }
 
 export interface ModelDefinition {
