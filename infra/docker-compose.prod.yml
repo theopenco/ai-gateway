@@ -145,12 +145,6 @@ services:
       context: ..
       dockerfile: infra/split.dockerfile
       target: ui
-      args:
-        VITE_DOCS_URL: ${VITE_DOCS_URL:-http://localhost:3005}
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:4002}
-        VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST}
-        VITE_POSTHOG_KEY: ${VITE_POSTHOG_KEY}
-        VITE_API: ${VITE_API:-http://localhost:4002}
     container_name: llmgateway-ui
     restart: unless-stopped
     ports:
@@ -170,6 +164,12 @@ services:
       retries: 3
     networks:
       - llmgateway-network
+    environment:
+      - VITE_DOCS_URL=${VITE_DOCS_URL:-http://localhost:3005}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:4002}
+      - VITE_POSTHOG_HOST=${VITE_POSTHOG_HOST}
+      - VITE_POSTHOG_KEY=${VITE_POSTHOG_KEY}
+      - VITE_API=${VITE_API:-http://localhost:4002}
 
   # Docs Service (Static files served via Nginx)
   docs:
@@ -177,10 +177,6 @@ services:
       context: ..
       dockerfile: infra/split.dockerfile
       target: docs
-      args:
-        VITE_DOCS_URL: ${VITE_DOCS_URL:-http://localhost:3005}
-        NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY}
-        NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST}
     container_name: llmgateway-docs
     restart: unless-stopped
     ports:
@@ -200,6 +196,10 @@ services:
       retries: 3
     networks:
       - llmgateway-network
+    environment:
+      - VITE_DOCS_URL=${VITE_DOCS_URL:-http://localhost:3005}
+      - NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY}
+      - NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST}
 
 volumes:
   postgres_data:

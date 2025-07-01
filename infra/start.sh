@@ -9,8 +9,8 @@ if ! id "node" &>/dev/null; then
 fi
 
 # Create log directories and files with proper permissions
-mkdir -p /var/log/supervisor /var/log/nginx /var/log/postgresql
-touch /var/log/nginx/access.log /var/log/nginx/error.log /var/log/postgresql.log
+mkdir -p /var/log/supervisor /var/log/postgresql
+touch /var/log/postgresql.log
 chown postgres:postgres /var/log/postgresql.log
 chmod 644 /var/log/postgresql.log
 
@@ -56,8 +56,7 @@ chown -R redis:redis /var/lib/redis
 chown -R node:node /app/services
 
 # Create log directories
-mkdir -p /var/log/supervisor /var/log/nginx
-touch /var/log/nginx/access.log /var/log/nginx/error.log
+mkdir -p /var/log/supervisor
 
 # Wait a moment for filesystem operations to complete
 sleep 2

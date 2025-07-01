@@ -12,7 +12,6 @@ export default defineConfig({
 			routes: [
 				"/",
 				"/dashboard",
-				"/onboarding",
 				"/changelog",
 				"/models",
 				"/changelog/$slug",
@@ -20,7 +19,6 @@ export default defineConfig({
 			],
 			crawlLinks: true,
 		},
-		preset: process.env.SERVER_PRESET || "static",
 	},
 	tsr: {
 		appDirectory: "./src",
