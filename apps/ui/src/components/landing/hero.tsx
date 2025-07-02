@@ -7,6 +7,7 @@ import { Navbar } from "./navbar";
 import { AuthLink } from "../shared/auth-link";
 import AnthropicLogo from "@/assets/models/anthropic.svg?react";
 import CloudriftLogo from "@/assets/models/cloudrift.svg?react";
+import DeepSeekLogo from "@/assets/models/deepseek.svg?react";
 import GoogleVertexAILogo from "@/assets/models/google-vertex-ai.svg?react";
 import GroqLogo from "@/assets/models/groq.svg?react";
 import InferenceNetLogo from "@/assets/models/inference-net.svg?react";
@@ -52,6 +53,7 @@ const PROVIDER_LOGOS = [
 	{ name: "Inference Net", component: InferenceNetLogo },
 	{ name: "Groq", component: GroqLogo },
 	{ name: "xAI", component: XaiLogo },
+	{ name: "DeepSeek", component: DeepSeekLogo },
 ] as const;
 
 export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
@@ -141,8 +143,9 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 											</div>
 										</a>
 
-										<h1 className="mt-8 max-w-4xl mx-auto text-balance text-6xl md:text-7xl lg:mt-16 xl:text-[5.25rem]">
-											One API Gateway for All Your LLM Needs
+										<h1 className="mt-8 max-w-4xl mx-auto text-balance text-6xl md:text-7xl lg:mt-16 xl:text-6xl">
+											Use any model, from any provider
+											<br />— with just one API.
 										</h1>
 										<p className="mx-auto mt-8 max-w-2xl text-balance text-lg">
 											Route, manage, and analyze your LLM requests across

@@ -1,6 +1,6 @@
 import { providers, type ProviderId } from "@llmgateway/models";
 import { useQueryClient } from "@tanstack/react-query";
-import { KeyIcon, MoreHorizontal, PlusIcon } from "lucide-react";
+import { KeyIcon, MoreHorizontal } from "lucide-react";
 
 import { CreateProviderKeyDialog } from "./create-provider-key-dialog";
 import { providerLogoComponents } from "@/components/provider-keys/provider-logo";
@@ -25,14 +25,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/lib/components/dropdown-menu";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/lib/components/table";
 import { toast } from "@/lib/components/use-toast";
 import { $api } from "@/lib/fetch-client";
 
@@ -68,9 +60,20 @@ export function ProviderKeysList({
 	const queryKey = $api.queryOptions("get", "/keys/provider").queryKey;
 
 	// Filter provider keys by selected organization
-	const keys = data?.providerKeys
-		.filter((key) => key.status !== "deleted")
-		.filter((key) => key.organizationId === selectedOrganization.id);
+	const organizationKeys =
+		data?.providerKeys
+			.filter((key) => key.status !== "deleted")
+			.filter((key) => key.organizationId === selectedOrganization.id) || [];
+
+	// Create a map of existing keys by provider
+	const existingKeysMap = new Map(
+		organizationKeys.map((key) => [key.provider, key]),
+	);
+
+	// Filter out LLM Gateway from the providers list
+	const availableProviders = providers.filter(
+		(provider) => provider.id !== "llmgateway",
+	);
 
 	const deleteKey = (id: string) => {
 		deleteMutation.mutate(
@@ -78,7 +81,6 @@ export function ProviderKeysList({
 			{
 				onSuccess: () => {
 					toast({ title: "Deleted", description: "Provider key removed" });
-
 					void queryClient.invalidateQueries({ queryKey });
 				},
 				onError: () =>
@@ -108,7 +110,6 @@ export function ProviderKeysList({
 						title: "Status Updated",
 						description: `Provider key marked as ${newStatus}`,
 					});
-
 					queryClient.invalidateQueries({ queryKey });
 				},
 				onError: () =>
@@ -121,83 +122,62 @@ export function ProviderKeysList({
 		);
 	};
 
-	// Get provider name from provider ID
-	const getProviderName = (providerId: string) => {
-		const provider = providers.find((p) => p.id === providerId);
-		return provider ? provider.name : providerId;
-	};
-
-	if (keys && keys.length === 0) {
-		return (
-			<div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-center">
-				<div className="mb-4">
-					<KeyIcon className="h-10 w-10 text-gray-500" />
-				</div>
-				<p className="text-gray-400 mb-6">
-					No provider keys have been created yet.
-				</p>
-				<CreateProviderKeyDialog selectedOrganization={selectedOrganization}>
-					<Button
-						type="button"
-						className="cursor-pointer flex items-center gap-2 bg-white text-black px-4 py-2 rounded-md hover:bg-gray-200"
-					>
-						<PlusIcon className="h-5 w-5" />
-						Add Provider Key
-					</Button>
-				</CreateProviderKeyDialog>
-			</div>
-		);
-	}
-
 	return (
-		<Table>
-			<TableHeader>
-				<TableRow>
-					<TableHead>Provider</TableHead>
-					<TableHead>API Key</TableHead>
-					<TableHead>Base URL</TableHead>
-					<TableHead>Created</TableHead>
-					<TableHead>Last Updated</TableHead>
-					<TableHead>Status</TableHead>
-					<TableHead className="text-right">Actions</TableHead>
-				</TableRow>
-			</TableHeader>
-			<TableBody>
-				{keys &&
-					keys.map((key) => {
-						const Logo = providerLogoComponents[key.provider as ProviderId];
+		<div className="space-y-6">
+			<div className="space-y-2">
+				<h2 className="text-2xl font-semibold tracking-tight">Integrations</h2>
+				<p className="text-muted-foreground">
+					Use your own provider API keys to access AI Gateway with automatic
+					fallback.
+				</p>
+			</div>
 
-						return (
-							<TableRow key={key.id}>
-								<TableCell className="font-medium">
-									<div className="flex items-center gap-2">
-										{Logo && <Logo className="h-4 w-4 text-white" />}
-										{getProviderName(key.provider)}
-									</div>
-								</TableCell>
-								<TableCell>
-									<div className="flex items-center space-x-2">
-										<span className="font-mono text-xs">{key.maskedToken}</span>
-									</div>
-								</TableCell>
-								<TableCell>{key.baseUrl || "-"}</TableCell>
-								<TableCell>
-									{new Date(key.createdAt).toLocaleString()}
-								</TableCell>
-								<TableCell>
-									{new Date(key.updatedAt).toLocaleString()}
-								</TableCell>
-								<TableCell>
-									<Badge
-										variant={key.status === "active" ? "default" : "secondary"}
-									>
-										{key.status}
-									</Badge>
-								</TableCell>
-								<TableCell className="text-right">
+			<div className="space-y-2">
+				{availableProviders.map((provider) => {
+					const Logo = providerLogoComponents[provider.id as ProviderId];
+					const existingKey = existingKeysMap.get(provider.id);
+					const hasKey = !!existingKey;
+
+					return (
+						<div
+							key={provider.id}
+							className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+						>
+							<div className="flex items-center gap-3">
+								<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-background border">
+									{Logo ? (
+										<Logo className="h-6 w-6" />
+									) : (
+										<div className="w-6 h-6 bg-muted rounded" />
+									)}
+								</div>
+								<div className="flex flex-col">
+									<span className="font-medium">{provider.name}</span>
+									{hasKey && (
+										<div className="flex items-center gap-2 mt-1">
+											<Badge
+												variant={
+													existingKey.status === "active"
+														? "default"
+														: "secondary"
+												}
+												className="text-xs"
+											>
+												{existingKey.status}
+											</Badge>
+											<span className="text-xs text-muted-foreground font-mono">
+												{existingKey.maskedToken}
+											</span>
+										</div>
+									)}
+								</div>
+							</div>
+
+							<div className="flex items-center gap-2">
+								{hasKey ? (
 									<DropdownMenu>
 										<DropdownMenuTrigger asChild>
-											<Button variant="ghost" size="icon" className="h-8 w-8">
+											<Button variant="ghost" size="sm">
 												<MoreHorizontal className="h-4 w-4" />
 												<span className="sr-only">Open menu</span>
 											</Button>
@@ -205,9 +185,13 @@ export function ProviderKeysList({
 										<DropdownMenuContent align="end">
 											<DropdownMenuLabel>Actions</DropdownMenuLabel>
 											<DropdownMenuItem
-												onClick={() => toggleStatus(key.id, key.status)}
+												onClick={() =>
+													toggleStatus(existingKey.id, existingKey.status)
+												}
 											>
-												{key.status === "active" ? "Deactivate" : "Activate"}
+												{existingKey.status === "active"
+													? "Deactivate"
+													: "Activate"}
 											</DropdownMenuItem>
 											<DropdownMenuSeparator />
 											<AlertDialog>
@@ -234,7 +218,7 @@ export function ProviderKeysList({
 													<AlertDialogFooter>
 														<AlertDialogCancel>Cancel</AlertDialogCancel>
 														<AlertDialogAction
-															onClick={() => deleteKey(key.id)}
+															onClick={() => deleteKey(existingKey.id)}
 															className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 														>
 															Delete
@@ -244,11 +228,21 @@ export function ProviderKeysList({
 											</AlertDialog>
 										</DropdownMenuContent>
 									</DropdownMenu>
-								</TableCell>
-							</TableRow>
-						);
-					})}
-			</TableBody>
-		</Table>
+								) : (
+									<CreateProviderKeyDialog
+										selectedOrganization={selectedOrganization}
+										preselectedProvider={provider.id}
+									>
+										<Button variant="outline" size="sm">
+											Add
+										</Button>
+									</CreateProviderKeyDialog>
+								)}
+							</div>
+						</div>
+					);
+				})}
+			</div>
+		</div>
 	);
 }

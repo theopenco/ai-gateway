@@ -182,16 +182,33 @@ function ProviderPage() {
 								</div>
 								{model.contextSize && (
 									<p className="text-xs text-muted-foreground">
-										Context: {formatContextSize(model.contextSize)}
+										Context:{" "}
+										<span className="font-mono text-foreground font-bold">
+											{formatContextSize(model.contextSize)}
+										</span>
 									</p>
 								)}
 								{(model.inputPrice !== undefined ||
 									model.outputPrice !== undefined) && (
 									<p className="text-xs text-muted-foreground">
-										{model.inputPrice !== undefined &&
-											`$${(model.inputPrice * 1e6).toFixed(2)} in`}
-										{model.outputPrice !== undefined &&
-											` / $${(model.outputPrice * 1e6).toFixed(2)} out`}
+										{model.inputPrice !== undefined && (
+											<>
+												<span className="font-mono text-foreground font-bold">
+													${(model.inputPrice * 1e6).toFixed(2)}
+												</span>{" "}
+												<span className="text-muted-foreground">in</span>
+											</>
+										)}
+
+										{model.outputPrice !== undefined && (
+											<>
+												<span className="text-muted-foreground mx-2">/</span>
+												<span className="font-mono text-foreground font-bold">
+													${(model.outputPrice * 1e6).toFixed(2)}
+												</span>{" "}
+												<span className="text-muted-foreground">out</span>
+											</>
+										)}
 									</p>
 								)}
 							</CardContent>
