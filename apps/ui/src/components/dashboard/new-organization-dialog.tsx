@@ -12,7 +12,7 @@ import {
 } from "@/lib/components/dialog";
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Organization } from "@/lib/types";
 import type React from "react";
@@ -29,12 +29,13 @@ export function NewOrganizationDialog({
 	onOrganizationCreated,
 }: NewOrganizationDialogProps) {
 	const [orgName, setOrgName] = useState("");
+	const api = useApi();
 
 	const queryClient = useQueryClient();
-	const createOrgMutation = $api.useMutation("post", "/orgs", {
+	const createOrgMutation = api.useMutation("post", "/orgs", {
 		onSuccess: (data) => {
 			// Update the organizations cache
-			const queryKey = $api.queryOptions("get", "/orgs").queryKey;
+			const queryKey = api.queryOptions("get", "/orgs").queryKey;
 			queryClient.setQueryData(queryKey, (oldData: any) => {
 				if (!oldData) {
 					return { organizations: [data.organization] };
