@@ -31,4 +31,11 @@ export const baseOptions: BaseLayoutProps = {
 			</>
 		),
 	},
+	links: [
+		{
+			text: "Dashboard",
+			url: "https://llmgateway.io/dashboard",
+			active: "none",
+		},
+	],
 };

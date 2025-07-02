@@ -7,17 +7,7 @@ import { Link } from "@tanstack/react-router";
 import { ExternalLink, Copy, Check, Plus, GitBranch } from "lucide-react";
 import { useState } from "react";
 
-import anthropicLogo from "@/assets/models/anthropic.svg?react";
-import CloudRiftLogo from "@/assets/models/cloudrift.svg?react";
-import GoogleStudioAiLogo from "@/assets/models/google-studio-ai.svg?react";
-import GoogleVertexLogo from "@/assets/models/google-vertex-ai.svg?react";
-import GroqLogo from "@/assets/models/groq.svg?react";
-import InferenceLogo from "@/assets/models/inference-net.svg?react";
-import KlusterLogo from "@/assets/models/kluster-ai.svg?react";
-import MistralLogo from "@/assets/models/mistral.svg?react";
-import OpenAiLogo from "@/assets/models/openai.svg?react";
-import TogetherAiLogo from "@/assets/models/together-ai.svg?react";
-import XaiLogo from "@/assets/models/xai.svg?react";
+import { providerLogoComponents } from "./provider-keys/provider-logo";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -29,22 +19,6 @@ import {
 import { DOCS_URL } from "@/lib/env";
 import Logo from "@/lib/icons/Logo";
 import { cn, formatContextSize } from "@/lib/utils";
-
-const providerLogoComponents: Partial<
-	Record<ProviderId, React.FC<React.SVGProps<SVGSVGElement>> | null>
-> = {
-	openai: OpenAiLogo,
-	anthropic: anthropicLogo,
-	"google-vertex": GoogleVertexLogo,
-	"inference.net": InferenceLogo,
-	"kluster.ai": KlusterLogo,
-	"together.ai": TogetherAiLogo,
-	"google-ai-studio": GoogleStudioAiLogo,
-	cloudrift: CloudRiftLogo,
-	xai: XaiLogo,
-	mistral: MistralLogo,
-	groq: GroqLogo,
-};
 
 interface ProviderModel {
 	model: string;
@@ -253,17 +227,40 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 											<CardContent className="mt-auto space-y-2">
 												{model.contextSize && (
 													<p className="text-xs text-muted-foreground">
-														Context: {formatContextSize(model.contextSize)}
+														Context:{" "}
+														<span className="font-mono text-foreground font-bold">
+															{formatContextSize(model.contextSize)}
+														</span>
 													</p>
 												)}
 												{(model.inputPrice !== undefined ||
 													model.outputPrice !== undefined ||
 													model.requestPrice !== undefined) && (
 													<p className="text-xs text-muted-foreground">
-														{model.inputPrice !== undefined &&
-															`$${(model.inputPrice * 1e6).toFixed(2)} in`}
-														{model.outputPrice !== undefined &&
-															` / $${(model.outputPrice * 1e6).toFixed(2)} out`}
+														{model.inputPrice !== undefined && (
+															<>
+																<span className="font-mono text-foreground font-bold">
+																	${(model.inputPrice * 1e6).toFixed(2)}
+																</span>{" "}
+																<span className="text-muted-foreground">
+																	in
+																</span>
+															</>
+														)}
+
+														{model.outputPrice !== undefined && (
+															<>
+																<span className="text-muted-foreground mx-2">
+																	/
+																</span>
+																<span className="font-mono text-foreground font-bold">
+																	${(model.outputPrice * 1e6).toFixed(2)}
+																</span>{" "}
+																<span className="text-muted-foreground">
+																	out
+																</span>
+															</>
+														)}
 														{model.requestPrice !== undefined &&
 															model.requestPrice !== 0 &&
 															` / $${(model.requestPrice * 1000).toFixed(2)} per 1K req`}

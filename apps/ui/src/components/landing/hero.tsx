@@ -7,12 +7,14 @@ import { Navbar } from "./navbar";
 import { AuthLink } from "../shared/auth-link";
 import AnthropicLogo from "@/assets/models/anthropic.svg?react";
 import CloudriftLogo from "@/assets/models/cloudrift.svg?react";
+import DeepSeekLogo from "@/assets/models/deepseek.svg?react";
 import GoogleVertexAILogo from "@/assets/models/google-vertex-ai.svg?react";
 import GroqLogo from "@/assets/models/groq.svg?react";
 import InferenceNetLogo from "@/assets/models/inference-net.svg?react";
 import KlusterAILogo from "@/assets/models/kluster-ai.svg?react";
 import MistralLogo from "@/assets/models/mistral.svg?react";
 import OpenAILogo from "@/assets/models/openai.svg?react";
+import PerplexityLogo from "@/assets/models/perplexity.svg?react";
 import TogetherAILogo from "@/assets/models/together-ai.svg?react";
 import XaiLogo from "@/assets/models/xai.svg?react";
 import heroImageLight from "@/assets/new-hero-light.png";
@@ -52,6 +54,8 @@ const PROVIDER_LOGOS = [
 	{ name: "Inference Net", component: InferenceNetLogo },
 	{ name: "Groq", component: GroqLogo },
 	{ name: "xAI", component: XaiLogo },
+	{ name: "DeepSeek", component: DeepSeekLogo },
+	{ name: "Perplexity", component: PerplexityLogo },
 ] as const;
 
 export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
@@ -141,8 +145,9 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 											</div>
 										</a>
 
-										<h1 className="mt-8 max-w-4xl mx-auto text-balance text-6xl md:text-7xl lg:mt-16 xl:text-[5.25rem]">
-											One API Gateway for All Your LLM Needs
+										<h1 className="mt-8 max-w-4xl mx-auto text-balance text-6xl md:text-7xl lg:mt-16 xl:text-6xl">
+											Use any model, from any provider
+											<br />— with just one API.
 										</h1>
 										<p className="mx-auto mt-8 max-w-2xl text-balance text-lg">
 											Route, manage, and analyze your LLM requests across
@@ -189,6 +194,36 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 												<span className="text-nowrap">View Documentation</span>
 											</a>
 										</Button>
+									</AnimatedGroup>
+
+									<AnimatedGroup
+										variants={{
+											container: {
+												visible: {
+													transition: {
+														staggerChildren: 0.05,
+														delayChildren: 1,
+													},
+												},
+											},
+											...transitionVariants,
+										}}
+										className="mt-8 flex justify-center fixed bottom-4 left-2 z-30"
+									>
+										<a
+											href="https://www.producthunt.com/products/llm-gateway?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-llm&#0045;gateway"
+											target="_blank"
+											rel="noopener noreferrer"
+											className="transition-transform hover:scale-105"
+										>
+											<img
+												src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=986038&theme=light&t=1751353042660"
+												alt="LLM&#0032;Gateway - One&#0032;API&#0032;Gateway&#0032;for&#0032;all&#0032;your&#0032;LLM&#0032;needs | Product Hunt"
+												style={{ width: "250px", height: "54px" }}
+												width="250"
+												height="54"
+											/>
+										</a>
 									</AnimatedGroup>
 								</div>
 							</div>

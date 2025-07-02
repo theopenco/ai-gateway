@@ -250,10 +250,11 @@ export function PricingPlans() {
 				annual: "$500",
 			},
 			features: [
-				"Access to ALL models",
 				"Use your own API keys without surcharges",
 				"NO fees on credit usage",
 				"90-day data retention",
+				"Advanced Analytics",
+				"Team Members (coming soon)",
 				"Priority support",
 			],
 			cta:

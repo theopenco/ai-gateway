@@ -4,35 +4,9 @@ import {
 } from "@llmgateway/models";
 
 import { AuthLink } from "../shared/auth-link";
-import anthropicLogo from "@/assets/models/anthropic.svg?react";
-import CloudRiftLogo from "@/assets/models/cloudrift.svg?react";
-import GoogleStudioAiLogo from "@/assets/models/google-studio-ai.svg?react";
-import GoogleVertexLogo from "@/assets/models/google-vertex-ai.svg?react";
-import GroqLogo from "@/assets/models/groq.svg?react";
-import InferenceLogo from "@/assets/models/inference-net.svg?react";
-import KlusterLogo from "@/assets/models/kluster-ai.svg?react";
-import MistralLogo from "@/assets/models/mistral.svg?react";
-import OpenAiLogo from "@/assets/models/openai.svg?react";
-import TogetherAiLogo from "@/assets/models/together-ai.svg?react";
-import XaiLogo from "@/assets/models/xai.svg?react";
+import { providerLogoComponents } from "@/components/provider-keys/provider-logo";
 import { Button } from "@/lib/components/button";
 import Logo from "@/lib/icons/Logo";
-
-const providerLogoComponents: Partial<
-	Record<ProviderId, React.FC<React.SVGProps<SVGSVGElement>> | null>
-> = {
-	openai: OpenAiLogo,
-	anthropic: anthropicLogo,
-	"google-vertex": GoogleVertexLogo,
-	"inference.net": InferenceLogo,
-	"kluster.ai": KlusterLogo,
-	"together.ai": TogetherAiLogo,
-	"google-ai-studio": GoogleStudioAiLogo,
-	cloudrift: CloudRiftLogo,
-	mistral: MistralLogo,
-	groq: GroqLogo,
-	xai: XaiLogo,
-};
 
 interface HeroProps {
 	providerId: ProviderId;
