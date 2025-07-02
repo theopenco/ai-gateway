@@ -20,6 +20,7 @@ import {
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { toast } from "@/lib/components/use-toast";
+import { useAppConfigValue } from "@/lib/config";
 import { $api } from "@/lib/fetch-client";
 
 import type { Organization } from "@/lib/types";
@@ -33,6 +34,7 @@ export function CreateProviderKeyDialog({
 	children,
 	selectedOrganization,
 }: CreateProviderKeyDialogProps) {
+	const config = useAppConfigValue();
 	const posthog = usePostHog();
 	const [open, setOpen] = useState(false);
 	const [selectedProvider, setSelectedProvider] = useState("");
@@ -71,7 +73,7 @@ export function CreateProviderKeyDialog({
 		e.preventDefault();
 
 		// Only enforce pro plan requirement if paid mode is enabled
-		if (HOSTED && !isProPlan) {
+		if (config.hosted && !isProPlan) {
 			toast({
 				title: "Upgrade Required",
 				description:
@@ -168,7 +170,7 @@ export function CreateProviderKeyDialog({
 						</span>
 					</DialogDescription>
 				</DialogHeader>
-				{HOSTED && !isProPlan && (
+				{config.hosted && !isProPlan && (
 					<Alert>
 						<AlertDescription className="flex items-center justify-between gap-2">
 							<span>Provider keys are only available on the Pro plan.</span>

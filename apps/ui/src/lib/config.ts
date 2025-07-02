@@ -34,41 +34,5 @@ export function useAppConfigValue(): AppConfig {
 	return data;
 }
 
-/**
- * Individual config value hooks for convenience
- */
-export function useApiUrl() {
-	const config = useAppConfigValue();
-	return config.apiUrl;
-}
-
-export function useIsHosted() {
-	const config = useAppConfigValue();
-	return config.hosted;
-}
-
-export function useGithubUrl() {
-	const config = useAppConfigValue();
-	return config.githubUrl;
-}
-
-export function useDocsUrl() {
-	const config = useAppConfigValue();
-	return config.docsUrl;
-}
-
-export function usePosthogConfig() {
-	const config = useAppConfigValue();
-	return {
-		key: config.posthogKey,
-		host: config.posthogHost,
-	};
-}
-
-export function useCrispId() {
-	const config = useAppConfigValue();
-	return config.crispId;
-}
-
 // Re-export types
 export type { AppConfig };

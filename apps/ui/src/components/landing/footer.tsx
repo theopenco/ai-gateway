@@ -1,9 +1,11 @@
 import { providers as providerDefinitions } from "@llmgateway/models";
 import { Link } from "@tanstack/react-router";
 
+import { useAppConfigValue } from "@/lib/config";
 import Logo from "@/lib/icons/Logo";
 
 export default function Footer() {
+	const config = useAppConfigValue();
 	const filteredProviders = providerDefinitions.filter(
 		(p) => p.name !== "LLM Gateway",
 	);
@@ -72,7 +74,7 @@ export default function Footer() {
 							<ul className="space-y-2">
 								<li>
 									<a
-										href={DOCS_URL}
+										href={config.docsUrl}
 										target="_blank"
 										className="text-sm hover:text-black dark:hover:text-white"
 									>
@@ -81,7 +83,7 @@ export default function Footer() {
 								</li>
 								<li>
 									<a
-										href={GITHUB_URL}
+										href={config.githubUrl}
 										target="_blank"
 										className="text-sm hover:text-black dark:hover:text-white"
 									>

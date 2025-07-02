@@ -16,6 +16,7 @@ import {
 } from "@/hooks/useChats";
 import { useUser } from "@/hooks/useUser";
 import { SidebarProvider } from "@/lib/components/sidebar";
+import { useAppConfigValue } from "@/lib/config";
 import { $api } from "@/lib/fetch-client";
 
 export interface Message {
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/playground")({
 });
 
 function RouteComponent() {
+	const config = useAppConfigValue();
 	const { user, isLoading: isUserLoading } = useUser();
 	const { userApiKey, isLoaded: isApiKeyLoaded } = useApiKey();
 	const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
@@ -167,7 +169,7 @@ function RouteComponent() {
 			});
 
 			const supportsStreaming = getModelStreamingSupport(selectedModel);
-			const response = await fetch(API_URL + "/chat/completion", {
+			const response = await fetch(config.apiUrl + "/chat/completion", {
 				credentials: "include",
 				method: "POST",
 				headers: { "Content-Type": "application/json" },

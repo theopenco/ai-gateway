@@ -24,6 +24,7 @@ import {
 	CardTitle,
 } from "@/lib/components/card";
 import { Tabs, TabsList, TabsTrigger } from "@/lib/components/tabs";
+import { useAppConfigValue } from "@/lib/config";
 import { useDashboardContext } from "@/lib/dashboard-context";
 import { $api } from "@/lib/fetch-client";
 
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/dashboard/_layout/")({
 });
 
 export default function Dashboard() {
+	const config = useAppConfigValue();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [days, setDays] = useState<7 | 30>(7);
@@ -311,7 +313,7 @@ export default function Dashboard() {
 									Add Provider
 								</Button>
 								<Button variant="outline" className="justify-start" asChild>
-									<a href={DOCS_URL} target="_blank">
+									<a href={config.docsUrl} target="_blank">
 										<ArrowUpRight className="mr-2 h-4 w-4" />
 										View Documentation
 									</a>

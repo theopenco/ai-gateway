@@ -13,7 +13,7 @@ function getAuthClient() {
 }
 
 // Create a proxy that dynamically gets the config
-export const authClient = new Proxy({} as ReturnType<typeof createAuthClient>, {
+export const authClient = new Proxy({} as ReturnType<typeof getAuthClient>, {
 	get(target, prop) {
 		const client = getAuthClient();
 		const value = (client as any)[prop];

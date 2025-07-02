@@ -65,7 +65,7 @@ import {
 	useSidebar,
 	SidebarTrigger,
 } from "@/lib/components/sidebar";
-import { useDocsUrl } from "@/lib/config";
+import { useAppConfigValue } from "@/lib/config";
 import { useDashboardContext } from "@/lib/dashboard-context";
 import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
@@ -609,7 +609,7 @@ export function DashboardSidebar({
 	onSelectOrganization,
 	onOrganizationCreated,
 }: DashboardSidebarProps) {
-	const docsUrl = useDocsUrl();
+	const config = useAppConfigValue();
 	const queryClient = useQueryClient();
 	const { location } = useRouterState();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
@@ -631,7 +631,7 @@ export function DashboardSidebar({
 			internal: false,
 		},
 		{
-			href: docsUrl,
+			href: config.docsUrl,
 			label: "Docs",
 			icon: FileText,
 			internal: false,

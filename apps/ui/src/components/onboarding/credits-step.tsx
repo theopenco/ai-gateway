@@ -19,6 +19,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Step } from "@/lib/components/stepper";
 import { toast } from "@/lib/components/use-toast";
+import { useAppConfigValue } from "@/lib/config";
 import { $api } from "@/lib/fetch-client";
 
 const CREDIT_OPTIONS = [
@@ -28,6 +29,7 @@ const CREDIT_OPTIONS = [
 ];
 
 export function CreditsStep() {
+	const config = useAppConfigValue();
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedAmount, setSelectedAmount] = useState("50");
 	const [isSuccess, setIsSuccess] = useState(false);
@@ -115,7 +117,7 @@ export function CreditsStep() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{!HOSTED ? (
+						{!config.hosted ? (
 							<div className="flex flex-col gap-4 items-center text-center">
 								<div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
 									<Check className="h-6 w-6 text-green-600 dark:text-green-300" />

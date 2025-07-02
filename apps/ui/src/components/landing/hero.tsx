@@ -18,6 +18,7 @@ import XaiLogo from "@/assets/models/xai.svg?react";
 import heroImageLight from "@/assets/new-hero-light.png";
 import heroImageDark from "@/assets/new-hero.png";
 import { Button } from "@/lib/components/button";
+import { useAppConfigValue } from "@/lib/config";
 
 const transitionVariants = {
 	item: {
@@ -54,6 +55,7 @@ const PROVIDER_LOGOS = [
 ] as const;
 
 export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
+	const config = useAppConfigValue();
 	return (
 		<>
 			<Navbar />
@@ -184,7 +186,7 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 											variant="ghost"
 											className="h-10.5 rounded-xl px-5"
 										>
-											<a href={DOCS_URL} target="_blank">
+											<a href={config.docsUrl} target="_blank">
 												<span className="text-nowrap">View Documentation</span>
 											</a>
 										</Button>
