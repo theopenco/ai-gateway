@@ -14,6 +14,7 @@ import InferenceNetLogo from "@/assets/models/inference-net.svg?react";
 import KlusterAILogo from "@/assets/models/kluster-ai.svg?react";
 import MistralLogo from "@/assets/models/mistral.svg?react";
 import OpenAILogo from "@/assets/models/openai.svg?react";
+import PerplexityLogo from "@/assets/models/perplexity.svg?react";
 import TogetherAILogo from "@/assets/models/together-ai.svg?react";
 import XaiLogo from "@/assets/models/xai.svg?react";
 import heroImageLight from "@/assets/new-hero-light.png";
@@ -54,6 +55,7 @@ const PROVIDER_LOGOS = [
 	{ name: "Groq", component: GroqLogo },
 	{ name: "xAI", component: XaiLogo },
 	{ name: "DeepSeek", component: DeepSeekLogo },
+	{ name: "Perplexity", component: PerplexityLogo },
 ] as const;
 
 export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
