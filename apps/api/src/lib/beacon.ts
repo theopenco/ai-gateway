@@ -40,6 +40,13 @@ export async function sendInstallationBeacon(): Promise<void> {
 		return;
 	}
 
+	console.log(
+		"Sending installation beacon (for anonymous tracking of self-hosted installs.",
+	);
+	console.log(
+		"To disable, set DISABLE_TRACKING=true in your environment variables.",
+	);
+
 	try {
 		// Get or create the installation record
 		let installation = await db.query.installation.findFirst({
