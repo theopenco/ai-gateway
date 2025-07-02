@@ -1,12 +1,15 @@
-import { MonitorSmartphone, HelpCircle } from "lucide-react";
+import { DotsHorizontalIcon } from "@radix-ui/react-icons";
+import { Link } from "@tanstack/react-router";
+import { MonitorSmartphone, HelpCircle, Plus } from "lucide-react";
 import React, { forwardRef, useId, useRef } from "react";
 
 import { AnimatedBeam } from "./animated-beam";
 import AnthropicLogo from "@/assets/models/anthropic.svg?react";
+import CloudriftLogo from "@/assets/models/cloudrift.svg?react";
 import GoogleVertexLogo from "@/assets/models/google-vertex-ai.svg?react";
-import InferenceLogo from "@/assets/models/inference-net.svg?react";
-import KlusterLogo from "@/assets/models/kluster-ai.svg?react";
 import OpenAiLogo from "@/assets/models/openai.svg?react";
+import XaiLogo from "@/assets/models/xai.svg?react";
+import { Button } from "@/lib/components/button";
 import {
 	Tooltip,
 	TooltipProvider,
@@ -46,14 +49,16 @@ export function Graph() {
 		useRef<HTMLDivElement>(null),
 		useRef<HTMLDivElement>(null),
 		useRef<HTMLDivElement>(null),
+		useRef<HTMLDivElement>(null),
 	];
 
 	const logos = [
 		<OpenAiLogo key={useId()} />,
 		<AnthropicLogo key={useId()} />,
 		<GoogleVertexLogo key={useId()} />,
-		<InferenceLogo key={useId()} />,
-		<KlusterLogo key={useId()} />,
+		<XaiLogo key={useId()} />,
+		<DotsHorizontalIcon key={useId()} />,
+		<CloudriftLogo key={useId()} />,
 	];
 
 	return (
@@ -91,7 +96,7 @@ export function Graph() {
 						<TooltipProvider delayDuration={100}>
 							<Tooltip>
 								<TooltipTrigger>
-									<Circle ref={rightRefs[5]}>
+									<Circle ref={rightRefs[6]}>
 										<HelpCircle className="text-muted-foreground dark:text-neutral-400" />
 									</Circle>
 								</TooltipTrigger>
@@ -124,6 +129,23 @@ export function Graph() {
 						curvature={(i - 2.5) * 20}
 					/>
 				))}
+			</div>
+
+			<div className="mt-12 flex justify-center space-x-6">
+				<Button asChild>
+					<Link to="/models">View all models</Link>
+				</Button>
+				<Button variant="outline" asChild>
+					<a
+						href="https://github.com/theopenco/llmgateway/issues/new?assignees=&labels=enhancement%2Cmodel-request&projects=&template=model-request.md&title=%5BModel+Request%5D+"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-2"
+					>
+						<Plus className="h-4 w-4" />
+						Request Model
+					</a>
+				</Button>
 			</div>
 		</div>
 	);

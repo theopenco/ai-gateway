@@ -28,16 +28,20 @@ import type { Organization } from "@/lib/types";
 interface CreateProviderKeyDialogProps {
 	children: React.ReactNode;
 	selectedOrganization: Organization;
+	preselectedProvider?: string;
 }
 
 export function CreateProviderKeyDialog({
 	children,
 	selectedOrganization,
+	preselectedProvider,
 }: CreateProviderKeyDialogProps) {
 	const config = useAppConfigValue();
 	const posthog = usePostHog();
 	const [open, setOpen] = useState(false);
-	const [selectedProvider, setSelectedProvider] = useState("");
+	const [selectedProvider, setSelectedProvider] = useState(
+		preselectedProvider || "",
+	);
 	const [baseUrl, setBaseUrl] = useState("");
 	const [token, setToken] = useState("");
 	const [isValidating, setIsValidating] = useState(false);
@@ -66,11 +70,23 @@ export function CreateProviderKeyDialog({
 			return false;
 		}
 
+		// If a provider is preselected, always include it even if it has a key
+		if (preselectedProvider && provider.id === preselectedProvider) {
+			return true;
+		}
+
 		const existingKey = organizationProviderKeys.find(
 			(key: any) => key.provider === provider.id && key.status !== "deleted",
 		);
 		return !existingKey;
 	});
+
+	// Update selectedProvider when preselectedProvider changes or dialog opens
+	React.useEffect(() => {
+		if (open && preselectedProvider) {
+			setSelectedProvider(preselectedProvider);
+		}
+	}, [open, preselectedProvider]);
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -154,7 +170,7 @@ export function CreateProviderKeyDialog({
 	const handleClose = () => {
 		setOpen(false);
 		setTimeout(() => {
-			setSelectedProvider("");
+			setSelectedProvider(preselectedProvider || "");
 			setBaseUrl("");
 			setToken("");
 		}, 300);
@@ -165,9 +181,15 @@ export function CreateProviderKeyDialog({
 			<DialogTrigger asChild>{children}</DialogTrigger>
 			<DialogContent className="sm:max-w-[500px]">
 				<DialogHeader>
-					<DialogTitle>Add Provider Key</DialogTitle>
+					<DialogTitle>
+						{preselectedProvider
+							? `Add ${providers.find((p) => p.id === preselectedProvider)?.name} Key`
+							: "Add Provider Key"}
+					</DialogTitle>
 					<DialogDescription>
-						Create a new provider key to connect to an LLM provider.
+						{preselectedProvider
+							? `Add an API key for ${providers.find((p) => p.id === preselectedProvider)?.name} to enable direct access.`
+							: "Create a new provider key to connect to an LLM provider."}
 						<span className="block mt-1">
 							Organization: {selectedOrganization.name}
 						</span>
@@ -196,6 +218,7 @@ export function CreateProviderKeyDialog({
 							value={selectedProvider}
 							providers={availableProviders}
 							loading={isLoading}
+							disabled={!!preselectedProvider}
 						/>
 					</div>
 

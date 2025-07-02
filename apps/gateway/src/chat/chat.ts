@@ -1533,7 +1533,9 @@ chat.openapi(completions, async (c) => {
 
 			if (!res.ok) {
 				const errorResponseText = await res.text();
-				console.error("error", url, res.status, errorResponseText);
+				console.log(
+					`Provider error - Status: ${res.status}, Text: ${errorResponseText}`,
+				);
 
 				await stream.writeSSE({
 					event: "error",
@@ -1543,6 +1545,7 @@ chat.openapi(completions, async (c) => {
 							type: getFinishReasonForError(res.status),
 							param: null,
 							code: getFinishReasonForError(res.status),
+							responseText: errorResponseText,
 						},
 					}),
 					id: String(eventId++),
@@ -2233,7 +2236,9 @@ chat.openapi(completions, async (c) => {
 		// Get the error response text
 		const errorResponseText = await res.text();
 
-		console.error("error", url, res.status, errorResponseText);
+		console.log(
+			`Provider error - Status: ${res.status}, Text: ${errorResponseText}`,
+		);
 
 		// Log the error in the database
 		const baseLogEntry = createLogEntry(
@@ -2288,6 +2293,7 @@ chat.openapi(completions, async (c) => {
 					usedProvider,
 					requestedModel,
 					usedModel,
+					responseText: errorResponseText,
 				},
 			},
 			500,

@@ -1,8 +1,13 @@
 import { providers as providerDefinitions } from "@llmgateway/models";
+import { DiscordLogoIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
+import { GithubIcon, TwitterIcon } from "lucide-react";
 
 import { useAppConfigValue } from "@/lib/config";
 import Logo from "@/lib/icons/Logo";
+
+const DISCORD_URL = "https://discord.gg/gcqcZeYWEz";
+const X_URL = "https://x.com/llmgateway";
 
 export default function Footer() {
 	const config = useAppConfigValue();
@@ -24,6 +29,35 @@ export default function Footer() {
 						<p className="text-zinc-600 dark:text-zinc-500 text-sm mt-2">
 							© {new Date().getFullYear()} LLM Gateway. All rights reserved.
 						</p>
+						<div className="flex items-center space-x-4 mt-4">
+							<a
+								href={GITHUB_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+								aria-label="GitHub"
+							>
+								<GithubIcon className="h-5 w-5" />
+							</a>
+							<a
+								href={X_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+								aria-label="Twitter"
+							>
+								<TwitterIcon className="h-5 w-5" />
+							</a>
+							<a
+								href={DISCORD_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+								aria-label="Discord"
+							>
+								<DiscordLogoIcon className="h-5 w-5" />
+							</a>
+						</div>
 					</div>
 
 					<div className="w-full md:w-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 text-zinc-700 dark:text-zinc-400">
@@ -101,6 +135,35 @@ export default function Footer() {
 								</li>
 							</ul>
 						</div>
+
+						<div>
+							<h3 className="text-sm font-semibold mb-3 text-zinc-900 dark:text-white">
+								Community
+							</h3>
+							<ul className="space-y-2">
+								<li>
+									<a
+										href={X_URL}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-sm hover:text-black dark:hover:text-white"
+									>
+										Twitter
+									</a>
+								</li>
+								<li>
+									<a
+										href={DISCORD_URL}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-sm hover:text-black dark:hover:text-white"
+									>
+										Discord
+									</a>
+								</li>
+							</ul>
+						</div>
+
 						<div>
 							<h3 className="text-sm font-semibold mb-3 text-zinc-900 dark:text-white">
 								Compare
@@ -116,6 +179,7 @@ export default function Footer() {
 								</li>
 							</ul>
 						</div>
+
 						<div>
 							<h3 className="text-sm font-semibold mb-3 text-zinc-900 dark:text-white">
 								Providers

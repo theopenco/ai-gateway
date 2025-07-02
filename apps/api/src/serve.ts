@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { runMigrations } from "@llmgateway/db";
 
 import { app } from "./index";
+import { sendInstallationBeacon } from "./lib/beacon";
 
 async function startServer() {
 	const port = Number(process.env.PORT) || 4002;
@@ -15,6 +16,10 @@ async function startServer() {
 			process.exit(1);
 		}
 	}
+
+	// Send installation beacon for self-hosted tracking
+	// This runs in the background and won't block startup
+	void sendInstallationBeacon();
 
 	console.log("listening on port", port);
 

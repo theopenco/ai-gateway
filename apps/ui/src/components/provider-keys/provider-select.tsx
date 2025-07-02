@@ -21,6 +21,7 @@ interface ProviderSelectProps {
 	loading?: boolean;
 	placeholder?: string;
 	emptyMessage?: string;
+	disabled?: boolean;
 }
 
 export function ProviderSelect({
@@ -30,9 +31,10 @@ export function ProviderSelect({
 	loading = false,
 	placeholder = "Select provider...",
 	emptyMessage = "All providers already have keys",
+	disabled = false,
 }: ProviderSelectProps) {
 	return (
-		<Select onValueChange={onValueChange} value={value}>
+		<Select onValueChange={onValueChange} value={value} disabled={disabled}>
 			<SelectTrigger className="w-full">
 				<SelectValue placeholder={placeholder} />
 			</SelectTrigger>
