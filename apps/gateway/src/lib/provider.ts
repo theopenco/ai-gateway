@@ -14,6 +14,7 @@ export const providerEnvVarMap: Record<Provider, string> = {
 	xai: "X_AI_API_KEY",
 	groq: "GROQ_API_KEY",
 	deepseek: "DEEPSEEK_API_KEY",
+	perplexity: "PERPLEXITY_API_KEY",
 };
 
 export function getProviderEnvVar(

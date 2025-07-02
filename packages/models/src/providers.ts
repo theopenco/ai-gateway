@@ -162,6 +162,18 @@ export const providers = [
 		website: "https://deepseek.com",
 		announcement: null,
 	},
+	{
+		id: "perplexity",
+		name: "Perplexity",
+		description:
+			"Perplexity's AI models for search and conversation with real-time web access",
+		streaming: true,
+		cancellation: true,
+		jsonOutput: false,
+		color: "#20B2AA",
+		website: "https://perplexity.ai",
+		announcement: null,
+	},
 ] as const satisfies ProviderDefinition[];
 
 export type ProviderId = (typeof providers)[number]["id"];

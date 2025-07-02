@@ -1,5 +1,5 @@
 {
-  "id": "67ed72aa-8e9c-4ac0-b7da-69b2da0e0c4c",
+  "id": "47370bc3-28ab-427e-8f8d-94bcd8813d9c",
   "prevId": "19b84b26-7aa0-42fc-998d-fc3e6397ada4",
   "version": "7",
   "dialect": "postgresql",
@@ -263,59 +263,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.installation": {
-      "name": "installation",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "uuid": {
-          "name": "uuid",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "installation_uuid_unique": {
-          "name": "installation_uuid_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "uuid"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.lock": {
       "name": "lock",
       "schema": "",
@@ -552,6 +499,12 @@
         },
         "output_cost": {
           "name": "output_cost",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "request_cost": {
+          "name": "request_cost",
           "type": "real",
           "primaryKey": false,
           "notNull": false

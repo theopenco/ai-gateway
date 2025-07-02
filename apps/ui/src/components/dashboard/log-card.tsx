@@ -223,6 +223,10 @@ export function LogCard({ log }: { log: Log }) {
 								<div>
 									{log.outputCost ? `$${log.outputCost.toFixed(6)}` : "?"}
 								</div>
+								<div className="text-muted-foreground">Request Cost</div>
+								<div>
+									{log.requestCost ? `$${log.requestCost.toFixed(6)}` : "?"}
+								</div>
 								<div className="text-muted-foreground">Total Cost</div>
 								<div className="font-medium">
 									{log.cost ? `$${log.cost.toFixed(6)}` : "?"}
@@ -239,9 +243,9 @@ export function LogCard({ log }: { log: Log }) {
 								<div className="text-muted-foreground">API Key ID</div>
 								<div className="font-mono text-xs">{log.apiKeyId}</div>
 								<div className="text-muted-foreground">Mode</div>
-								<div>{log.mode || "api-keys"}</div>
+								<div>{log.mode || "?"}</div>
 								<div className="text-muted-foreground">Used Mode</div>
-								<div>{log.mode || "api-keys"}</div>
+								<div>{log.usedMode || "?"}</div>
 							</div>
 						</div>
 					</div>

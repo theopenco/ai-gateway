@@ -52,6 +52,7 @@ interface ProviderModel {
 	providerName: string;
 	inputPrice?: number;
 	outputPrice?: number;
+	requestPrice?: number;
 	contextSize?: number;
 }
 
@@ -79,6 +80,7 @@ const groupedProviders = modelDefinitions.reduce<
 			providerName: provider.name,
 			inputPrice: map.inputPrice,
 			outputPrice: map.outputPrice,
+			requestPrice: map.requestPrice,
 			contextSize: map.contextSize,
 		});
 	});
@@ -255,12 +257,16 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 													</p>
 												)}
 												{(model.inputPrice !== undefined ||
-													model.outputPrice !== undefined) && (
+													model.outputPrice !== undefined ||
+													model.requestPrice !== undefined) && (
 													<p className="text-xs text-muted-foreground">
 														{model.inputPrice !== undefined &&
 															`$${(model.inputPrice * 1e6).toFixed(2)} in`}
 														{model.outputPrice !== undefined &&
 															` / $${(model.outputPrice * 1e6).toFixed(2)} out`}
+														{model.requestPrice !== undefined &&
+															model.requestPrice !== 0 &&
+															` / $${(model.requestPrice * 1000).toFixed(2)} per 1K req`}
 													</p>
 												)}
 											</CardContent>
