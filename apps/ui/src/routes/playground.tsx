@@ -106,8 +106,10 @@ function RouteComponent() {
 				: "New Chat";
 
 			const chatData = await createChat.mutateAsync({
-				title,
-				model: selectedModel,
+				body: {
+					title,
+					model: selectedModel,
+				},
 			});
 			const newChatId = chatData.chat.id;
 			setCurrentChatId(newChatId);
@@ -165,8 +167,10 @@ function RouteComponent() {
 			const chatId = await ensureCurrentChat(content);
 
 			await addMessage.mutateAsync({
-				chatId,
-				data: { role: "user", content },
+				params: {
+					path: { id: chatId },
+				},
+				body: { role: "user", content },
 			});
 
 			const supportsStreaming = getModelStreamingSupport(selectedModel);
@@ -257,8 +261,10 @@ function RouteComponent() {
 
 					if (assistantContent.trim()) {
 						await addMessage.mutateAsync({
-							chatId,
-							data: { role: "assistant", content: assistantContent },
+							params: {
+								path: { id: chatId },
+							},
+							body: { role: "assistant", content: assistantContent },
 						});
 					}
 				} finally {
@@ -277,8 +283,10 @@ function RouteComponent() {
 					});
 
 					await addMessage.mutateAsync({
-						chatId,
-						data: { role: "assistant", content: assistantContent },
+						params: {
+							path: { id: chatId },
+						},
+						body: { role: "assistant", content: assistantContent },
 					});
 				}
 			}

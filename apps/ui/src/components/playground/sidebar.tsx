@@ -96,8 +96,10 @@ export function ChatSidebar({
 	const saveTitle = (chatId: string) => {
 		if (editTitle.trim()) {
 			updateChat.mutate({
-				id: chatId,
-				data: { title: editTitle.trim() },
+				params: {
+					path: { id: chatId },
+				},
+				body: { title: editTitle.trim() },
 			});
 		}
 		setEditingId(null);
@@ -114,7 +116,11 @@ export function ChatSidebar({
 			return;
 		}
 
-		deleteChat.mutate(chatId);
+		deleteChat.mutate({
+			params: {
+				path: { id: chatId },
+			},
+		});
 		if (currentChatId === chatId) {
 			clearMessages();
 			onChatSelect?.("");

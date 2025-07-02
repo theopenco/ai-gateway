@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { toast } from "@/lib/components/use-toast";
-import { getConfigSync } from "@/lib/config-utils";
+import { useApi } from "@/lib/fetch-client";
 
 export interface Chat {
 	id: string;
@@ -21,57 +21,40 @@ export interface ChatMessage {
 	createdAt: string;
 }
 
-// Helper function for authenticated fetch
-async function authFetch(url: string, options: RequestInit = {}) {
-	const config = getConfigSync();
-	const response = await fetch(`${config.apiUrl}${url}`, {
-		...options,
-		headers: {
-			"Content-Type": "application/json",
-			...options.headers,
-		},
-		credentials: "include",
-	});
-
-	if (!response.ok) {
-		const error = await response
-			.json()
-			.catch(() => ({ message: "Network error" }));
-		throw new Error(error.message || `HTTP ${response.status}`);
-	}
-
-	return await response.json();
-}
-
 export function useChats() {
-	return useQuery({
-		queryKey: ["chats"],
-		queryFn: () => authFetch("/chats"),
-	});
+	const api = useApi();
+
+	return api.useQuery("get", "/chats");
 }
 
 export function useChat(chatId: string) {
-	return useQuery({
-		queryKey: ["chats", chatId],
-		queryFn: () => authFetch(`/chats/${chatId}`),
-		enabled: !!chatId,
-	});
+	const api = useApi();
+
+	return api.useQuery(
+		"get",
+		"/chats/{id}",
+		{
+			params: {
+				path: { id: chatId },
+			},
+		},
+		{
+			enabled: !!chatId,
+		},
+	);
 }
 
 export function useCreateChat() {
 	const queryClient = useQueryClient();
+	const api = useApi();
 
-	return useMutation({
-		mutationFn: (data: { title: string; model: string }) =>
-			authFetch("/chats", {
-				method: "POST",
-				body: JSON.stringify(data),
-			}),
+	return api.useMutation("post", "/chats", {
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["chats"] });
+			const queryKey = api.queryOptions("get", "/chats").queryKey;
+			queryClient.invalidateQueries({ queryKey });
 			toast({ title: "Chat created successfully" });
 		},
-		onError: (error: Error) => {
+		onError: (error: { message: string }) => {
 			toast({ title: error.message, variant: "destructive" });
 		},
 	});
@@ -79,24 +62,15 @@ export function useCreateChat() {
 
 export function useUpdateChat() {
 	const queryClient = useQueryClient();
+	const api = useApi();
 
-	return useMutation({
-		mutationFn: ({
-			id,
-			data,
-		}: {
-			id: string;
-			data: { title?: string; status?: "active" | "archived" };
-		}) =>
-			authFetch(`/chats/${id}`, {
-				method: "PATCH",
-				body: JSON.stringify(data),
-			}),
+	return api.useMutation("patch", "/chats/{id}", {
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["chats"] });
+			const queryKey = api.queryOptions("get", "/chats").queryKey;
+			queryClient.invalidateQueries({ queryKey });
 			toast({ title: "Chat updated successfully" });
 		},
-		onError: (error: Error) => {
+		onError: (error: { message: string }) => {
 			toast({ title: error.message, variant: "destructive" });
 		},
 	});
@@ -104,17 +78,15 @@ export function useUpdateChat() {
 
 export function useDeleteChat() {
 	const queryClient = useQueryClient();
+	const api = useApi();
 
-	return useMutation({
-		mutationFn: (chatId: string) =>
-			authFetch(`/chats/${chatId}`, {
-				method: "DELETE",
-			}),
+	return api.useMutation("delete", "/chats/{id}", {
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["chats"] });
+			const queryKey = api.queryOptions("get", "/chats").queryKey;
+			queryClient.invalidateQueries({ queryKey });
 			toast({ title: "Chat deleted successfully" });
 		},
-		onError: (error: Error) => {
+		onError: (error: { message: string }) => {
 			toast({ title: error.message, variant: "destructive" });
 		},
 	});
@@ -122,23 +94,14 @@ export function useDeleteChat() {
 
 export function useAddMessage() {
 	const queryClient = useQueryClient();
+	const api = useApi();
 
-	return useMutation({
-		mutationFn: ({
-			chatId,
-			data,
-		}: {
-			chatId: string;
-			data: { role: "user" | "assistant" | "system"; content: string };
-		}) =>
-			authFetch(`/chats/${chatId}/messages`, {
-				method: "POST",
-				body: JSON.stringify(data),
-			}),
+	return api.useMutation("post", "/chats/{id}/messages", {
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["chats"] });
+			const queryKey = api.queryOptions("get", "/chats").queryKey;
+			queryClient.invalidateQueries({ queryKey });
 		},
-		onError: (error: Error) => {
+		onError: (error: { message: string }) => {
 			toast({ title: error.message, variant: "destructive" });
 		},
 	});

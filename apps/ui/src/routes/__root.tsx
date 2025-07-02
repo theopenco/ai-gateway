@@ -15,7 +15,6 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "@/globals.css?url";
 import { Toaster } from "@/lib/components/toaster";
 import { getConfig } from "@/lib/config-server";
-import { setGlobalConfig } from "@/lib/config-utils";
 import { cn } from "@/lib/utils";
 
 import type { QueryClient } from "@tanstack/react-query";
@@ -26,16 +25,11 @@ export const Route = createRootRouteWithContext<{
 }>()({
 	loader: async ({ context: { queryClient } }) => {
 		// Prefetch the configuration so it's available throughout the app
-		const config = await queryClient.ensureQueryData({
+		return await queryClient.ensureQueryData({
 			queryKey: ["app-config"],
 			queryFn: () => getConfig(),
 			staleTime: 1000 * 60 * 5, // 5 minutes
 		});
-
-		// Set the global config for non-React contexts
-		setGlobalConfig(config);
-
-		return config;
 	},
 	head: () => ({
 		links: [
