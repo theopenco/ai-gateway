@@ -158,6 +158,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 		case "together.ai":
 		case "groq":
 		case "deepseek":
+		case "perplexity":
 			content = json.choices?.[0]?.message?.content || null;
 			finishReason = json.choices?.[0]?.finish_reason || null;
 			promptTokens = json.usage?.prompt_tokens || null;
@@ -301,6 +302,7 @@ function extractContentFromProvider(data: any, provider: Provider): string {
 		case "together.ai":
 		case "groq":
 		case "deepseek":
+		case "perplexity":
 			return data.choices?.[0]?.delta?.content || "";
 		default: // OpenAI format
 			return data.choices?.[0]?.delta?.content || "";
@@ -338,6 +340,7 @@ function extractTokenUsage(data: any, provider: Provider) {
 		case "together.ai":
 		case "groq":
 		case "deepseek":
+		case "perplexity":
 			if (data.usage) {
 				promptTokens = data.usage.prompt_tokens || null;
 				completionTokens = data.usage.completion_tokens || null;
@@ -1377,12 +1380,33 @@ chat.openapi(completions, async (c) => {
 				errorDetails: null,
 				inputCost: 0,
 				outputCost: 0,
+				requestCost: 0,
 				cost: 0,
 				estimatedCost: false,
 				cached: true,
 			});
 
 			return c.json(cachedResponse);
+		}
+	}
+
+	// Validate max_tokens against model's maxOutput limit
+	if (max_tokens !== undefined && finalModelInfo) {
+		// Find the provider mapping for the used provider
+		const providerMapping = finalModelInfo.providers.find(
+			(p) => p.providerId === usedProvider && p.modelName === usedModel,
+		);
+
+		if (
+			providerMapping &&
+			"maxOutput" in providerMapping &&
+			providerMapping.maxOutput !== undefined
+		) {
+			if (max_tokens > providerMapping.maxOutput) {
+				throw new HTTPException(400, {
+					message: `The requested max_tokens (${max_tokens}) exceeds the maximum output tokens allowed for model ${usedModel} (${providerMapping.maxOutput})`,
+				});
+			}
 		}
 	}
 
@@ -1484,6 +1508,7 @@ chat.openapi(completions, async (c) => {
 						streamed: true,
 						canceled: true,
 						errorDetails: null,
+						requestCost: null,
 						cached: false,
 					});
 
@@ -1564,6 +1589,7 @@ chat.openapi(completions, async (c) => {
 						statusText: res.statusText,
 						responseText: errorResponseText,
 					},
+					requestCost: null,
 					cached: false,
 				});
 
@@ -1889,6 +1915,7 @@ chat.openapi(completions, async (c) => {
 											case "together.ai":
 											case "groq":
 											case "deepseek":
+											case "perplexity":
 												if (data.choices && data.choices[0]?.finish_reason) {
 													finishReason = data.choices[0].finish_reason;
 												}
@@ -2105,6 +2132,7 @@ chat.openapi(completions, async (c) => {
 					canceled: canceled,
 					inputCost: costs.inputCost,
 					outputCost: costs.outputCost,
+					requestCost: costs.requestCost,
 					cost: costs.totalCost,
 					estimatedCost: costs.estimatedCost,
 					cached: false,
@@ -2183,6 +2211,7 @@ chat.openapi(completions, async (c) => {
 			streamed: false,
 			canceled: true,
 			errorDetails: null,
+			requestCost: null,
 			estimatedCost: false,
 			cached: false,
 		});
@@ -2242,6 +2271,7 @@ chat.openapi(completions, async (c) => {
 				statusText: res.statusText,
 				responseText: errorResponseText,
 			},
+			requestCost: null,
 			estimatedCost: false,
 			cached: false,
 		});
@@ -2341,6 +2371,7 @@ chat.openapi(completions, async (c) => {
 		errorDetails: null,
 		inputCost: costs.inputCost,
 		outputCost: costs.outputCost,
+		requestCost: costs.requestCost,
 		cost: costs.totalCost,
 		estimatedCost: costs.estimatedCost,
 		cached: false,

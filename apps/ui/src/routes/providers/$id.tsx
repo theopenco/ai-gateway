@@ -105,6 +105,7 @@ function ProviderPage() {
 				contextSize: providerModel.contextSize,
 				inputPrice: providerModel.inputPrice,
 				outputPrice: providerModel.outputPrice,
+				requestPrice: providerModel.requestPrice,
 				status: "active",
 			};
 		});

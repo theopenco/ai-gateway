@@ -84,6 +84,8 @@ export default function Dashboard() {
 		activityData.reduce((sum, day) => sum + day.inputCost, 0) || 0;
 	const totalOutputCost =
 		activityData.reduce((sum, day) => sum + day.outputCost, 0) || 0;
+	const totalRequestCost =
+		activityData.reduce((sum, day) => sum + day.requestCost, 0) || 0;
 
 	// Format tokens for display (k for thousands, M for millions)
 	const formatTokens = (tokens: number) => {
@@ -221,6 +223,12 @@ export default function Dashboard() {
 											<span>${totalInputCost.toFixed(2)} input</span>
 											&nbsp;+&nbsp;
 											<span>${totalOutputCost.toFixed(2)} output</span>
+											{totalRequestCost > 0 && (
+												<>
+													&nbsp;+&nbsp;
+													<span>${totalRequestCost.toFixed(2)} requests</span>
+												</>
+											)}
 										</p>
 									</>
 								)}

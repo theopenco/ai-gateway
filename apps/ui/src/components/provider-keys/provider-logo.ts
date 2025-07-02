@@ -9,6 +9,7 @@ import KlusterLogo from "@/assets/models/kluster-ai.svg?react";
 import LLMGatewayLogo from "@/assets/models/llmgateway.svg?react";
 import MistralLogo from "@/assets/models/mistral.svg?react";
 import OpenAiLogo from "@/assets/models/openai.svg?react";
+import PerplexityLogo from "@/assets/models/perplexity.svg?react";
 import TogetherAiLogo from "@/assets/models/together-ai.svg?react";
 import XaiLogo from "@/assets/models/xai.svg?react";
 
@@ -31,4 +32,5 @@ export const providerLogoComponents: Partial<
 	groq: GroqLogo,
 	xai: XaiLogo,
 	deepseek: DeepSeekLogo,
+	perplexity: PerplexityLogo,
 };

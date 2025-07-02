@@ -28,6 +28,7 @@ const dailyActivitySchema = z.object({
 	cost: z.number(),
 	inputCost: z.number(),
 	outputCost: z.number(),
+	requestCost: z.number(),
 	errorCount: z.number(),
 	errorRate: z.number(),
 	cacheCount: z.number(),
@@ -152,6 +153,7 @@ activity.openapi(getActivity, async (c) => {
 		const totalCost = Number(log.cost || 0);
 		const inputCost = Number(log.inputCost || 0);
 		const outputCost = Number(log.outputCost || 0);
+		const requestCost = Number(log.requestCost || 0);
 
 		const dateStr = log.createdAt.toISOString().split("T")[0];
 
@@ -166,6 +168,7 @@ activity.openapi(getActivity, async (c) => {
 				cost: 0,
 				inputCost: 0,
 				outputCost: 0,
+				requestCost: 0,
 				errorCount: 0,
 				errorRate: 0,
 				cacheCount: 0,
@@ -186,6 +189,7 @@ activity.openapi(getActivity, async (c) => {
 		dayData.cost += totalCost;
 		dayData.inputCost += inputCost;
 		dayData.outputCost += outputCost;
+		dayData.requestCost += requestCost;
 		dayData.errorCount += log.hasError ? 1 : 0;
 		dayData.cacheCount += log.cached ? 1 : 0;
 		dayData.errorRate =

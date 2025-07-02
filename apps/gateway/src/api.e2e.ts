@@ -1,5 +1,9 @@
 import { db, tables, eq } from "@llmgateway/db";
-import { models, providers } from "@llmgateway/models";
+import {
+	models,
+	type ProviderModelMapping,
+	providers,
+} from "@llmgateway/models";
 import "dotenv/config";
 import { beforeEach, describe, expect, test } from "vitest";
 
@@ -12,15 +16,43 @@ import {
 
 // Helper function to get test options with retry for CI environment
 function getTestOptions() {
-	return process.env.CI ? { retry: 3 } : {};
+	return process.env.CI ? { retry: 5 } : {};
 }
 
 console.log("running with test options:", getTestOptions());
 
 const fullMode = process.env.FULL_MODE;
 
+// Filter models based on test skip/only property
+const hasOnlyModels = models.some((model) =>
+	model.providers.some(
+		(provider: ProviderModelMapping) => provider.test === "only",
+	),
+);
+
+// Log if we're using "only" mode
+if (hasOnlyModels) {
+	if (process.env.CI) {
+		throw new Error(
+			"Cannot use 'only' in test configuration when running in CI. Please remove 'only' from the test configuration and try again.",
+		);
+	}
+	console.log(
+		"Running in 'only' mode - only testing models marked with test: 'only'",
+	);
+}
+
 const testModels = models
 	.filter((model) => !["custom", "auto"].includes(model.model))
+	// If any model has test: "only", only include those models
+	.filter((model) => {
+		if (hasOnlyModels) {
+			return model.providers.some(
+				(provider: ProviderModelMapping) => provider.test === "only",
+			);
+		}
+		return true;
+	})
 	.flatMap((model) => {
 		const testCases = [];
 
@@ -28,12 +60,24 @@ const testModels = models
 			// test root model without a specific provider
 			testCases.push({
 				model: model.model,
-				providers: model.providers,
+				providers: model.providers.filter(
+					(provider: ProviderModelMapping) => provider.test !== "skip",
+				),
 			});
 		}
 
 		// Create entries for provider-specific requests using provider/model format
-		for (const provider of model.providers) {
+		for (const provider of model.providers as ProviderModelMapping[]) {
+			// Skip providers marked with test: "skip"
+			if (provider.test === "skip") {
+				continue;
+			}
+
+			// If we have any "only" providers, skip those not marked as "only"
+			if (hasOnlyModels && provider.test !== "only") {
+				continue;
+			}
+
 			testCases.push({
 				model: `${provider.providerId}/${model.model}`,
 				providers: [provider],
@@ -46,10 +90,29 @@ const testModels = models
 
 const providerModels = models
 	.filter((model) => !["custom", "auto"].includes(model.model))
+	// If any model has test: "only", only include those models
+	.filter((model) => {
+		if (hasOnlyModels) {
+			return model.providers.some(
+				(provider: ProviderModelMapping) => provider.test === "only",
+			);
+		}
+		return true;
+	})
 	.flatMap((model) => {
 		const testCases = [];
 
-		for (const provider of model.providers) {
+		for (const provider of model.providers as ProviderModelMapping[]) {
+			// Skip providers marked with test: "skip"
+			if (provider.test === "skip") {
+				continue;
+			}
+
+			// If we have any "only" providers, skip those not marked as "only"
+			if (hasOnlyModels && provider.test !== "only") {
+				continue;
+			}
+
 			testCases.push({
 				model: `${provider.providerId}/${model.model}`,
 				provider,
@@ -59,6 +122,10 @@ const providerModels = models
 
 		return testCases;
 	});
+
+// Log the number of test models after filtering
+console.log(`Testing ${testModels.length} model configurations`);
+console.log(`Testing ${providerModels.length} provider model configurations`);
 
 const streamingModels = testModels.filter((m) =>
 	m.providers.some((p: any) => {
@@ -167,7 +234,9 @@ describe("e2e tests with real provider keys", () => {
 		const logs = await waitForLogs(1);
 		expect(logs.length).toBeGreaterThan(0);
 
-		console.log("logs", JSON.stringify(logs, null, 2));
+		if (fullMode) {
+			console.log("logs", JSON.stringify(logs, null, 2));
+		}
 
 		const log = logs[0];
 		expect(log.usedProvider).toBeTruthy();
@@ -208,7 +277,9 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("response:", JSON.stringify(json, null, 2));
+			if (fullMode) {
+				console.log("response:", JSON.stringify(json, null, 2));
+			}
 
 			expect(res.status).toBe(200);
 			validateResponse(json);
@@ -268,7 +339,9 @@ describe("e2e tests with real provider keys", () => {
 			expect(res.headers.get("content-type")).toContain("text/event-stream");
 
 			const streamResult = await readAll(res.body);
-			console.log("streamResult", JSON.stringify(streamResult, null, 2));
+			if (fullMode) {
+				console.log("streamResult", JSON.stringify(streamResult, null, 2));
+			}
 
 			expect(streamResult.hasValidSSE).toBe(true);
 			expect(streamResult.eventCount).toBeGreaterThan(0);
@@ -357,7 +430,9 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("reasoning response:", JSON.stringify(json, null, 2));
+			if (fullMode) {
+				console.log("reasoning response:", JSON.stringify(json, null, 2));
+			}
 
 			expect(res.status).toBe(200);
 			validateResponse(json);
@@ -417,7 +492,9 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("json", JSON.stringify(json, null, 2));
+			if (fullMode) {
+				console.log("json", JSON.stringify(json, null, 2));
+			}
 			expect(res.status).toBe(200);
 			expect(json).toHaveProperty("choices.[0].message.content");
 
@@ -472,7 +549,9 @@ describe("e2e tests with real provider keys", () => {
 				});
 
 				const json = await res.json();
-				console.log("response:", JSON.stringify(json, null, 2));
+				if (fullMode) {
+					console.log("response:", JSON.stringify(json, null, 2));
+				}
 
 				expect(res.status).toBe(200);
 				validateResponse(json);
