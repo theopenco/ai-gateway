@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { useUser } from "@/hooks/useUser";
-import { signIn } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
 import {
 	Form,
@@ -38,6 +38,7 @@ function RouteComponent() {
 	const navigate = useNavigate();
 	const posthog = usePostHog();
 	const [isLoading, setIsLoading] = useState(false);
+	const { signIn } = useAuth();
 	useUser({ redirectTo: "/dashboard", redirectWhen: "authenticated" });
 
 	useEffect(() => {

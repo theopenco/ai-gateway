@@ -21,7 +21,7 @@ import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { toast } from "@/lib/components/use-toast";
 import { useAppConfigValue } from "@/lib/config";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Organization } from "@/lib/types";
 
@@ -42,6 +42,7 @@ export function CreateProviderKeyDialog({
 	const [token, setToken] = useState("");
 	const [isValidating, setIsValidating] = useState(false);
 
+	const $api = useApi();
 	const queryKey = $api.queryOptions("get", "/keys/provider").queryKey;
 	const queryClient = useQueryClient();
 

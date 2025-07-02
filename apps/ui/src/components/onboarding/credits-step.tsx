@@ -20,7 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Step } from "@/lib/components/stepper";
 import { toast } from "@/lib/components/use-toast";
 import { useAppConfigValue } from "@/lib/config";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 const CREDIT_OPTIONS = [
 	{ value: "10", label: "$10", description: "Good for testing" },
@@ -34,6 +34,7 @@ export function CreditsStep() {
 	const [selectedAmount, setSelectedAmount] = useState("50");
 	const [isSuccess, setIsSuccess] = useState(false);
 	const posthog = usePostHog();
+	const $api = useApi();
 
 	const stripe = useStripeElements();
 	const elements = useElements();

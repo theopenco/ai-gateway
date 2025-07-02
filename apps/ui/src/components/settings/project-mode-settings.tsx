@@ -10,7 +10,7 @@ import { Separator } from "@/lib/components/separator";
 import { useToast } from "@/lib/components/use-toast";
 import { useAppConfigValue } from "@/lib/config";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function ProjectModeSettings() {
 	const config = useAppConfigValue();
@@ -18,6 +18,7 @@ export function ProjectModeSettings() {
 	const { selectedProject, selectedOrganization } = useDashboardContext();
 	const queryClient = useQueryClient();
 
+	const $api = useApi();
 	const updateProject = $api.useMutation("patch", "/projects/{id}", {
 		onSuccess: (data) => {
 			if (selectedOrganization) {

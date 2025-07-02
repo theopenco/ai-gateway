@@ -8,13 +8,14 @@ import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Separator } from "@/lib/components/separator";
 import { useToast } from "@/lib/components/use-toast";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function OrganizationRetentionSettings() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
 	const { selectedOrganization } = useDashboardContext();
 
+	const $api = useApi();
 	const updateOrganization = $api.useMutation("patch", "/orgs/{id}", {
 		onSuccess: () => {
 			const queryKey = $api.queryOptions("get", "/orgs").queryKey;

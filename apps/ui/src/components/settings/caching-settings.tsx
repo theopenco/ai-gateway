@@ -9,13 +9,14 @@ import { Label } from "@/lib/components/label";
 import { Separator } from "@/lib/components/separator";
 import { useToast } from "@/lib/components/use-toast";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function CachingSettings() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
 	const { selectedProject, selectedOrganization } = useDashboardContext();
 
+	const $api = useApi();
 	const updateProject = $api.useMutation("patch", "/projects/{id}", {
 		onSuccess: (data) => {
 			if (selectedOrganization) {

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { signIn, signUp } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
 import {
 	Dialog,
@@ -25,7 +25,7 @@ import {
 } from "@/lib/components/form";
 import { Input } from "@/lib/components/input";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 const loginSchema = z.object({
 	email: z.string().email({ message: "Please enter a valid email address" }),
@@ -51,6 +51,8 @@ export function AuthDialog({ open }: AuthDialogProps) {
 	const posthog = usePostHog();
 	const [isLoading, setIsLoading] = useState(false);
 	const [mode, setMode] = useState<"login" | "signup">("login");
+	const { signIn, signUp } = useAuth();
+	const $api = useApi();
 
 	const loginForm = useForm<z.infer<typeof loginSchema>>({
 		resolver: zodResolver(loginSchema),

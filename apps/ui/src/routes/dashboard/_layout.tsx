@@ -8,7 +8,7 @@ import { TopBar } from "@/components/dashboard/top-bar";
 import { useUser } from "@/hooks/useUser";
 import { SidebarProvider } from "@/lib/components/sidebar";
 import { DashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Organization, Project } from "@/lib/types";
 
@@ -22,6 +22,7 @@ function RouteComponent() {
 	const [selectedOrganization, setSelectedOrganization] =
 		useState<Organization | null>(null);
 	const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+	const $api = useApi();
 
 	useUser({ redirectTo: "/login", redirectWhen: "unauthenticated" });
 

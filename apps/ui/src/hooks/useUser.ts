@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { usePostHog } from "posthog-js/react";
 import { useEffect } from "react";
 
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export interface UserUpdateData {
 	name?: string;
@@ -23,6 +23,7 @@ export interface UseUserOptions {
 export function useUser(options?: UseUserOptions) {
 	const posthog = usePostHog();
 	const navigate = useNavigate();
+	const $api = useApi();
 
 	const { data, isLoading, error } = $api.useQuery("get", "/user/me", {
 		retry: 0,
@@ -73,6 +74,8 @@ export function useUser(options?: UseUserOptions) {
 
 export function useUpdateUser() {
 	const queryClient = useQueryClient();
+	const $api = useApi();
+
 	return $api.useMutation("patch", "/user/me", {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["user"] });
@@ -82,9 +85,11 @@ export function useUpdateUser() {
 }
 
 export function useUpdatePassword() {
+	const $api = useApi();
 	return $api.useMutation("put", "/user/password");
 }
 
 export function useDeleteAccount() {
+	const $api = useApi();
 	return $api.useMutation("delete", "/user/me");
 }

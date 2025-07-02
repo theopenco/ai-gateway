@@ -12,12 +12,13 @@ import {
 
 import { Button } from "@/lib/components/button";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function CacheRateChart() {
 	const [days, setDays] = useState<7 | 30>(7);
 	const { selectedProject } = useDashboardContext();
 
+	const $api = useApi();
 	const { data, isLoading, error } = $api.useQuery(
 		"get",
 		"/activity",

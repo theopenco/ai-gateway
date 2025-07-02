@@ -19,13 +19,14 @@ import {
 	DialogTrigger,
 } from "@/lib/components/dialog";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 import { useStripe } from "@/lib/stripe";
 
 import type React from "react";
 
 export function PaymentMethodsManagement() {
 	const queryClient = useQueryClient();
+	const $api = useApi();
 	const { data } = $api.useSuspenseQuery("get", "/payments/payment-methods");
 
 	const { mutate: setDefaultMutation, isPending: isDefaultMethodPending } =
@@ -193,6 +194,7 @@ function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
 	const stripe = useStripeElements();
 	const elements = useElements();
 	const [loading, setLoading] = useState(false);
+	const $api = useApi();
 
 	const { mutateAsync: setupIntentMutation } = $api.useMutation(
 		"post",

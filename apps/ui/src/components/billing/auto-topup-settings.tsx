@@ -14,12 +14,13 @@ import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { useToast } from "@/lib/components/use-toast";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 import Spinner from "@/lib/icons/Spinner";
 
 function AutoTopUpSettings() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
+	const $api = useApi();
 
 	const { selectedOrganization } = useDashboardContext();
 	const { data: paymentMethods } = $api.useQuery(

@@ -4,7 +4,7 @@ import { ChevronUp, Settings, User2 } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 
 import { useUser } from "@/hooks/useUser";
-import { signOut } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 import { Badge } from "@/lib/components/badge";
 import {
 	DropdownMenu,
@@ -42,6 +42,7 @@ export function AppSidebar() {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const posthog = usePostHog();
+	const { signOut } = useAuth();
 
 	const { user, isLoading } = useUser({
 		redirectTo: "/login",

@@ -17,7 +17,7 @@ import {
 import { useUser } from "@/hooks/useUser";
 import { SidebarProvider } from "@/lib/components/sidebar";
 import { useAppConfigValue } from "@/lib/config";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export interface Message {
 	id: string;
@@ -35,6 +35,7 @@ function RouteComponent() {
 	const { user, isLoading: isUserLoading } = useUser();
 	const { userApiKey, isLoaded: isApiKeyLoaded } = useApiKey();
 	const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+	const $api = useApi();
 
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(false);

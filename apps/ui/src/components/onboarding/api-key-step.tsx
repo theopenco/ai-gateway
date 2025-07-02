@@ -25,7 +25,7 @@ import {
 import { Input } from "@/lib/components/input";
 import { Step } from "@/lib/components/stepper";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 const formSchema = z.object({
 	name: z.string().min(1, "Name is required"),
@@ -37,6 +37,7 @@ export function ApiKeyStep() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [apiKey, setApiKey] = useState<string | null>(null);
 	const { data: defaultProject, isError } = useDefaultProject();
+	const $api = useApi();
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),

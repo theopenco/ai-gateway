@@ -26,7 +26,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/lib/components/tabs";
 import { useAppConfigValue } from "@/lib/config";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
 	component: Dashboard,
@@ -40,6 +40,7 @@ export default function Dashboard() {
 	const queryClient = useQueryClient();
 	const [days, setDays] = useState<7 | 30>(7);
 	const { selectedOrganization, selectedProject } = useDashboardContext();
+	const $api = useApi();
 
 	// Only fetch activity data if we have a selected project
 	const { data, isLoading } = $api.useQuery(

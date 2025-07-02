@@ -13,7 +13,7 @@ import {
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Organization, Project } from "@/lib/types";
 import type React from "react";
@@ -39,6 +39,7 @@ export function NewProjectDialog({
 	const [projectName, setProjectName] = useState("");
 
 	const queryClient = useQueryClient();
+	const $api = useApi();
 	const createProjectMutation = $api.useMutation("post", "/projects", {
 		onSuccess: (data) => {
 			// Update the projects cache for the current organization

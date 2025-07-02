@@ -13,12 +13,13 @@ import {
 } from "@/lib/components/card";
 import { useToast } from "@/lib/components/use-toast";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function PlanManagement() {
 	const { selectedOrganization } = useDashboardContext();
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
+	const $api = useApi();
 
 	const { data: subscriptionStatus } = $api.useQuery(
 		"get",

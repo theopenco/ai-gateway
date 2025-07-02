@@ -28,7 +28,7 @@ import { useState } from "react";
 import { OrganizationSwitcher } from "./organization-switcher";
 import { TopUpCreditsDialog } from "@/components/credits/top-up-credits-dialog";
 import { useUser } from "@/hooks/useUser";
-import { signOut } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/lib/components/avatar";
 import { Button } from "@/lib/components/button";
 import {
@@ -616,6 +616,7 @@ export function DashboardSidebar({
 	const { user } = useUser();
 	const { selectedOrganization } = useDashboardContext();
 	const navigate = useNavigate();
+	const { signOut } = useAuth();
 
 	const toolsResources = [
 		{

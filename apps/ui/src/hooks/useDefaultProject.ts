@@ -1,6 +1,8 @@
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function useDefaultProject() {
+	const $api = useApi();
+
 	const { data: orgsData, isError: orgsError } = $api.useSuspenseQuery(
 		"get",
 		"/orgs",

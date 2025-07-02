@@ -22,7 +22,7 @@ import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { useToast } from "@/lib/components/use-toast";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 import Spinner from "@/lib/icons/Spinner";
 import { useStripe } from "@/lib/stripe";
 
@@ -54,6 +54,7 @@ export function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
 		string | null
 	>(null);
 	const { stripe, isLoading: stripeLoading } = useStripe();
+	const $api = useApi();
 
 	const { data: paymentMethodsData } = $api.useSuspenseQuery(
 		"get",
@@ -155,6 +156,7 @@ function AmountStep({
 }) {
 	const presetAmounts = [10, 25, 50, 100];
 	const { selectedOrganization } = useDashboardContext();
+	const $api = useApi();
 	const { data: feeData, isLoading: feeDataLoading } = $api.useQuery(
 		"post",
 		"/payments/calculate-fees",
@@ -281,6 +283,7 @@ function PaymentStep({
 	const stripe = useStripeElements();
 	const elements = useElements();
 	const { toast } = useToast();
+	const $api = useApi();
 	const { mutateAsync: topUpMutation } = $api.useMutation(
 		"post",
 		"/payments/create-payment-intent",
@@ -549,6 +552,7 @@ function ConfirmPaymentStep({
 }) {
 	const { toast } = useToast();
 	const { selectedOrganization } = useDashboardContext();
+	const $api = useApi();
 	const { mutateAsync: topUpMutation } = $api.useMutation(
 		"post",
 		"/payments/top-up-with-saved-method",

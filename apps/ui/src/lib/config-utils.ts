@@ -20,17 +20,3 @@ export function getConfigSync(): AppConfig {
 	}
 	return globalConfig;
 }
-
-/**
- * Check if configuration is loaded
- */
-export function isConfigLoaded(): boolean {
-	return globalConfig !== null;
-}
-
-/**
- * Clear the configuration cache (for testing)
- */
-export function clearConfigCache(): void {
-	globalConfig = null;
-}

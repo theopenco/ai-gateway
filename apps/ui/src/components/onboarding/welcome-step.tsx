@@ -1,7 +1,7 @@
 import { Rocket } from "lucide-react";
 import * as React from "react";
 
-import { useSession } from "../../lib/auth-client";
+import { useAuth } from "../../lib/auth-client";
 import {
 	Card,
 	CardContent,
@@ -12,6 +12,7 @@ import {
 import { Step } from "../../lib/components/stepper";
 
 export function WelcomeStep() {
+	const { useSession } = useAuth();
 	const session = useSession();
 	const user = session.data?.user;
 	const organization = { name: "Your Organization" };

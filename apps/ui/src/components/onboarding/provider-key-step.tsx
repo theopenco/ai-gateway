@@ -29,7 +29,7 @@ import {
 import { Input } from "@/lib/components/input";
 import { toast } from "@/lib/components/use-toast";
 import { useAppConfigValue } from "@/lib/config";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 const formSchema = z.object({
 	provider: z.string().min(1, "Provider is required"),
@@ -52,6 +52,7 @@ export function ProviderKeyStep() {
 		},
 	});
 
+	const $api = useApi();
 	const createProviderKey = $api.useMutation("post", "/keys/provider");
 
 	async function onSubmit(values: FormValues) {

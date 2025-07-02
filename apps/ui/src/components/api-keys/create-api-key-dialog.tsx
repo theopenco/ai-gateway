@@ -16,7 +16,7 @@ import {
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Project } from "@/lib/types";
 import type React from "react";
@@ -36,6 +36,7 @@ export function CreateApiKeyDialog({
 	const [step, setStep] = useState<"form" | "created">("form");
 	const [name, setName] = useState("");
 	const [apiKey, setApiKey] = useState("");
+	const $api = useApi();
 
 	const { mutate: createApiKey } = $api.useMutation("post", "/keys/api");
 

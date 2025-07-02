@@ -32,7 +32,7 @@ import {
 	TableRow,
 } from "@/lib/components/table";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Project } from "@/lib/types";
 
@@ -42,6 +42,7 @@ interface ApiKeysListProps {
 
 export function ApiKeysList({ selectedProject }: ApiKeysListProps) {
 	const queryClient = useQueryClient();
+	const $api = useApi();
 
 	// Show message if no project is selected
 	if (!selectedProject) {

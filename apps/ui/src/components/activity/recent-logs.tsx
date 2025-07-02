@@ -14,7 +14,7 @@ import {
 	SelectValue,
 } from "@/lib/components/select";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 const UnifiedFinishReason = {
 	COMPLETED: "completed",
@@ -36,6 +36,7 @@ export function RecentLogs() {
 	const [provider, setProvider] = useState<string | undefined>();
 	const [model, setModel] = useState<string | undefined>();
 	const { selectedProject } = useDashboardContext();
+	const $api = useApi();
 
 	const { data, isLoading, error } = $api.useQuery(
 		"get",
