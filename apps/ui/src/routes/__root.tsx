@@ -14,7 +14,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "@/globals.css?url";
 import { Toaster } from "@/lib/components/toaster";
-import { useAppConfigValue } from "@/lib/config";
 import { getConfig } from "@/lib/config-server";
 import { loadConfig } from "@/lib/config-utils";
 import { cn } from "@/lib/utils";
@@ -74,7 +73,7 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
-	const config = useAppConfigValue();
+	const config = Route.useLoaderData();
 
 	useEffect(() => {
 		if (config.crispId) {
@@ -90,7 +89,7 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
-	const config = useAppConfigValue();
+	const config = Route.useLoaderData();
 
 	const posthogOptions: Partial<PostHogConfig> | undefined = {
 		api_host: config.posthogHost,

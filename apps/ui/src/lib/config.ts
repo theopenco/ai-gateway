@@ -1,37 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { Route } from "@/routes/__root";
 
-import { getConfig, type AppConfig } from "./config-server";
-
-// React Query key for configuration
-const CONFIG_QUERY_KEY = ["app-config"] as const;
+import type { AppConfig } from "./config-server";
 
 /**
- * Hook to get application configuration
- * Uses React Query to cache the config and handle loading/error states
- */
-export function useAppConfig() {
-	return useQuery({
-		queryKey: CONFIG_QUERY_KEY,
-		queryFn: () => getConfig(),
-		staleTime: 1000 * 60 * 5, // 5 minutes
-		gcTime: 1000 * 60 * 10, // 10 minutes
-		refetchOnWindowFocus: false,
-		refetchOnReconnect: false,
-	});
-}
-
-/**
- * Synchronous config access for cases where you know the config is already loaded
- * Use this only in components that are rendered after the config has been fetched
+ * Synchronous config access that uses the data loaded by the root route's loader
  */
 export function useAppConfigValue(): AppConfig {
-	const { data } = useAppConfig();
-	if (!data) {
-		throw new Error(
-			"Config not loaded. Use useAppConfig() to handle loading state.",
-		);
-	}
-	return data;
+	return Route.useLoaderData();
 }
 
 // Re-export types
