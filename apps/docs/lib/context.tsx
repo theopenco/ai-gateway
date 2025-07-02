@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useMemo } from "react";
 
 import type { ReactNode } from "react";
 
@@ -25,41 +25,25 @@ export function usePostHogConfig() {
 	return useContext(ConfigContext);
 }
 
-// Provider component that fetches and provides the PostHog config
-export function ConfigProvider({ children }: { children: ReactNode }) {
-	const [config, setConfig] = useState<EnvConfig>({
-		posthogKey: "",
-		posthogHost: "",
-		isLoaded: false,
-		hasError: false,
-	});
-
-	useEffect(() => {
-		// Fetch environment variables from the server
-		const fetchEnvVars = async () => {
-			try {
-				const response = await fetch("/api/env");
-				const envVars = await response.json();
-
-				setConfig({
-					posthogKey: envVars.posthogKey,
-					posthogHost: envVars.posthogHost,
-					isLoaded: true,
-					hasError: false,
-				});
-			} catch (error) {
-				console.error("Failed to fetch environment variables:", error);
-				setConfig({
-					posthogKey: "",
-					posthogHost: "",
-					isLoaded: true,
-					hasError: true,
-				});
-			}
-		};
-
-		fetchEnvVars();
-	}, []);
+// Provider component that provides the PostHog config
+export function ConfigProvider({
+	children,
+	posthogKey = "",
+	posthogHost = "",
+}: {
+	children: ReactNode;
+	posthogKey?: string;
+	posthogHost?: string;
+}) {
+	const config = useMemo<EnvConfig>(
+		() => ({
+			posthogKey,
+			posthogHost,
+			isLoaded: true,
+			hasError: false,
+		}),
+		[posthogKey, posthogHost],
+	);
 
 	return (
 		<ConfigContext.Provider value={config}>{children}</ConfigContext.Provider>

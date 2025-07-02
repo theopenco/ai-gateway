@@ -12,10 +12,14 @@ const inter = Inter({
 });
 
 export default function Layout({ children }: { children: ReactNode }) {
+	// Access environment variables directly on the server
+	const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY || "";
+	const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || "";
+
 	return (
 		<html lang="en" className={inter.className} suppressHydrationWarning>
 			<body className="flex flex-col min-h-screen">
-				<ConfigProvider>
+				<ConfigProvider posthogKey={posthogKey} posthogHost={posthogHost}>
 					<PostHogProvider>
 						<RootProvider>{children}</RootProvider>
 					</PostHogProvider>
