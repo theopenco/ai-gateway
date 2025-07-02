@@ -1,52 +1,36 @@
-import { getConfig } from "./config-server";
-
 import type { AppConfig } from "./config-server";
 
-// Cache for configuration
-let configCache: AppConfig | null = null;
-let configPromise: Promise<AppConfig> | null = null;
+// Global variable to store the config from the loader
+let globalConfig: AppConfig | null = null;
+
+// Set the global config from the loader
+export function setGlobalConfig(config: AppConfig): void {
+	globalConfig = config;
+}
 
 /**
  * Get configuration synchronously (throws if not loaded)
  * Use this only in contexts where you know config is already loaded
  */
 export function getConfigSync(): AppConfig {
-	if (!configCache) {
+	if (!globalConfig) {
 		throw new Error(
-			"Configuration not loaded. Call loadConfig() first or use useAppConfig() in React components.",
+			"Configuration not loaded. Use Route.useLoaderData() in React components.",
 		);
 	}
-	return configCache;
-}
-
-/**
- * Load configuration and cache it
- * Call this early in the application lifecycle
- */
-export async function loadConfig(): Promise<AppConfig> {
-	if (configCache) {
-		return configCache;
-	}
-
-	if (!configPromise) {
-		configPromise = getConfig();
-	}
-
-	configCache = await configPromise;
-	return configCache;
+	return globalConfig;
 }
 
 /**
  * Check if configuration is loaded
  */
 export function isConfigLoaded(): boolean {
-	return configCache !== null;
+	return globalConfig !== null;
 }
 
 /**
  * Clear the configuration cache (for testing)
  */
 export function clearConfigCache(): void {
-	configCache = null;
-	configPromise = null;
+	globalConfig = null;
 }

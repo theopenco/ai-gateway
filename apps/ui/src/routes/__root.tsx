@@ -15,7 +15,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "@/globals.css?url";
 import { Toaster } from "@/lib/components/toaster";
 import { getConfig } from "@/lib/config-server";
-import { loadConfig } from "@/lib/config-utils";
+import { setGlobalConfig } from "@/lib/config-utils";
 import { cn } from "@/lib/utils";
 
 import type { QueryClient } from "@tanstack/react-query";
@@ -32,8 +32,8 @@ export const Route = createRootRouteWithContext<{
 			staleTime: 1000 * 60 * 5, // 5 minutes
 		});
 
-		// Also populate the synchronous cache for utility functions
-		await loadConfig();
+		// Set the global config for non-React contexts
+		setGlobalConfig(config);
 
 		return config;
 	},
