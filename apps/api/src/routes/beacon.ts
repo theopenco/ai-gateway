@@ -117,18 +117,12 @@ beacon.openapi(beaconRoute, async (c) => {
 		properties: {
 			installation: beaconData.type,
 			timestamp: beaconData.timestamp,
-			// Add some additional context
 			source: "self_hosted_api",
 			version: process.env.APP_VERSION || "v0.0.0-unknown",
-			// New IP/region tracking data
 			client_ip: clientIP,
 			country: regionInfo.country,
 			region: regionInfo.region,
 			cloud_provider: cloudProvider,
-			// Additional debugging headers (anonymized)
-			has_cf_ray: !!c.req.header("CF-Ray"),
-			has_gcp_trace: !!c.req.header("X-Cloud-Trace-Context"),
-			user_agent: c.req.header("User-Agent"),
 		},
 	});
 
