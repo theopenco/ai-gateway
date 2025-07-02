@@ -24,6 +24,7 @@ interface LocalModel {
 		inputPrice?: number;
 		outputPrice?: number;
 		imageInputPrice?: number;
+		requestPrice?: number;
 		contextSize?: number;
 		providerInfo?: {
 			id: string;
@@ -121,6 +122,13 @@ export function ModelSelector({
 										<div>
 											${(model.providers[0].inputPrice * 1e6).toFixed(2)}/1M
 											tokens
+										</div>
+									)}
+								{model.providers[0]?.requestPrice !== null &&
+									model.providers[0]?.requestPrice !== undefined && (
+										<div>
+											${(model.providers[0].requestPrice * 1000).toFixed(2)}/1K
+											requests
 										</div>
 									)}
 								<div className="flex gap-1 mt-1">
