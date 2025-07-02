@@ -16,7 +16,7 @@
 		"build": "tsc && vinxi build",
 		"dev": "vinxi dev --port 3002",
 		"generate": "openapi-typescript ../api/openapi.json -o ./src/lib/api/v1.d.ts",
-		"start": "vinxi serve --dir .output/public/"
+		"start": "vinxi start"
 	},
 	"dependencies": {
 		"@hey-api/client-fetch": "0.10.1",
