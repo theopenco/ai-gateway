@@ -30,6 +30,10 @@ export interface ProviderModelMapping {
 	 */
 	imageInputPrice?: number;
 	/**
+	 * Price per request in USD
+	 */
+	requestPrice?: number;
+	/**
 	 * Maximum context window size in tokens
 	 */
 	contextSize?: number;
@@ -49,6 +53,10 @@ export interface ProviderModelMapping {
 	 * Whether this model supports reasoning mode
 	 */
 	reasoning?: boolean;
+	/**
+	 * Test skip/only functionality
+	 */
+	test?: "skip" | "only";
 }
 
 export interface ModelDefinition {

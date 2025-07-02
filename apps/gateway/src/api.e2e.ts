@@ -1,5 +1,9 @@
 import { db, tables, eq } from "@llmgateway/db";
-import { models, providers } from "@llmgateway/models";
+import {
+	models,
+	type ProviderModelMapping,
+	providers,
+} from "@llmgateway/models";
 import "dotenv/config";
 import { beforeEach, describe, expect, test } from "vitest";
 
@@ -19,8 +23,36 @@ console.log("running with test options:", getTestOptions());
 
 const fullMode = process.env.FULL_MODE;
 
+// Filter models based on test skip/only property
+const hasOnlyModels = models.some((model) =>
+	model.providers.some(
+		(provider: ProviderModelMapping) => provider.test === "only",
+	),
+);
+
+// Log if we're using "only" mode
+if (hasOnlyModels) {
+	if (process.env.CI) {
+		throw new Error(
+			"Cannot use 'only' in test configuration when running in CI. Please remove 'only' from the test configuration and try again.",
+		);
+	}
+	console.log(
+		"Running in 'only' mode - only testing models marked with test: 'only'",
+	);
+}
+
 const testModels = models
 	.filter((model) => !["custom", "auto"].includes(model.model))
+	// If any model has test: "only", only include those models
+	.filter((model) => {
+		if (hasOnlyModels) {
+			return model.providers.some(
+				(provider: ProviderModelMapping) => provider.test === "only",
+			);
+		}
+		return true;
+	})
 	.flatMap((model) => {
 		const testCases = [];
 
@@ -28,12 +60,24 @@ const testModels = models
 			// test root model without a specific provider
 			testCases.push({
 				model: model.model,
-				providers: model.providers,
+				providers: model.providers.filter(
+					(provider: ProviderModelMapping) => provider.test !== "skip",
+				),
 			});
 		}
 
 		// Create entries for provider-specific requests using provider/model format
-		for (const provider of model.providers) {
+		for (const provider of model.providers as ProviderModelMapping[]) {
+			// Skip providers marked with test: "skip"
+			if (provider.test === "skip") {
+				continue;
+			}
+
+			// If we have any "only" providers, skip those not marked as "only"
+			if (hasOnlyModels && provider.test !== "only") {
+				continue;
+			}
+
 			testCases.push({
 				model: `${provider.providerId}/${model.model}`,
 				providers: [provider],
@@ -46,10 +90,29 @@ const testModels = models
 
 const providerModels = models
 	.filter((model) => !["custom", "auto"].includes(model.model))
+	// If any model has test: "only", only include those models
+	.filter((model) => {
+		if (hasOnlyModels) {
+			return model.providers.some(
+				(provider: ProviderModelMapping) => provider.test === "only",
+			);
+		}
+		return true;
+	})
 	.flatMap((model) => {
 		const testCases = [];
 
-		for (const provider of model.providers) {
+		for (const provider of model.providers as ProviderModelMapping[]) {
+			// Skip providers marked with test: "skip"
+			if (provider.test === "skip") {
+				continue;
+			}
+
+			// If we have any "only" providers, skip those not marked as "only"
+			if (hasOnlyModels && provider.test !== "only") {
+				continue;
+			}
+
 			testCases.push({
 				model: `${provider.providerId}/${model.model}`,
 				provider,
@@ -59,6 +122,10 @@ const providerModels = models
 
 		return testCases;
 	});
+
+// Log the number of test models after filtering
+console.log(`Testing ${testModels.length} model configurations`);
+console.log(`Testing ${providerModels.length} provider model configurations`);
 
 const streamingModels = testModels.filter((m) =>
 	m.providers.some((p: any) => {

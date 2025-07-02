@@ -407,6 +407,7 @@ export interface paths {
 								cost: number | null;
 								inputCost: number | null;
 								outputCost: number | null;
+								requestCost: number | null;
 								estimatedCost: boolean | null;
 								canceled: boolean | null;
 								streamed: boolean | null;
@@ -473,6 +474,7 @@ export interface paths {
 								cost: number;
 								inputCost: number;
 								outputCost: number;
+								requestCost: number;
 								errorCount: number;
 								errorRate: number;
 								cacheCount: number;
