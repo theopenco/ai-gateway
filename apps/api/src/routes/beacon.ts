@@ -98,8 +98,8 @@ function extractRegionInfo(c: any): { country?: string; region?: string } {
 beacon.openapi(beaconRoute, async (c) => {
 	const beaconData = c.req.valid("json");
 
-	// Check if telemetry is disabled via environment variable
-	if (process.env.DISABLE_TELEMETRY === "true") {
+	// Check if telemetry is active via environment variable
+	if (process.env.TELEMETRY_ACTIVE !== "true") {
 		console.log("Telemetry disabled - beacon data discarded");
 		return c.json({
 			success: true,
@@ -115,7 +115,7 @@ beacon.openapi(beaconRoute, async (c) => {
 	const cloudProvider = c.req.header("CF-Ray")
 		? "cloudflare"
 		: c.req.header("X-Google-Cloud-Region") ||
-			  c.req.header("X-Cloud-Trace-Context")
+			c.req.header("X-Cloud-Trace-Context")
 			? "gcp"
 			: "unknown";
 

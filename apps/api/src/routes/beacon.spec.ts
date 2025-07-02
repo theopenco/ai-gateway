@@ -11,6 +11,39 @@ vi.mock("../posthog", () => ({
 }));
 
 describe("beacon endpoint", () => {
+	it("should not send data to PostHog when telemetry is disabled", async () => {
+		// Set TELEMETRY_ACTIVE to false
+		const originalValue = process.env.TELEMETRY_ACTIVE;
+		process.env.TELEMETRY_ACTIVE = "false";
+
+		const beaconData = {
+			uuid: "123e4567-e89b-12d3-a456-426614174000",
+			type: "self-host",
+			timestamp: "2024-01-01T00:00:00.000Z",
+		};
+
+		const response = await app.request("/beacon", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(beaconData),
+		});
+
+		expect(response.status).toBe(200);
+		const responseData = await response.json();
+		expect(responseData).toEqual({
+			success: true,
+			message: "Beacon received (telemetry disabled)",
+		});
+
+		// Verify PostHog was NOT called when telemetry is disabled
+		expect(posthog.capture).not.toHaveBeenCalled();
+
+		// Restore original value
+		process.env.TELEMETRY_ACTIVE = originalValue;
+	});
+
 	it("should accept valid beacon data", async () => {
 		const beaconData = {
 			uuid: "123e4567-e89b-12d3-a456-426614174000",

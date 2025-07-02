@@ -32,10 +32,10 @@ async function sendBeacon(data: BeaconData): Promise<void> {
  * Retrieves installation data and sends beacon on startup
  */
 export async function sendInstallationBeacon(): Promise<void> {
-	// Check if telemetry is disabled via environment variable
-	if (process.env.DISABLE_TELEMETRY === "true") {
+	// Check if telemetry is active via environment variable
+	if (process.env.TELEMETRY_ACTIVE !== "true") {
 		console.log(
-			"Telemetry disabled via DISABLE_TELEMETRY environment variable",
+			"Telemetry disabled - TELEMETRY_ACTIVE environment variable not set to 'true'",
 		);
 		return;
 	}
@@ -44,7 +44,7 @@ export async function sendInstallationBeacon(): Promise<void> {
 		"Sending installation beacon (for anonymous tracking of self-hosted installs.",
 	);
 	console.log(
-		"To disable, set DISABLE_TRACKING=true in your environment variables.",
+		"To disable, set TELEMETRY_ACTIVE=false in your environment variables.",
 	);
 
 	try {
