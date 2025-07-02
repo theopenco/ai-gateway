@@ -163,6 +163,89 @@ describe("test", () => {
 		expect(json.message).toContain("does not support reasoning");
 	});
 
+	test("Max tokens validation error when exceeding model limit", async () => {
+		await db.insert(tables.apiKey).values({
+			id: "token-id",
+			token: "real-token",
+			projectId: "project-id",
+			description: "Test API Key",
+		});
+
+		// Create provider key for OpenAI with mock server URL as baseUrl
+		await db.insert(tables.providerKey).values({
+			id: "provider-key-id",
+			token: "sk-test-key",
+			provider: "openai",
+			organizationId: "org-id",
+			baseUrl: mockServerUrl,
+		});
+
+		const res = await app.request("/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer real-token`,
+			},
+			body: JSON.stringify({
+				model: "openai/gpt-4",
+				messages: [
+					{
+						role: "user",
+						content: "Hello",
+					},
+				],
+				max_tokens: 10000, // This exceeds gpt-4's maxOutput of 8192
+			}),
+		});
+
+		expect(res.status).toBe(400);
+
+		const json = await res.json();
+		expect(json.message).toContain("exceeds the maximum output tokens allowed");
+		expect(json.message).toContain("10000");
+		expect(json.message).toContain("8192");
+	});
+
+	test("Max tokens validation allows valid token count", async () => {
+		await db.insert(tables.apiKey).values({
+			id: "token-id",
+			token: "real-token",
+			projectId: "project-id",
+			description: "Test API Key",
+		});
+
+		// Create provider key for OpenAI with mock server URL as baseUrl
+		await db.insert(tables.providerKey).values({
+			id: "provider-key-id",
+			token: "sk-test-key",
+			provider: "openai",
+			organizationId: "org-id",
+			baseUrl: mockServerUrl,
+		});
+
+		const res = await app.request("/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer real-token`,
+			},
+			body: JSON.stringify({
+				model: "openai/gpt-4",
+				messages: [
+					{
+						role: "user",
+						content: "Hello",
+					},
+				],
+				max_tokens: 4000, // This is within gpt-4's maxOutput of 8192
+			}),
+		});
+
+		expect(res.status).toBe(200);
+		const json = await res.json();
+		expect(json).toHaveProperty("choices.[0].message.content");
+	});
+
 	test("Error when requesting provider-specific model name without prefix", async () => {
 		// Create a fake model name that would be a provider-specific model name
 		const res = await app.request("/v1/chat/completions", {

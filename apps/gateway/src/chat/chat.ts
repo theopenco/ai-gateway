@@ -1389,6 +1389,26 @@ chat.openapi(completions, async (c) => {
 		}
 	}
 
+	// Validate max_tokens against model's maxOutput limit
+	if (max_tokens !== undefined && finalModelInfo) {
+		// Find the provider mapping for the used provider
+		const providerMapping = finalModelInfo.providers.find(
+			(p) => p.providerId === usedProvider && p.modelName === usedModel,
+		);
+
+		if (
+			providerMapping &&
+			"maxOutput" in providerMapping &&
+			providerMapping.maxOutput !== undefined
+		) {
+			if (max_tokens > providerMapping.maxOutput) {
+				throw new HTTPException(400, {
+					message: `The requested max_tokens (${max_tokens}) exceeds the maximum output tokens allowed for model ${usedModel} (${providerMapping.maxOutput})`,
+				});
+			}
+		}
+	}
+
 	// Check if streaming is requested and if the model/provider combination supports it
 	if (stream) {
 		if (!getModelStreamingSupport(baseModelName, usedProvider)) {
