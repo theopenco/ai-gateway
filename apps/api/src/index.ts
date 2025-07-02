@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { authHandler } from "./auth/handler";
 import { routes } from "./routes";
+import { beacon } from "./routes/beacon";
 import { stripeRoutes } from "./stripe";
 
 import type { ServerTypes } from "./vars";
@@ -122,6 +123,8 @@ app.openapi(root, async (c) => {
 });
 
 app.route("/stripe", stripeRoutes);
+
+app.route("/", beacon);
 
 app.doc("/json", config);
 

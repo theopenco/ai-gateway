@@ -1,3 +1,5 @@
+import { randomUUID } from "crypto";
+
 import { logs } from "./logs";
 import { db, tables } from "./src";
 
@@ -25,6 +27,13 @@ async function upsert<T extends Record<string, any>>(
 }
 
 async function seed() {
+	// Insert installation record for self-hosted tracking
+	await upsert(tables.installation, {
+		id: "self-hosted-installation",
+		uuid: randomUUID(),
+		type: "self-host",
+	});
+
 	// Insert user
 	await upsert(tables.user, {
 		id: "test-user-id",
