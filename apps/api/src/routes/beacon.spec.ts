@@ -46,9 +46,6 @@ describe("beacon endpoint", () => {
 				country: undefined,
 				region: undefined,
 				cloud_provider: "unknown",
-				has_cf_ray: false,
-				has_gcp_trace: false,
-				user_agent: undefined,
 			},
 		});
 	});
@@ -68,7 +65,6 @@ describe("beacon endpoint", () => {
 				"CF-IPCountry": "US",
 				"CF-Region": "California",
 				"CF-Ray": "8a1b2c3d4e5f6789-SJC",
-				"User-Agent": "test-agent/1.0",
 			},
 			body: JSON.stringify(beaconData),
 		});
@@ -88,9 +84,6 @@ describe("beacon endpoint", () => {
 				country: "US",
 				region: "California",
 				cloud_provider: "cloudflare",
-				has_cf_ray: true,
-				has_gcp_trace: false,
-				user_agent: "test-agent/1.0",
 			},
 		});
 	});
@@ -109,7 +102,6 @@ describe("beacon endpoint", () => {
 				"X-Forwarded-For": "198.51.100.25, 203.0.113.1",
 				"X-Google-Cloud-Region": "us-central1",
 				"X-Cloud-Trace-Context": "105445aa7843bc8bf206b120001000/1;o=1",
-				"User-Agent": "test-agent/2.0",
 			},
 			body: JSON.stringify(beaconData),
 		});
@@ -129,9 +121,6 @@ describe("beacon endpoint", () => {
 				country: undefined, // GCP doesn't provide country in standard headers
 				region: "us-central1",
 				cloud_provider: "gcp",
-				has_cf_ray: false,
-				has_gcp_trace: true,
-				user_agent: "test-agent/2.0",
 			},
 		});
 	});
@@ -167,9 +156,6 @@ describe("beacon endpoint", () => {
 				country: undefined,
 				region: undefined,
 				cloud_provider: "unknown",
-				has_cf_ray: false,
-				has_gcp_trace: false,
-				user_agent: undefined,
 			},
 		});
 	});
