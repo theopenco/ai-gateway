@@ -13,7 +13,7 @@
 		".vercel"
 	],
 	"scripts": {
-		"build": "tsc && vinxi build",
+		"build": "tsc && vinxi build && rm -rf .output/server/node_modules && rm -rf .output/server/package.json",
 		"dev": "vinxi dev --port 3002",
 		"generate": "openapi-typescript ../api/openapi.json -o ./src/lib/api/v1.d.ts",
 		"start": "vinxi start"
@@ -44,7 +44,9 @@
 		"@stripe/react-stripe-js": "3.7.0",
 		"@stripe/stripe-js": "7.4.0",
 		"@tanstack/react-query": "^5.74.7",
+		"@tanstack/react-query-devtools": "5.81.5",
 		"@tanstack/react-router": "^1.117.1",
+		"@tanstack/react-router-devtools": "1.124.0",
 		"@tanstack/react-router-with-query": "^1.123.2",
 		"@tanstack/react-start": "^1.118.0",
 		"@tanstack/react-table": "^8.21.2",
@@ -82,8 +84,6 @@
 		"@content-collections/core": "0.9.1",
 		"@content-collections/vinxi": "0.1.1",
 		"@tailwindcss/vite": "^4.1.10",
-		"@tanstack/react-query-devtools": "^5.80.6",
-		"@tanstack/react-router-devtools": "^1.120.3",
 		"@types/node": "24.0.10",
 		"@types/react": "^19.1.8",
 		"@types/react-dom": "^19.1.6",
