@@ -21,7 +21,7 @@ const ConfigContext = createContext<EnvConfig>({
 });
 
 // Hook to use the PostHog config
-export function usePostHogConfig() {
+export function useConfig() {
 	return useContext(ConfigContext);
 }
 

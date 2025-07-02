@@ -4,12 +4,12 @@ import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
 import { useEffect } from "react";
 
-import { usePostHogConfig } from "./context";
+import { useConfig } from "./context";
 
 import type { ReactNode } from "react";
 
 export function PostHogProvider({ children }: { children: ReactNode }) {
-	const config = usePostHogConfig();
+	const config = useConfig();
 
 	useEffect(() => {
 		if (config.isLoaded && config.posthogKey && !config.hasError) {
