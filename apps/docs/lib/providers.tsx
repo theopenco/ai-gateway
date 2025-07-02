@@ -2,38 +2,33 @@
 
 import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
-	const [isInitialized, setIsInitialized] = useState(false);
+import { usePostHogConfig } from "./context";
+
+import type { ReactNode } from "react";
+
+export function PostHogProvider({ children }: { children: ReactNode }) {
+	const config = usePostHogConfig();
 
 	useEffect(() => {
-		// Fetch environment variables from the server
-		const fetchEnvVars = async () => {
-			try {
-				const response = await fetch("/api/env");
-				const envVars = await response.json();
+		if (config.isLoaded && config.posthogKey && !config.hasError) {
+			posthog.init(config.posthogKey, {
+				api_host: config.posthogHost,
+				defaults: "2025-05-24",
+				capture_pageview: "history_change",
+				autocapture: true,
+				loaded: (ph) => {
+					ph.register({
+						app_section: "docs",
+					});
+				},
+			});
+		}
+	}, [config.isLoaded, config.posthogKey, config.posthogHost, config.hasError]);
 
-				posthog.init(envVars.posthogKey, {
-					api_host: envVars.posthogHost,
-					defaults: "2025-05-24",
-					loaded: (ph) => {
-						ph.register({
-							app_section: "docs",
-						});
-					},
-				});
-
-				setIsInitialized(true);
-			} catch (error) {
-				console.error("Failed to fetch environment variables:", error);
-			}
-		};
-
-		fetchEnvVars();
-	}, []);
-
-	if (!isInitialized) {
+	// Don't render the provider if config is not loaded yet or has an error
+	if (!config.isLoaded || config.hasError || !config.posthogKey) {
 		return children;
 	}
 
