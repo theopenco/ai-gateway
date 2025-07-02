@@ -1,11 +1,15 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { PostHog } from "posthog-node";
 import { z } from "zod";
-
-import { posthog } from "../posthog";
 
 import type { ServerTypes } from "../vars";
 
 export const beacon = new OpenAPIHono<ServerTypes>();
+
+// use a dedicated posthog project for this
+const posthog = new PostHog("phc_C6iARGYa6inQUJbnSJUzfCUgqRd3nfJ2OkM0BbxaBWB", {
+	host: "https://us.i.posthog.com",
+});
 
 const beaconDataSchema = z.object({
 	uuid: z.string().uuid("Must be a valid UUID"),
