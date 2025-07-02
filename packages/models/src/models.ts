@@ -38,6 +38,10 @@ export interface ProviderModelMapping {
 	 */
 	contextSize?: number;
 	/**
+	 * Maximum output size in tokens
+	 */
+	maxOutput?: number;
+	/**
 	 * Whether this specific model supports streaming for this provider
 	 */
 	streaming: boolean;
