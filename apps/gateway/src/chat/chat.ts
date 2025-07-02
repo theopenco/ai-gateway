@@ -191,7 +191,7 @@ function parseProviderResponse(usedProvider: Provider, json: any) {
 					try {
 						const parsed = JSON.parse(content);
 						content = JSON.stringify(parsed);
-					} catch (_e) {}
+					} catch (_e) { }
 				}
 			}
 			break;
@@ -616,10 +616,10 @@ function transformStreamingChunkToOpenAIFormat(
 					usage:
 						data.usageMetadata && data.usageMetadata.candidatesTokenCount
 							? {
-									prompt_tokens: data.usageMetadata.promptTokenCount || 0,
-									completion_tokens: data.usageMetadata.candidatesTokenCount,
-									total_tokens: data.usageMetadata.totalTokenCount || 0,
-								}
+								prompt_tokens: data.usageMetadata.promptTokenCount || 0,
+								completion_tokens: data.usageMetadata.candidatesTokenCount,
+								total_tokens: data.usageMetadata.totalTokenCount || 0,
+							}
 							: null,
 				};
 			} else if (data.candidates?.[0]?.finishReason) {
@@ -644,10 +644,10 @@ function transformStreamingChunkToOpenAIFormat(
 					usage:
 						data.usageMetadata && data.usageMetadata.candidatesTokenCount
 							? {
-									prompt_tokens: data.usageMetadata.promptTokenCount || 0,
-									completion_tokens: data.usageMetadata.candidatesTokenCount,
-									total_tokens: data.usageMetadata.totalTokenCount || 0,
-								}
+								prompt_tokens: data.usageMetadata.promptTokenCount || 0,
+								completion_tokens: data.usageMetadata.candidatesTokenCount,
+								total_tokens: data.usageMetadata.totalTokenCount || 0,
+							}
 							: null,
 				};
 			}
@@ -667,13 +667,13 @@ function transformStreamingChunkToOpenAIFormat(
 							index: 0,
 							delta: data.delta
 								? {
-										...data.delta,
-										role: "assistant",
-									}
+									...data.delta,
+									role: "assistant",
+								}
 								: {
-										content: data.content || "",
-										role: "assistant",
-									},
+									content: data.content || "",
+									role: "assistant",
+								},
 							finish_reason: data.finish_reason || null,
 						},
 					],
@@ -688,9 +688,9 @@ function transformStreamingChunkToOpenAIFormat(
 							...choice,
 							delta: choice.delta
 								? {
-										...choice.delta,
-										role: choice.delta.role || "assistant",
-									}
+									...choice.delta,
+									role: choice.delta.role || "assistant",
+								}
 								: choice.delta,
 						})) || data.choices,
 				};
@@ -1166,9 +1166,9 @@ chat.openapi(completions, async (c) => {
 				project.mode === "api-keys"
 					? providerKeys.map((key) => key.provider)
 					: providers
-							.filter((p) => p.id !== "llmgateway")
-							.filter((p) => hasProviderEnvironmentToken(p.id as Provider))
-							.map((p) => p.id);
+						.filter((p) => p.id !== "llmgateway")
+						.filter((p) => hasProviderEnvironmentToken(p.id as Provider))
+						.map((p) => p.id);
 
 			// Filter model providers to only those available
 			const availableModelProviders = modelInfo.providers.filter((provider) =>
@@ -1533,7 +1533,7 @@ chat.openapi(completions, async (c) => {
 
 			if (!res.ok) {
 				const errorResponseText = await res.text();
-				console.error("error", url, res.status, errorResponseText);
+				console.log(`Provider error - Status: ${res.status}, Text: ${errorResponseText}`);
 
 				await stream.writeSSE({
 					event: "error",
@@ -1543,6 +1543,7 @@ chat.openapi(completions, async (c) => {
 							type: getFinishReasonForError(res.status),
 							param: null,
 							code: getFinishReasonForError(res.status),
+							responseText: errorResponseText,
 						},
 					}),
 					id: String(eventId++),
@@ -2233,7 +2234,7 @@ chat.openapi(completions, async (c) => {
 		// Get the error response text
 		const errorResponseText = await res.text();
 
-		console.error("error", url, res.status, errorResponseText);
+		console.log(`Provider error - Status: ${res.status}, Text: ${errorResponseText}`);
 
 		// Log the error in the database
 		const baseLogEntry = createLogEntry(
@@ -2288,6 +2289,7 @@ chat.openapi(completions, async (c) => {
 					usedProvider,
 					requestedModel,
 					usedModel,
+					responseText: errorResponseText,
 				},
 			},
 			500,
