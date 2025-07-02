@@ -31,7 +31,7 @@ export default function Footer() {
 						</p>
 						<div className="flex items-center space-x-4 mt-4">
 							<a
-								href={GITHUB_URL}
+								href={config.githubUrl}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
