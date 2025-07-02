@@ -39,12 +39,12 @@ export function NewProjectDialog({
 	const [projectName, setProjectName] = useState("");
 
 	const queryClient = useQueryClient();
-	const $api = useApi();
-	const createProjectMutation = $api.useMutation("post", "/projects", {
+	const api = useApi();
+	const createProjectMutation = api.useMutation("post", "/projects", {
 		onSuccess: (data) => {
 			// Update the projects cache for the current organization
 			if (selectedOrganization) {
-				const queryKey = $api.queryOptions("get", "/orgs/{id}/projects", {
+				const queryKey = api.queryOptions("get", "/orgs/{id}/projects", {
 					params: { path: { id: selectedOrganization.id } },
 				}).queryKey;
 

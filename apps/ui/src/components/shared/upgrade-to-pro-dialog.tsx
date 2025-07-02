@@ -58,8 +58,8 @@ function UpgradeDialogContent({
 		initialBillingCycle,
 	);
 
-	const $api = useApi();
-	const createSubscriptionMutation = $api.useMutation(
+	const api = useApi();
+	const createSubscriptionMutation = api.useMutation(
 		"post",
 		"/subscriptions/create-pro-subscription",
 	);

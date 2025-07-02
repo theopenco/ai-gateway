@@ -40,10 +40,10 @@ export default function Dashboard() {
 	const queryClient = useQueryClient();
 	const [days, setDays] = useState<7 | 30>(7);
 	const { selectedOrganization, selectedProject } = useDashboardContext();
-	const $api = useApi();
+	const api = useApi();
 
 	// Only fetch activity data if we have a selected project
-	const { data, isLoading } = $api.useQuery(
+	const { data, isLoading } = api.useQuery(
 		"get",
 		"/activity",
 		{
@@ -62,7 +62,7 @@ export default function Dashboard() {
 	// Invalidate activity query when project changes
 	useEffect(() => {
 		if (selectedProject?.id) {
-			const queryKey = $api.queryOptions("get", "/activity", {
+			const queryKey = api.queryOptions("get", "/activity", {
 				params: {
 					query: {
 						days: String(days),

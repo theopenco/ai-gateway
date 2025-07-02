@@ -23,9 +23,9 @@ export interface UseUserOptions {
 export function useUser(options?: UseUserOptions) {
 	const posthog = usePostHog();
 	const navigate = useNavigate();
-	const $api = useApi();
+	const api = useApi();
 
-	const { data, isLoading, error } = $api.useQuery("get", "/user/me", {
+	const { data, isLoading, error } = api.useQuery("get", "/user/me", {
 		retry: 0,
 		gcTime: 0,
 	});
@@ -74,9 +74,9 @@ export function useUser(options?: UseUserOptions) {
 
 export function useUpdateUser() {
 	const queryClient = useQueryClient();
-	const $api = useApi();
+	const api = useApi();
 
-	return $api.useMutation("patch", "/user/me", {
+	return api.useMutation("patch", "/user/me", {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["user"] });
 			queryClient.invalidateQueries({ queryKey: ["session"] });
@@ -85,11 +85,11 @@ export function useUpdateUser() {
 }
 
 export function useUpdatePassword() {
-	const $api = useApi();
-	return $api.useMutation("put", "/user/password");
+	const api = useApi();
+	return api.useMutation("put", "/user/password");
 }
 
 export function useDeleteAccount() {
-	const $api = useApi();
-	return $api.useMutation("delete", "/user/me");
+	const api = useApi();
+	return api.useMutation("delete", "/user/me");
 }

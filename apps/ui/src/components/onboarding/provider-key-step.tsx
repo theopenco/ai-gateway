@@ -52,8 +52,8 @@ export function ProviderKeyStep() {
 		},
 	});
 
-	const $api = useApi();
-	const createProviderKey = $api.useMutation("post", "/keys/provider");
+	const api = useApi();
+	const createProviderKey = api.useMutation("post", "/keys/provider");
 
 	async function onSubmit(values: FormValues) {
 		setIsLoading(true);

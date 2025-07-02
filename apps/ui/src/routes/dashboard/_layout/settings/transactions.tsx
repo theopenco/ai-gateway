@@ -112,8 +112,8 @@ function TransactionsPage() {
 	const { selectedOrganization } = useDashboardContext();
 	const isMobile = useIsMobile();
 
-	const $api = useApi();
-	const { data } = $api.useSuspenseQuery("get", "/orgs/{id}/transactions", {
+	const api = useApi();
+	const { data } = api.useSuspenseQuery("get", "/orgs/{id}/transactions", {
 		params: {
 			path: { id: selectedOrganization?.id ?? "" },
 		},

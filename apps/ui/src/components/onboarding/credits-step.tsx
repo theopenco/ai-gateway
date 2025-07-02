@@ -34,12 +34,12 @@ export function CreditsStep() {
 	const [selectedAmount, setSelectedAmount] = useState("50");
 	const [isSuccess, setIsSuccess] = useState(false);
 	const posthog = usePostHog();
-	const $api = useApi();
+	const api = useApi();
 
 	const stripe = useStripeElements();
 	const elements = useElements();
 
-	const { mutateAsync: createPaymentIntent } = $api.useMutation(
+	const { mutateAsync: createPaymentIntent } = api.useMutation(
 		"post",
 		"/payments/create-payment-intent",
 	);

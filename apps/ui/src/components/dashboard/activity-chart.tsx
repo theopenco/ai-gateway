@@ -158,9 +158,9 @@ export function ActivityChart() {
 		"requests" | "cost" | "tokens"
 	>("requests");
 	const { selectedProject } = useDashboardContext();
-	const $api = useApi();
+	const api = useApi();
 
-	const { data, isLoading, error } = $api.useQuery(
+	const { data, isLoading, error } = api.useQuery(
 		"get",
 		"/activity",
 		{

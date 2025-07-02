@@ -1,9 +1,9 @@
 import { useApi } from "@/lib/fetch-client";
 
 export function useDefaultProject() {
-	const $api = useApi();
+	const api = useApi();
 
-	const { data: orgsData, isError: orgsError } = $api.useSuspenseQuery(
+	const { data: orgsData, isError: orgsError } = api.useSuspenseQuery(
 		"get",
 		"/orgs",
 	);
@@ -14,7 +14,7 @@ export function useDefaultProject() {
 
 	const defaultOrg = orgsData.organizations[0];
 
-	const { data: projectsData, isError: projectsError } = $api.useSuspenseQuery(
+	const { data: projectsData, isError: projectsError } = api.useSuspenseQuery(
 		"get",
 		"/orgs/{id}/projects",
 		{

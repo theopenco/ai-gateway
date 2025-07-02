@@ -42,7 +42,7 @@ interface ApiKeysListProps {
 
 export function ApiKeysList({ selectedProject }: ApiKeysListProps) {
 	const queryClient = useQueryClient();
-	const $api = useApi();
+	const api = useApi();
 
 	// Show message if no project is selected
 	if (!selectedProject) {
@@ -58,17 +58,17 @@ export function ApiKeysList({ selectedProject }: ApiKeysListProps) {
 		);
 	}
 
-	const { data } = $api.useSuspenseQuery("get", "/keys/api", {
+	const { data } = api.useSuspenseQuery("get", "/keys/api", {
 		params: {
 			query: { projectId: selectedProject.id },
 		},
 	});
 
-	const { mutate: deleteMutation } = $api.useMutation(
+	const { mutate: deleteMutation } = api.useMutation(
 		"delete",
 		"/keys/api/{id}",
 	);
-	const { mutate: toggleKeyStatus } = $api.useMutation(
+	const { mutate: toggleKeyStatus } = api.useMutation(
 		"patch",
 		"/keys/api/{id}",
 	);
@@ -84,7 +84,7 @@ export function ApiKeysList({ selectedProject }: ApiKeysListProps) {
 			},
 			{
 				onSuccess: () => {
-					const queryKey = $api.queryOptions("get", "/keys/api", {
+					const queryKey = api.queryOptions("get", "/keys/api", {
 						params: {
 							query: { projectId: selectedProject.id },
 						},
@@ -118,7 +118,7 @@ export function ApiKeysList({ selectedProject }: ApiKeysListProps) {
 			},
 			{
 				onSuccess: () => {
-					const queryKey = $api.queryOptions("get", "/keys/api", {
+					const queryKey = api.queryOptions("get", "/keys/api", {
 						params: {
 							query: { projectId: selectedProject.id },
 						},

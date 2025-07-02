@@ -42,16 +42,18 @@ export function CreateProviderKeyDialog({
 	const [token, setToken] = useState("");
 	const [isValidating, setIsValidating] = useState(false);
 
-	const $api = useApi();
-	const queryKey = $api.queryOptions("get", "/keys/provider").queryKey;
+	const api = useApi();
+	const queryKey = api.queryOptions("get", "/keys/provider").queryKey;
 	const queryClient = useQueryClient();
 
-	const { data: providerKeysData, isPending: isLoading } =
-		$api.useSuspenseQuery("get", "/keys/provider");
+	const { data: providerKeysData, isPending: isLoading } = api.useSuspenseQuery(
+		"get",
+		"/keys/provider",
+	);
 
 	const isProPlan = selectedOrganization.plan === "pro";
 
-	const createMutation = $api.useMutation("post", "/keys/provider");
+	const createMutation = api.useMutation("post", "/keys/provider");
 
 	// Filter provider keys by selected organization
 	const organizationProviderKeys =

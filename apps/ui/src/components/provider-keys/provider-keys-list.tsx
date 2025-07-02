@@ -46,7 +46,7 @@ export function ProviderKeysList({
 	selectedOrganization,
 }: ProviderKeysListProps) {
 	const queryClient = useQueryClient();
-	const $api = useApi();
+	const api = useApi();
 
 	// Show message if no organization is selected
 	if (!selectedOrganization) {
@@ -62,11 +62,11 @@ export function ProviderKeysList({
 		);
 	}
 
-	const { data } = $api.useSuspenseQuery("get", "/keys/provider");
-	const deleteMutation = $api.useMutation("delete", "/keys/provider/{id}");
-	const toggleMutation = $api.useMutation("patch", "/keys/provider/{id}");
+	const { data } = api.useSuspenseQuery("get", "/keys/provider");
+	const deleteMutation = api.useMutation("delete", "/keys/provider/{id}");
+	const toggleMutation = api.useMutation("patch", "/keys/provider/{id}");
 
-	const queryKey = $api.queryOptions("get", "/keys/provider").queryKey;
+	const queryKey = api.queryOptions("get", "/keys/provider").queryKey;
 
 	// Filter provider keys by selected organization
 	const keys = data?.providerKeys

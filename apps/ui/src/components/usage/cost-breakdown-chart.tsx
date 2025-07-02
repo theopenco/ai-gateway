@@ -17,8 +17,8 @@ export function CostBreakdownChart() {
 	const [days, setDays] = useState<7 | 30>(7);
 	const { selectedProject } = useDashboardContext();
 
-	const $api = useApi();
-	const { data, isLoading, error } = $api.useQuery(
+	const api = useApi();
+	const { data, isLoading, error } = api.useQuery(
 		"get",
 		"/activity",
 		{

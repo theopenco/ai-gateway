@@ -36,9 +36,9 @@ export function RecentLogs() {
 	const [provider, setProvider] = useState<string | undefined>();
 	const [model, setModel] = useState<string | undefined>();
 	const { selectedProject } = useDashboardContext();
-	const $api = useApi();
+	const api = useApi();
 
-	const { data, isLoading, error } = $api.useQuery(
+	const { data, isLoading, error } = api.useQuery(
 		"get",
 		"/logs",
 		{

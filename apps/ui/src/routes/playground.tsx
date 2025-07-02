@@ -35,7 +35,7 @@ function RouteComponent() {
 	const { user, isLoading: isUserLoading } = useUser();
 	const { userApiKey, isLoaded: isApiKeyLoaded } = useApiKey();
 	const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
-	const $api = useApi();
+	const api = useApi();
 
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -50,8 +50,8 @@ function RouteComponent() {
 	);
 	const { data: _chatsData } = useChats();
 	const { data: subscriptionStatus, isLoading: isSubscriptionLoading } =
-		$api.useQuery("get", "/subscriptions/status", {});
-	const { data: orgsData, isLoading: isOrgsLoading } = $api.useQuery(
+		api.useQuery("get", "/subscriptions/status", {});
+	const { data: orgsData, isLoading: isOrgsLoading } = api.useQuery(
 		"get",
 		"/orgs",
 	);

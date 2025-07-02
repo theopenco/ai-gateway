@@ -15,10 +15,10 @@ export function OrganizationRetentionSettings() {
 	const queryClient = useQueryClient();
 	const { selectedOrganization } = useDashboardContext();
 
-	const $api = useApi();
-	const updateOrganization = $api.useMutation("patch", "/orgs/{id}", {
+	const api = useApi();
+	const updateOrganization = api.useMutation("patch", "/orgs/{id}", {
 		onSuccess: () => {
-			const queryKey = $api.queryOptions("get", "/orgs").queryKey;
+			const queryKey = api.queryOptions("get", "/orgs").queryKey;
 			queryClient.invalidateQueries({ queryKey });
 		},
 	});

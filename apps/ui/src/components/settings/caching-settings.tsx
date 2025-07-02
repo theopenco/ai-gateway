@@ -16,11 +16,11 @@ export function CachingSettings() {
 	const queryClient = useQueryClient();
 	const { selectedProject, selectedOrganization } = useDashboardContext();
 
-	const $api = useApi();
-	const updateProject = $api.useMutation("patch", "/projects/{id}", {
+	const api = useApi();
+	const updateProject = api.useMutation("patch", "/projects/{id}", {
 		onSuccess: (data) => {
 			if (selectedOrganization) {
-				const queryKey = $api.queryOptions("get", "/orgs/{id}/projects", {
+				const queryKey = api.queryOptions("get", "/orgs/{id}/projects", {
 					params: { path: { id: data.project.organizationId } },
 				}).queryKey;
 				queryClient.invalidateQueries({ queryKey });

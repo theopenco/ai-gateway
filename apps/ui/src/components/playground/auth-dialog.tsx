@@ -52,7 +52,7 @@ export function AuthDialog({ open }: AuthDialogProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [mode, setMode] = useState<"login" | "signup">("login");
 	const { signIn, signUp } = useAuth();
-	const $api = useApi();
+	const api = useApi();
 
 	const loginForm = useForm<z.infer<typeof loginSchema>>({
 		resolver: zodResolver(loginSchema),
@@ -81,7 +81,7 @@ export function AuthDialog({ open }: AuthDialogProps) {
 			},
 			{
 				onSuccess: (ctx) => {
-					const queryKey = $api.queryOptions("get", "/user/me").queryKey;
+					const queryKey = api.queryOptions("get", "/user/me").queryKey;
 					queryClient.invalidateQueries({ queryKey });
 					posthog.identify(ctx.data.user.id, {
 						email: ctx.data.user.email,
@@ -124,7 +124,7 @@ export function AuthDialog({ open }: AuthDialogProps) {
 			},
 			{
 				onSuccess: (ctx) => {
-					const queryKey = $api.queryOptions("get", "/user/me").queryKey;
+					const queryKey = api.queryOptions("get", "/user/me").queryKey;
 					queryClient.invalidateQueries({ queryKey });
 					posthog.identify(ctx.data.user.id, {
 						email: ctx.data.user.email,
@@ -166,7 +166,7 @@ export function AuthDialog({ open }: AuthDialogProps) {
 				});
 				return;
 			}
-			const queryKey = $api.queryOptions("get", "/user/me").queryKey;
+			const queryKey = api.queryOptions("get", "/user/me").queryKey;
 			queryClient.invalidateQueries({ queryKey });
 			posthog.capture("user_logged_in", { method: "passkey" });
 			toast({ title: "Login successful" });

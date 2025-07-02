@@ -9,8 +9,8 @@ export function useCreateApiKey() {
 	const queryClient = useQueryClient();
 	const posthog = usePostHog();
 	const { data: defaultProject } = useDefaultProject();
-	const $api = useApi();
-	const { mutate: createApiKey } = $api.useMutation("post", "/keys/api");
+	const api = useApi();
+	const { mutate: createApiKey } = api.useMutation("post", "/keys/api");
 
 	const create = (name: string, onSuccess: (token: string) => void) => {
 		if (!defaultProject?.id) {
@@ -29,7 +29,7 @@ export function useCreateApiKey() {
 				onSuccess: (data) => {
 					const createdKey = data.apiKey;
 
-					const queryKey = $api.queryOptions("get", "/keys/api", {
+					const queryKey = api.queryOptions("get", "/keys/api", {
 						params: { query: { projectId: defaultProject.id } },
 					}).queryKey;
 

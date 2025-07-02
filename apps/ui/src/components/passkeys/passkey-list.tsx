@@ -16,7 +16,7 @@ import { useApi } from "@/lib/fetch-client";
 
 export function PasskeyList() {
 	const authClient = useAuthClient();
-	const $api = useApi();
+	const api = useApi();
 
 	const {
 		data,
@@ -31,7 +31,7 @@ export function PasskeyList() {
 		mutate: deletePasskey,
 		isPending: isDeleting,
 		variables: deletingId,
-	} = $api.useMutation("delete", "/user/me/passkeys/{id}", {
+	} = api.useMutation("delete", "/user/me/passkeys/{id}", {
 		onSuccess: () => {
 			toast({
 				title: "Passkey deleted",

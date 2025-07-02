@@ -37,7 +37,7 @@ export function ApiKeyStep() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [apiKey, setApiKey] = useState<string | null>(null);
 	const { data: defaultProject, isError } = useDefaultProject();
-	const $api = useApi();
+	const api = useApi();
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
@@ -46,7 +46,7 @@ export function ApiKeyStep() {
 		},
 	});
 
-	const createApiKey = $api.useMutation("post", "/keys/api");
+	const createApiKey = api.useMutation("post", "/keys/api");
 
 	async function onSubmit(values: FormValues) {
 		setIsLoading(true);
