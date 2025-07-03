@@ -98,15 +98,6 @@ function extractRegionInfo(c: any): { country?: string; region?: string } {
 beacon.openapi(beaconRoute, async (c) => {
 	const beaconData = c.req.valid("json");
 
-	// Check if telemetry is active via environment variable
-	if (process.env.TELEMETRY_ACTIVE !== "true") {
-		console.log("Telemetry disabled - beacon data discarded");
-		return c.json({
-			success: true,
-			message: "Beacon received (telemetry disabled)",
-		});
-	}
-
 	// Extract IP and region information
 	const clientIP = extractClientIP(c);
 	const regionInfo = extractRegionInfo(c);
