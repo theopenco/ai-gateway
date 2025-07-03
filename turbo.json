@@ -20,19 +20,18 @@
 			"outputs": [
 				"dist/**",
 				".next/**",
-				".source/**",
 				".vercel/**",
 				".output/**",
 				".vinxi/**",
-				"out/**",
-				"openapi.json"
+				"out/**"
 			]
 		},
 		"generate": {
 			"dependsOn": ["^generate"],
-			"cache": false
+			"outputs": [".source/**", "openapi.json", "v1.d.ts"]
 		},
 		"dev": {
+			"persistent": true,
 			"cache": false
 		},
 		"lint": {},
