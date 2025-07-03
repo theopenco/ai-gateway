@@ -5,7 +5,8 @@
 	"files": [
 		".source",
 		".next",
-		"out"
+		"out",
+		"openapi.json"
 	],
 	"scripts": {
 		"build": "fumadocs-mdx && tsc && next build",
