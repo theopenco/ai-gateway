@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { ProductHuntBanner } from "@/components/shared/product-hunt-banner";
 import { useUser } from "@/hooks/useUser";
 import { useAuth } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
@@ -97,82 +98,89 @@ function RouteComponent() {
 	}
 
 	return (
-		<div className="px-4 sm:px-0 max-w-[64rm] mx-auto flex h-screen w-screen flex-col items-center justify-center">
-			<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-				<div className="flex flex-col space-y-2 text-center">
-					<h1 className="text-2xl font-semibold tracking-tight">
-						Create an account
-					</h1>
-					<p className="text-sm text-muted-foreground">
-						Enter your email below to create your account
+		<>
+			<ProductHuntBanner />
+			<div className="px-4 sm:px-0 max-w-[64rm] mx-auto flex h-screen w-screen flex-col items-center justify-center">
+				<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+					<div className="flex flex-col space-y-2 text-center">
+						<h1 className="text-2xl font-semibold tracking-tight">
+							Create an account
+						</h1>
+						<p className="text-sm text-muted-foreground">
+							Enter your email below to create your account
+						</p>
+					</div>
+					<Form {...form}>
+						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+							<FormField
+								control={form.control}
+								name="name"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Name</FormLabel>
+										<FormControl>
+											<Input placeholder="John Doe" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="email"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Email</FormLabel>
+										<FormControl>
+											<Input
+												placeholder="name@example.com"
+												type="email"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="password"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Password</FormLabel>
+										<FormControl>
+											<Input
+												placeholder="••••••••"
+												type="password"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<Button type="submit" className="w-full" disabled={isLoading}>
+								{isLoading ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Creating account...
+									</>
+								) : (
+									"Create account"
+								)}
+							</Button>
+						</form>
+					</Form>
+					<p className="px-8 text-center text-sm text-muted-foreground">
+						<Link
+							to="/login"
+							className="hover:text-brand underline underline-offset-4"
+						>
+							Already have an account? Sign in
+						</Link>
 					</p>
 				</div>
-				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-						<FormField
-							control={form.control}
-							name="name"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Name</FormLabel>
-									<FormControl>
-										<Input placeholder="John Doe" {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="email"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Email</FormLabel>
-									<FormControl>
-										<Input
-											placeholder="name@example.com"
-											type="email"
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="password"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Password</FormLabel>
-									<FormControl>
-										<Input placeholder="••••••••" type="password" {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<Button type="submit" className="w-full" disabled={isLoading}>
-							{isLoading ? (
-								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Creating account...
-								</>
-							) : (
-								"Create account"
-							)}
-						</Button>
-					</form>
-				</Form>
-				<p className="px-8 text-center text-sm text-muted-foreground">
-					<Link
-						to="/login"
-						className="hover:text-brand underline underline-offset-4"
-					>
-						Already have an account? Sign in
-					</Link>
-				</p>
 			</div>
-		</div>
+		</>
 	);
 }

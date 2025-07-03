@@ -6,7 +6,7 @@ import Logo from "@/lib/icons/Logo";
 
 export function MobileHeader() {
 	return (
-		<header className="bg-background sticky top-0 z-30 flex h-14 items-center gap-4 border-b px-4 sm:static md:hidden">
+		<header className="bg-background fixed top-0 left-0 right-0 z-50 flex h-14 items-center gap-4 border-b px-4 sm:static md:hidden">
 			<SidebarTrigger />
 			<Link to="/dashboard" className="flex items-center gap-2 font-semibold">
 				<Logo className="h-6 w-6 rounded-full text-black dark:text-white" />

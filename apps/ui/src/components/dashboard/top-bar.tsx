@@ -18,7 +18,7 @@ export function TopBar({
 	onProjectCreated,
 }: TopBarProps) {
 	return (
-		<header className="sticky top-0 z-40 flex h-16 flex-shrink-0 items-center gap-2 border-b border-border bg-background px-4 sm:px-6">
+		<header className="sticky md:top-0 top-13 z-40 flex h-16 flex-shrink-0 items-center gap-2 border-b border-border bg-background px-4 sm:px-6">
 			{selectedOrganization && (
 				<ProjectSwitcher
 					projects={projects}

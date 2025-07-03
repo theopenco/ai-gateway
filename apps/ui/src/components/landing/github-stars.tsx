@@ -42,7 +42,7 @@ export function GitHubStars() {
 	const { data: stars, isLoading, isError } = useGitHubStars(REPO);
 
 	return (
-		<Button variant="secondary" asChild>
+		<Button variant="secondary" className="w-full md:w-fit" asChild>
 			<a
 				href={config.githubUrl}
 				target="_blank"
