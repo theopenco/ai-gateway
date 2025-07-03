@@ -23,12 +23,14 @@
 				".vercel/**",
 				".output/**",
 				".vinxi/**",
-				"out/**"
+				"out/**",
+				".source/**",
+				"openapi.json"
 			]
 		},
 		"generate": {
 			"dependsOn": ["^generate"],
-			"outputs": [".source/**", "openapi.json", "v1.d.ts"]
+			"outputs": ["content/**", "migrations"]
 		},
 		"dev": {
 			"persistent": true,
