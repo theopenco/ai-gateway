@@ -115,7 +115,7 @@ beacon.openapi(beaconRoute, async (c) => {
 	const cloudProvider = c.req.header("CF-Ray")
 		? "cloudflare"
 		: c.req.header("X-Google-Cloud-Region") ||
-			c.req.header("X-Cloud-Trace-Context")
+			  c.req.header("X-Cloud-Trace-Context")
 			? "gcp"
 			: "unknown";
 
