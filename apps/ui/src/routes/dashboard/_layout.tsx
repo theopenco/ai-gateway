@@ -8,7 +8,7 @@ import { TopBar } from "@/components/dashboard/top-bar";
 import { useUser } from "@/hooks/useUser";
 import { SidebarProvider } from "@/lib/components/sidebar";
 import { DashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Organization, Project } from "@/lib/types";
 
@@ -22,14 +22,15 @@ function RouteComponent() {
 	const [selectedOrganization, setSelectedOrganization] =
 		useState<Organization | null>(null);
 	const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+	const api = useApi();
 
 	useUser({ redirectTo: "/login", redirectWhen: "unauthenticated" });
 
 	// Fetch organizations
-	const { data: organizationsData } = $api.useQuery("get", "/orgs");
+	const { data: organizationsData } = api.useQuery("get", "/orgs");
 
 	// Fetch projects for selected organization
-	const { data: projectsData } = $api.useQuery(
+	const { data: projectsData } = api.useQuery(
 		"get",
 		"/orgs/{id}/projects",
 		{

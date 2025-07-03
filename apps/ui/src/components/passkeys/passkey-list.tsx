@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { KeySquare, Trash2, Loader2 } from "lucide-react";
 
-import { authClient } from "@/lib/auth-client";
+import { useAuthClient } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
 import {
 	Table,
@@ -12,9 +12,12 @@ import {
 	TableRow,
 } from "@/lib/components/table";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function PasskeyList() {
+	const authClient = useAuthClient();
+	const api = useApi();
+
 	const {
 		data,
 		isPending: isLoading,
@@ -28,7 +31,7 @@ export function PasskeyList() {
 		mutate: deletePasskey,
 		isPending: isDeleting,
 		variables: deletingId,
-	} = $api.useMutation("delete", "/user/me/passkeys/{id}", {
+	} = api.useMutation("delete", "/user/me/passkeys/{id}", {
 		onSuccess: () => {
 			toast({
 				title: "Passkey deleted",

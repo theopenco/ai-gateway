@@ -29,14 +29,6 @@ COPY packages/models/package.json ./packages/models/
 
 RUN pnpm install --frozen-lockfile
 
-ARG VITE_HOSTED
-ARG VITE_DOCS_URL
-ARG VITE_API_URL
-ARG VITE_POSTHOG_KEY
-ARG VITE_POSTHOG_HOST
-ARG NEXT_PUBLIC_POSTHOG_KEY
-ARG NEXT_PUBLIC_POSTHOG_HOST
-
 # Copy source code
 COPY . .
 
@@ -52,7 +44,6 @@ ENV APP_VERSION=$APP_VERSION
 RUN apk add --no-cache \
     nodejs \
     npm \
-    nginx \
     postgresql \
     redis \
     supervisor \
@@ -73,27 +64,17 @@ COPY --from=builder /app/apps ./apps
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/.npmrc /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 
-# Deploy API service
-RUN pnpm --filter=api --prod deploy /app/services/api
+# Deploy all services with a single command
+RUN pnpm --filter=api --prod deploy /app/services/api && \
+    pnpm --filter=gateway --prod deploy /app/services/gateway && \
+    pnpm --filter=ui --prod deploy /app/services/ui && \
+    pnpm --filter=docs --prod deploy /app/services/docs
 
 # copy migrations files to API service
 COPY --from=builder /app/packages/db/migrations /app/services/api/migrations
 
-# Deploy Gateway service
-RUN pnpm --filter=gateway --prod deploy /app/services/gateway
-
-# Copy UI static files
-COPY --from=builder /app/apps/ui/.output/public/ /usr/share/nginx/html/ui/
-COPY --from=builder /app/apps/ui/.output/static/ /usr/share/nginx/html/ui/static/
-
-# Copy Docs static files
-COPY --from=builder /app/apps/docs/out/ /usr/share/nginx/html/docs/
-
 # Copy database init scripts
 COPY --from=builder /app/packages/db/init/ /docker-entrypoint-initdb.d/
-
-# Configure Nginx
-COPY --from=builder /app/infra/nginx-unified.conf /etc/nginx/nginx.conf
 
 # Configure PostgreSQL
 RUN mkdir -p /run/postgresql && \

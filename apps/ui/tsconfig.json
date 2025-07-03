@@ -13,7 +13,7 @@
 		"isolatedModules": true,
 		"jsx": "preserve",
 		"incremental": true,
-		"types": ["vinxi/types/client", "vinxi/types/server"],
+		"types": ["vinxi/types/client", "vinxi/types/server", "node"],
 		"paths": {
 			"@/*": ["./src/*"],
 			"@llmgateway/*": ["../../packages/*/src"],

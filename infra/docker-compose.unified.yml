@@ -38,8 +38,8 @@ services:
       - TOGETHER_AI_API_KEY=${TOGETHER_AI_API_KEY:-}
 
       # Analytics (optional)
-      - VITE_POSTHOG_KEY=${VITE_POSTHOG_KEY:-}
-      - VITE_POSTHOG_HOST=${VITE_POSTHOG_HOST:-}
+      - POSTHOG_KEY=${POSTHOG_KEY:-}
+      - POSTHOG_HOST=${POSTHOG_HOST:-}
 
       # Stripe (optional)
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}

@@ -16,7 +16,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/lib/components/card";
-import { DOCS_URL } from "@/lib/env";
+import { useAppConfigValue } from "@/lib/config";
 import Logo from "@/lib/icons/Logo";
 import { cn, formatContextSize } from "@/lib/utils";
 
@@ -72,6 +72,7 @@ const totalModels = modelDefinitions.length;
 const totalProviders = sortedProviderEntries.length;
 
 export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
+	const config = useAppConfigValue();
 	const [copiedModel, setCopiedModel] = useState<string | null>(null);
 
 	const copyModelName = async (modelName: string) => {
@@ -277,7 +278,7 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 
 			<footer className="mt-16 text-center">
 				<a
-					href={`${DOCS_URL}/v1_models`}
+					href={`${config.docsUrl}/v1_models`}
 					target="_blank"
 					className="inline-flex items-center gap-2 text-sm text-muted-foreground"
 				>

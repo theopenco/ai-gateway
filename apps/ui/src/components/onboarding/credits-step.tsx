@@ -19,8 +19,8 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Step } from "@/lib/components/stepper";
 import { toast } from "@/lib/components/use-toast";
-import { HOSTED } from "@/lib/env";
-import { $api } from "@/lib/fetch-client";
+import { useAppConfigValue } from "@/lib/config";
+import { useApi } from "@/lib/fetch-client";
 
 const CREDIT_OPTIONS = [
 	{ value: "10", label: "$10", description: "Good for testing" },
@@ -29,15 +29,17 @@ const CREDIT_OPTIONS = [
 ];
 
 export function CreditsStep() {
+	const config = useAppConfigValue();
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedAmount, setSelectedAmount] = useState("50");
 	const [isSuccess, setIsSuccess] = useState(false);
 	const posthog = usePostHog();
+	const api = useApi();
 
 	const stripe = useStripeElements();
 	const elements = useElements();
 
-	const { mutateAsync: createPaymentIntent } = $api.useMutation(
+	const { mutateAsync: createPaymentIntent } = api.useMutation(
 		"post",
 		"/payments/create-payment-intent",
 	);
@@ -116,7 +118,7 @@ export function CreditsStep() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{!HOSTED ? (
+						{!config.hosted ? (
 							<div className="flex flex-col gap-4 items-center text-center">
 								<div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
 									<Check className="h-6 w-6 text-green-600 dark:text-green-300" />

@@ -13,29 +13,30 @@ import {
 } from "@/lib/components/card";
 import { useToast } from "@/lib/components/use-toast";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function PlanManagement() {
 	const { selectedOrganization } = useDashboardContext();
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
+	const api = useApi();
 
-	const { data: subscriptionStatus } = $api.useQuery(
+	const { data: subscriptionStatus } = api.useQuery(
 		"get",
 		"/subscriptions/status",
 	);
 
-	const cancelSubscriptionMutation = $api.useMutation(
+	const cancelSubscriptionMutation = api.useMutation(
 		"post",
 		"/subscriptions/cancel-pro-subscription",
 	);
 
-	const resumeSubscriptionMutation = $api.useMutation(
+	const resumeSubscriptionMutation = api.useMutation(
 		"post",
 		"/subscriptions/resume-pro-subscription",
 	);
 
-	const upgradeToYearlyMutation = $api.useMutation(
+	const upgradeToYearlyMutation = api.useMutation(
 		"post",
 		"/subscriptions/upgrade-to-yearly",
 	);
@@ -52,7 +53,7 @@ export function PlanManagement() {
 		try {
 			await cancelSubscriptionMutation.mutateAsync({});
 			await queryClient.invalidateQueries({
-				queryKey: $api.queryOptions("get", "/subscriptions/status").queryKey,
+				queryKey: api.queryOptions("get", "/subscriptions/status").queryKey,
 			});
 			toast({
 				title: "Subscription Canceled",
@@ -80,7 +81,7 @@ export function PlanManagement() {
 		try {
 			await resumeSubscriptionMutation.mutateAsync({});
 			await queryClient.invalidateQueries({
-				queryKey: $api.queryOptions("get", "/subscriptions/status").queryKey,
+				queryKey: api.queryOptions("get", "/subscriptions/status").queryKey,
 			});
 			toast({
 				title: "Subscription Resumed",
@@ -108,7 +109,7 @@ export function PlanManagement() {
 		try {
 			await upgradeToYearlyMutation.mutateAsync({});
 			await queryClient.invalidateQueries({
-				queryKey: $api.queryOptions("get", "/subscriptions/status").queryKey,
+				queryKey: api.queryOptions("get", "/subscriptions/status").queryKey,
 			});
 			toast({
 				title: "Upgraded to Yearly",

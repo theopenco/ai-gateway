@@ -1,4 +1,4 @@
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Organization } from "@/lib/types";
 
@@ -7,7 +7,8 @@ export interface OrganizationsResponse {
 }
 
 export function useDefaultOrganization() {
-	const { data, error } = $api.useSuspenseQuery("get", "/orgs");
+	const api = useApi();
+	const { data, error } = api.useSuspenseQuery("get", "/orgs");
 
 	if (!data?.organizations || data.organizations.length === 0) {
 		return {

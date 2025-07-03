@@ -20,7 +20,7 @@ import {
 	type Chat,
 } from "@/hooks/useChats";
 import { useUser } from "@/hooks/useUser";
-import { signOut } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 import { Avatar, AvatarFallback } from "@/lib/components/avatar";
 import { Button } from "@/lib/components/button";
 import {
@@ -64,6 +64,7 @@ export function ChatSidebar({
 	const navigate = useNavigate();
 	const posthog = usePostHog();
 	const { user } = useUser();
+	const { signOut } = useAuth();
 
 	// Use real chat data from API
 	const { data: chatsData, isLoading } = useChats();
@@ -95,8 +96,10 @@ export function ChatSidebar({
 	const saveTitle = (chatId: string) => {
 		if (editTitle.trim()) {
 			updateChat.mutate({
-				id: chatId,
-				data: { title: editTitle.trim() },
+				params: {
+					path: { id: chatId },
+				},
+				body: { title: editTitle.trim() },
 			});
 		}
 		setEditingId(null);
@@ -113,7 +116,11 @@ export function ChatSidebar({
 			return;
 		}
 
-		deleteChat.mutate(chatId);
+		deleteChat.mutate({
+			params: {
+				path: { id: chatId },
+			},
+		});
 		if (currentChatId === chatId) {
 			clearMessages();
 			onChatSelect?.("");

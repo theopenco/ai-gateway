@@ -13,7 +13,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/lib/components/card";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export const Route = createFileRoute("/dashboard/_layout/activity")({
 	component: ActivityPage,
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/dashboard/_layout/activity")({
 
 function RefreshButton() {
 	const queryClient = useQueryClient();
+	const api = useApi();
 
 	return (
 		<Button
@@ -30,7 +31,7 @@ function RefreshButton() {
 			size="icon"
 			onClick={() =>
 				queryClient.invalidateQueries({
-					queryKey: $api.queryOptions("get", "/logs").queryKey,
+					queryKey: api.queryOptions("get", "/logs").queryKey,
 				})
 			}
 			title="Refresh logs"

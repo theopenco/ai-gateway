@@ -9,17 +9,18 @@ import { Label } from "@/lib/components/label";
 import { Separator } from "@/lib/components/separator";
 import { useToast } from "@/lib/components/use-toast";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function CachingSettings() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
 	const { selectedProject, selectedOrganization } = useDashboardContext();
 
-	const updateProject = $api.useMutation("patch", "/projects/{id}", {
+	const api = useApi();
+	const updateProject = api.useMutation("patch", "/projects/{id}", {
 		onSuccess: (data) => {
 			if (selectedOrganization) {
-				const queryKey = $api.queryOptions("get", "/orgs/{id}/projects", {
+				const queryKey = api.queryOptions("get", "/orgs/{id}/projects", {
 					params: { path: { id: data.project.organizationId } },
 				}).queryKey;
 				queryClient.invalidateQueries({ queryKey });

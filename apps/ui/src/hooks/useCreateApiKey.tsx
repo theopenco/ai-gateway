@@ -3,13 +3,14 @@ import { usePostHog } from "posthog-js/react";
 
 import { useDefaultProject } from "@/hooks/useDefaultProject";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export function useCreateApiKey() {
 	const queryClient = useQueryClient();
 	const posthog = usePostHog();
 	const { data: defaultProject } = useDefaultProject();
-	const { mutate: createApiKey } = $api.useMutation("post", "/keys/api");
+	const api = useApi();
+	const { mutate: createApiKey } = api.useMutation("post", "/keys/api");
 
 	const create = (name: string, onSuccess: (token: string) => void) => {
 		if (!defaultProject?.id) {
@@ -28,7 +29,7 @@ export function useCreateApiKey() {
 				onSuccess: (data) => {
 					const createdKey = data.apiKey;
 
-					const queryKey = $api.queryOptions("get", "/keys/api", {
+					const queryKey = api.queryOptions("get", "/keys/api", {
 						params: { query: { projectId: defaultProject.id } },
 					}).queryKey;
 

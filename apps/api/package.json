@@ -7,7 +7,7 @@
 		"dist/"
 	],
 	"scripts": {
-		"build": "tsc && tsup",
+		"build": "tsc && tsup && pnpm run generate",
 		"dev": "nodemon -e ts,json --exec 'tsx src/serve.ts'",
 		"generate": "tsx ./src/scripts/generate-openapi.ts",
 		"start": "node dist/serve.js"

@@ -20,8 +20,8 @@ import {
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { toast } from "@/lib/components/use-toast";
-import { HOSTED } from "@/lib/env";
-import { $api } from "@/lib/fetch-client";
+import { useAppConfigValue } from "@/lib/config";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Organization } from "@/lib/types";
 
@@ -36,6 +36,7 @@ export function CreateProviderKeyDialog({
 	selectedOrganization,
 	preselectedProvider,
 }: CreateProviderKeyDialogProps) {
+	const config = useAppConfigValue();
 	const posthog = usePostHog();
 	const [open, setOpen] = useState(false);
 	const [selectedProvider, setSelectedProvider] = useState(
@@ -45,15 +46,18 @@ export function CreateProviderKeyDialog({
 	const [token, setToken] = useState("");
 	const [isValidating, setIsValidating] = useState(false);
 
-	const queryKey = $api.queryOptions("get", "/keys/provider").queryKey;
+	const api = useApi();
+	const queryKey = api.queryOptions("get", "/keys/provider").queryKey;
 	const queryClient = useQueryClient();
 
-	const { data: providerKeysData, isPending: isLoading } =
-		$api.useSuspenseQuery("get", "/keys/provider");
+	const { data: providerKeysData, isPending: isLoading } = api.useSuspenseQuery(
+		"get",
+		"/keys/provider",
+	);
 
 	const isProPlan = selectedOrganization.plan === "pro";
 
-	const createMutation = $api.useMutation("post", "/keys/provider");
+	const createMutation = api.useMutation("post", "/keys/provider");
 
 	// Filter provider keys by selected organization
 	const organizationProviderKeys =
@@ -88,7 +92,7 @@ export function CreateProviderKeyDialog({
 		e.preventDefault();
 
 		// Only enforce pro plan requirement if paid mode is enabled
-		if (HOSTED && !isProPlan) {
+		if (config.hosted && !isProPlan) {
 			toast({
 				title: "Upgrade Required",
 				description:
@@ -191,7 +195,7 @@ export function CreateProviderKeyDialog({
 						</span>
 					</DialogDescription>
 				</DialogHeader>
-				{HOSTED && !isProPlan && (
+				{config.hosted && !isProPlan && (
 					<Alert>
 						<AlertDescription className="flex items-center justify-between gap-2">
 							<span>Provider keys are only available on the Pro plan.</span>

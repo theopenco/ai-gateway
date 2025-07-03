@@ -28,7 +28,7 @@ import { useState } from "react";
 import { OrganizationSwitcher } from "./organization-switcher";
 import { TopUpCreditsDialog } from "@/components/credits/top-up-credits-dialog";
 import { useUser } from "@/hooks/useUser";
-import { signOut } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/lib/components/avatar";
 import { Button } from "@/lib/components/button";
 import {
@@ -65,8 +65,8 @@ import {
 	useSidebar,
 	SidebarTrigger,
 } from "@/lib/components/sidebar";
+import { useAppConfigValue } from "@/lib/config";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { DOCS_URL } from "@/lib/env";
 import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
 
@@ -119,26 +119,7 @@ const ORGANIZATION_SETTINGS = [
 	},
 ] as const;
 
-const TOOLS_RESOURCES = [
-	{
-		href: "/dashboard/models",
-		label: "Models",
-		icon: BrainCircuit,
-		internal: true,
-	},
-	{
-		href: "/playground",
-		label: "Playground",
-		icon: BotMessageSquare,
-		internal: false,
-	},
-	{
-		href: DOCS_URL,
-		label: "Docs",
-		icon: FileText,
-		internal: false,
-	},
-] as const;
+// TOOLS_RESOURCES will be created dynamically inside the component
 
 const USER_MENU_ITEMS = [
 	{
@@ -346,10 +327,17 @@ function OrganizationSection({
 }
 
 function ToolsResourcesSection({
+	toolsResources,
 	isActive,
 	isMobile,
 	toggleSidebar,
 }: {
+	toolsResources: readonly {
+		href: string;
+		label: string;
+		icon: any;
+		internal: boolean;
+	}[];
 	isActive: (path: string) => boolean;
 	isMobile: boolean;
 	toggleSidebar: () => void;
@@ -361,7 +349,7 @@ function ToolsResourcesSection({
 			</SidebarGroupLabel>
 			<SidebarGroupContent className="mt-2">
 				<SidebarMenu>
-					{TOOLS_RESOURCES.map((item) => (
+					{toolsResources.map((item) => (
 						<SidebarMenuItem key={item.href}>
 							{item.internal ? (
 								<Link
@@ -621,12 +609,35 @@ export function DashboardSidebar({
 	onSelectOrganization,
 	onOrganizationCreated,
 }: DashboardSidebarProps) {
+	const config = useAppConfigValue();
 	const queryClient = useQueryClient();
 	const { location } = useRouterState();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const { user } = useUser();
 	const { selectedOrganization } = useDashboardContext();
 	const navigate = useNavigate();
+	const { signOut } = useAuth();
+
+	const toolsResources = [
+		{
+			href: "/dashboard/models",
+			label: "Models",
+			icon: BrainCircuit,
+			internal: true,
+		},
+		{
+			href: "/playground",
+			label: "Playground",
+			icon: BotMessageSquare,
+			internal: false,
+		},
+		{
+			href: config.docsUrl,
+			label: "Docs",
+			icon: FileText,
+			internal: false,
+		},
+	] as const;
 	const posthog = usePostHog();
 
 	const isActive = (path: string) => location.pathname === path;
@@ -704,6 +715,7 @@ export function DashboardSidebar({
 					/>
 
 					<ToolsResourcesSection
+						toolsResources={toolsResources}
 						isActive={isActive}
 						isMobile={isMobile}
 						toggleSidebar={toggleSidebar}

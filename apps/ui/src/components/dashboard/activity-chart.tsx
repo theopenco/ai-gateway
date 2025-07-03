@@ -27,7 +27,7 @@ import {
 	SelectValue,
 } from "@/lib/components/select";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { ActivityModelUsage, DailyActivity } from "@/types/activity";
 import type { TooltipProps } from "recharts";
@@ -158,8 +158,9 @@ export function ActivityChart() {
 		"requests" | "cost" | "tokens"
 	>("requests");
 	const { selectedProject } = useDashboardContext();
+	const api = useApi();
 
-	const { data, isLoading, error } = $api.useQuery(
+	const { data, isLoading, error } = api.useQuery(
 		"get",
 		"/activity",
 		{

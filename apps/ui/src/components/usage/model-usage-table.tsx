@@ -12,7 +12,7 @@ import {
 	TableRow,
 } from "@/lib/components/table";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { ActivityModelUsage } from "@/types/activity";
 
@@ -25,7 +25,8 @@ export function ModelUsageTable() {
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 	const { selectedProject } = useDashboardContext();
 
-	const { data, isLoading, error } = $api.useQuery(
+	const api = useApi();
+	const { data, isLoading, error } = api.useQuery(
 		"get",
 		"/activity",
 		{

@@ -16,8 +16,8 @@ import {
 } from "@/hooks/useChats";
 import { useUser } from "@/hooks/useUser";
 import { SidebarProvider } from "@/lib/components/sidebar";
-import { API_URL } from "@/lib/env";
-import { $api } from "@/lib/fetch-client";
+import { useAppConfigValue } from "@/lib/config";
+import { useApi } from "@/lib/fetch-client";
 
 export interface Message {
 	id: string;
@@ -31,9 +31,11 @@ export const Route = createFileRoute("/playground")({
 });
 
 function RouteComponent() {
+	const config = useAppConfigValue();
 	const { user, isLoading: isUserLoading } = useUser();
 	const { userApiKey, isLoaded: isApiKeyLoaded } = useApiKey();
 	const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+	const api = useApi();
 
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -48,8 +50,8 @@ function RouteComponent() {
 	);
 	const { data: _chatsData } = useChats();
 	const { data: subscriptionStatus, isLoading: isSubscriptionLoading } =
-		$api.useQuery("get", "/subscriptions/status", {});
-	const { data: orgsData, isLoading: isOrgsLoading } = $api.useQuery(
+		api.useQuery("get", "/subscriptions/status", {});
+	const { data: orgsData, isLoading: isOrgsLoading } = api.useQuery(
 		"get",
 		"/orgs",
 	);
@@ -104,8 +106,10 @@ function RouteComponent() {
 				: "New Chat";
 
 			const chatData = await createChat.mutateAsync({
-				title,
-				model: selectedModel,
+				body: {
+					title,
+					model: selectedModel,
+				},
 			});
 			const newChatId = chatData.chat.id;
 			setCurrentChatId(newChatId);
@@ -163,12 +167,14 @@ function RouteComponent() {
 			const chatId = await ensureCurrentChat(content);
 
 			await addMessage.mutateAsync({
-				chatId,
-				data: { role: "user", content },
+				params: {
+					path: { id: chatId },
+				},
+				body: { role: "user", content },
 			});
 
 			const supportsStreaming = getModelStreamingSupport(selectedModel);
-			const response = await fetch(API_URL + "/chat/completion", {
+			const response = await fetch(config.apiUrl + "/chat/completion", {
 				credentials: "include",
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -255,8 +261,10 @@ function RouteComponent() {
 
 					if (assistantContent.trim()) {
 						await addMessage.mutateAsync({
-							chatId,
-							data: { role: "assistant", content: assistantContent },
+							params: {
+								path: { id: chatId },
+							},
+							body: { role: "assistant", content: assistantContent },
 						});
 					}
 				} finally {
@@ -275,8 +283,10 @@ function RouteComponent() {
 					});
 
 					await addMessage.mutateAsync({
-						chatId,
-						data: { role: "assistant", content: assistantContent },
+						params: {
+							path: { id: chatId },
+						},
+						body: { role: "assistant", content: assistantContent },
 					});
 				}
 			}

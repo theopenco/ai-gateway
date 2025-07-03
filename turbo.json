@@ -20,28 +20,20 @@
 			"outputs": [
 				"dist/**",
 				".next/**",
-				".source/**",
 				".vercel/**",
 				".output/**",
 				".vinxi/**",
 				"out/**",
+				".source/**",
 				"openapi.json"
-			],
-			"env": [
-				"VITE_POSTHOG_KEY",
-				"VITE_POSTHOG_HOST",
-				"NEXT_PUBLIC_POSTHOG_KEY",
-				"NEXT_PUBLIC_POSTHOG_HOST",
-				"VITE_API_URL",
-				"VITE_DOCS_URL",
-				"VITE_CRISP_ID"
 			]
 		},
 		"generate": {
 			"dependsOn": ["^generate"],
-			"cache": false
+			"outputs": ["openapi.json", "content/**", "migrations", "**/v1.d.ts"]
 		},
 		"dev": {
+			"persistent": true,
 			"cache": false
 		},
 		"lint": {},

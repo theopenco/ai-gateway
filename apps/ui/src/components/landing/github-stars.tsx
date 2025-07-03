@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Star } from "lucide-react";
 
 import { Button } from "@/lib/components/button";
-import { GITHUB_URL } from "@/lib/env";
+import { useAppConfigValue } from "@/lib/config";
 
 async function fetchGitHubStars(repo: string): Promise<number> {
 	const res = await fetch(`https://api.github.com/repos/${repo}`);
@@ -38,12 +38,13 @@ function formatNumber(num: number | undefined): string {
 }
 
 export function GitHubStars() {
+	const config = useAppConfigValue();
 	const { data: stars, isLoading, isError } = useGitHubStars(REPO);
 
 	return (
 		<Button variant="secondary" asChild>
 			<a
-				href={GITHUB_URL}
+				href={config.githubUrl}
 				target="_blank"
 				rel="noopener noreferrer"
 				className="group"

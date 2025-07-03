@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { addPasskey } from "@/components/passkeys/add-passkey";
+import { createAddPasskeyFunction } from "@/components/passkeys/add-passkey";
 import { PasskeyList } from "@/components/passkeys/passkey-list";
 import { SettingsLoading } from "@/components/settings/settings-loading";
 import { useUpdatePassword } from "@/hooks/useUser";
+import { useAuthClient } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -29,6 +30,8 @@ function RouteComponent() {
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
+	const authClient = useAuthClient();
+	const addPasskey = createAddPasskeyFunction(authClient);
 
 	const updatePasswordMutation = useUpdatePassword();
 

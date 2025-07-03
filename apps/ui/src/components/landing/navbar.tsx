@@ -6,19 +6,20 @@ import { GitHubStars } from "./github-stars";
 import { ThemeToggle } from "./theme-toggle";
 import { AuthLink } from "../shared/auth-link";
 import { Button } from "@/lib/components/button";
-import { DOCS_URL } from "@/lib/env";
+import { useAppConfigValue } from "@/lib/config";
 import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
 
-const menuItems = [
-	{ name: "Pricing", href: "/#pricing", external: false },
-	{ name: "Docs", href: DOCS_URL, external: true },
-	{ name: "Models", href: "/models", external: false },
-	{ name: "Playground", href: "/playground", external: false },
-	{ name: "Changelog", href: "/changelog", external: false },
-];
-
 export const Navbar = () => {
+	const config = useAppConfigValue();
+
+	const menuItems = [
+		{ name: "Pricing", href: "/#pricing", external: false },
+		{ name: "Docs", href: config.docsUrl, external: true },
+		{ name: "Models", href: "/models", external: false },
+		{ name: "Playground", href: "/playground", external: false },
+		{ name: "Changelog", href: "/changelog", external: false },
+	];
 	const [menuState, setMenuState] = useState(false);
 	const [isScrolled, setIsScrolled] = useState(false);
 

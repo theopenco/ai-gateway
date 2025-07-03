@@ -13,10 +13,10 @@
 		".vercel"
 	],
 	"scripts": {
-		"build": "tsc && SERVER_PRESET=static vinxi build",
+		"build": "tsc && vinxi build && rm -rf .output/server/node_modules && rm -rf .output/server/package.json",
 		"dev": "vinxi dev --port 3002",
 		"generate": "openapi-typescript ../api/openapi.json -o ./src/lib/api/v1.d.ts",
-		"start": "vinxi serve --dir .output/public/"
+		"start": "vinxi start"
 	},
 	"dependencies": {
 		"@hey-api/client-fetch": "0.10.1",
@@ -82,8 +82,9 @@
 		"@content-collections/core": "0.9.1",
 		"@content-collections/vinxi": "0.1.1",
 		"@tailwindcss/vite": "^4.1.10",
-		"@tanstack/react-query-devtools": "^5.80.6",
-		"@tanstack/react-router-devtools": "^1.120.3",
+		"@tanstack/react-query-devtools": "5.81.5",
+		"@tanstack/react-router-devtools": "1.124.0",
+		"@types/node": "24.0.10",
 		"@types/react": "^19.1.8",
 		"@types/react-dom": "^19.1.6",
 		"@vitejs/plugin-react": "^4.4.1",

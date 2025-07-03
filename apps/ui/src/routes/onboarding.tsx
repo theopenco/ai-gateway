@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
-import { useSession } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/onboarding")({
 	component: OnboardingPage,
@@ -10,6 +10,7 @@ export const Route = createFileRoute("/onboarding")({
 
 function OnboardingPage() {
 	const navigate = useNavigate();
+	const { useSession } = useAuth();
 	const session = useSession();
 
 	useEffect(() => {

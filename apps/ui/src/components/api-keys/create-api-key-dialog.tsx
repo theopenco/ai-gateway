@@ -16,7 +16,7 @@ import {
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 import type { Project } from "@/lib/types";
 import type React from "react";
@@ -36,8 +36,9 @@ export function CreateApiKeyDialog({
 	const [step, setStep] = useState<"form" | "created">("form");
 	const [name, setName] = useState("");
 	const [apiKey, setApiKey] = useState("");
+	const api = useApi();
 
-	const { mutate: createApiKey } = $api.useMutation("post", "/keys/api");
+	const { mutate: createApiKey } = api.useMutation("post", "/keys/api");
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -57,7 +58,7 @@ export function CreateApiKeyDialog({
 				onSuccess: (data) => {
 					const createdKey = data.apiKey;
 
-					const queryKey = $api.queryOptions("get", "/keys/api", {
+					const queryKey = api.queryOptions("get", "/keys/api", {
 						params: { query: { projectId: selectedProject.id } },
 					}).queryKey;
 

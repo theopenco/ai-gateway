@@ -14,7 +14,7 @@ import {
 import { Label } from "@/lib/components/label";
 import { Switch } from "@/lib/components/switch";
 import { useToast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 interface UpgradeToProDialogProps {
 	children: React.ReactNode;
@@ -58,7 +58,8 @@ function UpgradeDialogContent({
 		initialBillingCycle,
 	);
 
-	const createSubscriptionMutation = $api.useMutation(
+	const api = useApi();
+	const createSubscriptionMutation = api.useMutation(
 		"post",
 		"/subscriptions/create-pro-subscription",
 	);

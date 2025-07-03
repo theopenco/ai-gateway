@@ -14,15 +14,16 @@ import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { useToast } from "@/lib/components/use-toast";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 import Spinner from "@/lib/icons/Spinner";
 
 function AutoTopUpSettings() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
+	const api = useApi();
 
 	const { selectedOrganization } = useDashboardContext();
-	const { data: paymentMethods } = $api.useQuery(
+	const { data: paymentMethods } = api.useQuery(
 		"get",
 		"/payments/payment-methods",
 	);
@@ -31,7 +32,7 @@ function AutoTopUpSettings() {
 	const [threshold, setThreshold] = useState(10);
 	const [amount, setAmount] = useState(10);
 
-	const { data: feeData, isLoading: feeDataLoading } = $api.useQuery(
+	const { data: feeData, isLoading: feeDataLoading } = api.useQuery(
 		"post",
 		"/payments/calculate-fees",
 		{
@@ -50,7 +51,7 @@ function AutoTopUpSettings() {
 		}
 	}, [selectedOrganization]);
 
-	const updateOrganization = $api.useMutation("patch", "/orgs/{id}");
+	const updateOrganization = api.useMutation("patch", "/orgs/{id}");
 
 	const hasPaymentMethods =
 		paymentMethods?.paymentMethods && paymentMethods.paymentMethods.length > 0;
@@ -91,7 +92,7 @@ function AutoTopUpSettings() {
 			});
 
 			await queryClient.invalidateQueries({
-				queryKey: $api.queryOptions("get", "/orgs").queryKey,
+				queryKey: api.queryOptions("get", "/orgs").queryKey,
 			});
 
 			toast({

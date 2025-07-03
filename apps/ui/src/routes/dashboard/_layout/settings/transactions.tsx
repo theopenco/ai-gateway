@@ -12,7 +12,7 @@ import {
 	CardTitle,
 } from "@/lib/components/card";
 import { useDashboardContext } from "@/lib/dashboard-context";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
 export const Route = createFileRoute(
 	"/dashboard/_layout/settings/transactions",
@@ -112,7 +112,8 @@ function TransactionsPage() {
 	const { selectedOrganization } = useDashboardContext();
 	const isMobile = useIsMobile();
 
-	const { data } = $api.useSuspenseQuery("get", "/orgs/{id}/transactions", {
+	const api = useApi();
+	const { data } = api.useSuspenseQuery("get", "/orgs/{id}/transactions", {
 		params: {
 			path: { id: selectedOrganization?.id ?? "" },
 		},

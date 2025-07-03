@@ -28,8 +28,8 @@ import {
 } from "@/lib/components/form";
 import { Input } from "@/lib/components/input";
 import { toast } from "@/lib/components/use-toast";
-import { HOSTED } from "@/lib/env";
-import { $api } from "@/lib/fetch-client";
+import { useAppConfigValue } from "@/lib/config";
+import { useApi } from "@/lib/fetch-client";
 
 const formSchema = z.object({
 	provider: z.string().min(1, "Provider is required"),
@@ -39,6 +39,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export function ProviderKeyStep() {
+	const config = useAppConfigValue();
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSuccess, setIsSuccess] = useState(false);
 	const { data: organization } = useDefaultOrganization();
@@ -51,7 +52,8 @@ export function ProviderKeyStep() {
 		},
 	});
 
-	const createProviderKey = $api.useMutation("post", "/keys/provider");
+	const api = useApi();
+	const createProviderKey = api.useMutation("post", "/keys/provider");
 
 	async function onSubmit(values: FormValues) {
 		setIsLoading(true);
@@ -105,7 +107,7 @@ export function ProviderKeyStep() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{!isProPlan && HOSTED ? (
+						{!isProPlan && config.hosted ? (
 							<div className="flex flex-col items-center gap-6 py-4">
 								<div className="text-center">
 									<h3 className="text-lg font-semibold mb-2 flex items-center justify-center gap-2">

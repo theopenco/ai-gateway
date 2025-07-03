@@ -8,7 +8,7 @@
 		"openapi.json"
 	],
 	"scripts": {
-		"build": "tsc && tsup && pnpm generate",
+		"build": "tsc && tsup && pnpm run generate",
 		"dev": "concurrently 'nodemon -e ts,json --exec \"tsx src/serve.ts\"' 'nodemon -e ts,json --exec \"tsx src/worker.ts\"'",
 		"generate": "NODE_ENV=production tsx ./src/scripts/generate-openapi.ts",
 		"start": "node dist/serve.js"

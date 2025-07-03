@@ -3,10 +3,14 @@ import { DiscordLogoIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
 import { GithubIcon, TwitterIcon } from "lucide-react";
 
-import { DOCS_URL, GITHUB_URL, DISCORD_URL, X_URL } from "@/lib/env";
+import { useAppConfigValue } from "@/lib/config";
 import Logo from "@/lib/icons/Logo";
 
+const DISCORD_URL = "https://discord.gg/gcqcZeYWEz";
+const X_URL = "https://x.com/llmgateway";
+
 export default function Footer() {
+	const config = useAppConfigValue();
 	const filteredProviders = providerDefinitions.filter(
 		(p) => p.name !== "LLM Gateway",
 	);
@@ -27,7 +31,7 @@ export default function Footer() {
 						</p>
 						<div className="flex items-center space-x-4 mt-4">
 							<a
-								href={GITHUB_URL}
+								href={config.githubUrl}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
@@ -104,7 +108,7 @@ export default function Footer() {
 							<ul className="space-y-2">
 								<li>
 									<a
-										href={DOCS_URL}
+										href={config.docsUrl}
 										target="_blank"
 										className="text-sm hover:text-black dark:hover:text-white"
 									>
@@ -113,7 +117,7 @@ export default function Footer() {
 								</li>
 								<li>
 									<a
-										href={GITHUB_URL}
+										href={config.githubUrl}
 										target="_blank"
 										className="text-sm hover:text-black dark:hover:text-white"
 									>

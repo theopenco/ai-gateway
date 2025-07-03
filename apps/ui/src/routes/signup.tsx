@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { useUser } from "@/hooks/useUser";
-import { signUp } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
 import {
 	Form,
@@ -38,6 +38,7 @@ function RouteComponent() {
 	const posthog = usePostHog();
 	const navigate = useNavigate();
 	const [isLoading, setIsLoading] = useState(false);
+	const { signUp } = useAuth();
 	useUser({ redirectTo: "/dashboard", redirectWhen: "authenticated" });
 
 	useEffect(() => {

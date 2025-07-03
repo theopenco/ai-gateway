@@ -29,14 +29,6 @@ COPY ../packages/models/package.json ./packages/models/
 
 RUN pnpm install --frozen-lockfile
 
-ARG VITE_CRISP_ID
-ARG VITE_DOCS_URL
-ARG VITE_API_URL
-ARG VITE_POSTHOG_KEY
-ARG VITE_POSTHOG_HOST
-ARG NEXT_PUBLIC_POSTHOG_KEY
-ARG NEXT_PUBLIC_POSTHOG_HOST
-
 # Copy source code
 COPY .. .
 
@@ -95,32 +87,28 @@ ENV PORT=80
 ENV NODE_ENV=production
 CMD ["pnpm", "start"]
 
-# Base static image with Nginx
-FROM nginx:alpine AS static-base
-ARG APP_VERSION
-ENV APP_VERSION=$APP_VERSION
-
-# Copy Nginx configuration
-COPY infra/nginx-static.conf /etc/nginx/nginx.conf
-
-# Create a simple 404 page
-RUN echo "<html><body><h1>404 - Page Not Found</h1></body></html>" > /usr/share/nginx/html/404.html
-
+FROM runtime AS ui
+WORKDIR /app/temp
+COPY --from=builder /app/apps ./apps
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/.npmrc /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+RUN pnpm --filter=ui --prod deploy ../dist/ui
+RUN rm -rf /app/temp
+WORKDIR /app/dist/ui
 EXPOSE 80
+ENV PORT=80
+ENV NODE_ENV=production
+CMD ["pnpm", "start"]
 
-COPY --from=init /tini /tini
-ENTRYPOINT ["/tini", "--"]
-CMD ["nginx", "-g", "daemon off;"]
-
-# UI static image
-FROM static-base AS ui
-
-# Copy UI static files directly to the root
-COPY --from=builder /app/apps/ui/.output/public/ /usr/share/nginx/html/
-COPY --from=builder /app/apps/ui/.output/static/ /usr/share/nginx/html/static
-
-# Docs static image
-FROM static-base AS docs
-
-# Copy docs static files directly to the root
-COPY --from=builder /app/apps/docs/out/ /usr/share/nginx/html/
+FROM runtime AS docs
+WORKDIR /app/temp
+COPY --from=builder /app/apps ./apps
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/.npmrc /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+RUN pnpm --filter=docs --prod deploy ../dist/docs
+RUN rm -rf /app/temp
+WORKDIR /app/dist/docs
+EXPOSE 80
+ENV PORT=80
+ENV NODE_ENV=production
+CMD ["pnpm", "start"]

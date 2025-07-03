@@ -19,19 +19,20 @@ import {
 	DialogTrigger,
 } from "@/lib/components/dialog";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 import { useStripe } from "@/lib/stripe";
 
 import type React from "react";
 
 export function PaymentMethodsManagement() {
 	const queryClient = useQueryClient();
-	const { data } = $api.useSuspenseQuery("get", "/payments/payment-methods");
+	const api = useApi();
+	const { data } = api.useSuspenseQuery("get", "/payments/payment-methods");
 
 	const { mutate: setDefaultMutation, isPending: isDefaultMethodPending } =
-		$api.useMutation("post", "/payments/payment-methods/default");
+		api.useMutation("post", "/payments/payment-methods/default");
 	const { mutate: deleteMutation, isPending: isDeletePending } =
-		$api.useMutation("delete", "/payments/payment-methods/{id}");
+		api.useMutation("delete", "/payments/payment-methods/{id}");
 
 	const paymentMethods = data?.paymentMethods || [];
 
@@ -40,7 +41,7 @@ export function PaymentMethodsManagement() {
 			{ body: { paymentMethodId } },
 			{
 				onSuccess: () => {
-					const queryKey = $api.queryOptions(
+					const queryKey = api.queryOptions(
 						"get",
 						"/payments/payment-methods",
 					).queryKey;
@@ -79,7 +80,7 @@ export function PaymentMethodsManagement() {
 			},
 			{
 				onSuccess: () => {
-					const queryKey = $api.queryOptions(
+					const queryKey = api.queryOptions(
 						"get",
 						"/payments/payment-methods",
 					).queryKey;
@@ -193,8 +194,9 @@ function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
 	const stripe = useStripeElements();
 	const elements = useElements();
 	const [loading, setLoading] = useState(false);
+	const api = useApi();
 
-	const { mutateAsync: setupIntentMutation } = $api.useMutation(
+	const { mutateAsync: setupIntentMutation } = api.useMutation(
 		"post",
 		"/payments/create-setup-intent",
 	);
@@ -225,7 +227,7 @@ function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
 				});
 			} else {
 				await queryClient.invalidateQueries({
-					queryKey: $api.queryOptions("get", "/payments/payment-methods")
+					queryKey: api.queryOptions("get", "/payments/payment-methods")
 						.queryKey,
 				});
 				toast({

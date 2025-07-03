@@ -7,21 +7,6 @@ import tsConfigPaths from "vite-tsconfig-paths";
 
 // noinspection JSUnusedGlobalSymbols
 export default defineConfig({
-	server: {
-		prerender: {
-			routes: [
-				"/",
-				"/dashboard",
-				"/onboarding",
-				"/changelog",
-				"/models",
-				"/changelog/$slug",
-				"/providers/$id",
-			],
-			crawlLinks: true,
-		},
-		preset: process.env.SERVER_PRESET || "static",
-	},
 	tsr: {
 		appDirectory: "./src",
 	},
