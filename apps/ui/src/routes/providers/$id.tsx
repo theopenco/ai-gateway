@@ -9,6 +9,7 @@ import { useState } from "react";
 import Footer from "@/components/landing/footer";
 import { Navbar } from "@/components/landing/navbar";
 import { Hero } from "@/components/providers/hero";
+import { ProductHuntBanner } from "@/components/shared/product-hunt-banner";
 import { Badge } from "@/lib/components/badge";
 import { Button } from "@/lib/components/button";
 import {
@@ -112,6 +113,7 @@ function ProviderPage() {
 
 	return (
 		<>
+			<ProductHuntBanner />
 			<Navbar />
 			<Hero providerId={provider.id} />
 			<div className="mx-auto px-6 lg:px-0 container py-8">

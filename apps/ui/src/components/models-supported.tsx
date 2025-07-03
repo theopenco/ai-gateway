@@ -106,7 +106,7 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 							<span>{totalModels} Models</span>
 						</div>
 					</div>
-					<div className="flex justify-center gap-4">
+					<div className="flex justify-center gap-4 flex-col md:flex-row">
 						<Button variant="outline" asChild>
 							<a
 								href="https://github.com/theopenco/llmgateway/issues/new?assignees=&labels=enhancement%2Cmodel-request&projects=&template=model-request.md&title=%5BModel+Request%5D+"
@@ -133,12 +133,12 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 				</header>
 			) : (
 				<div className="mb-10">
-					<div className="flex items-center justify-between mb-6">
+					<div className="flex items-start md:items-center justify-between mb-6 flex-col md:flex-row">
 						<p className="text-xl text-muted-foreground max-w-3xl">
 							Access {totalModels} models from {totalProviders} leading AI
 							providers through our unified API
 						</p>
-						<div className="flex gap-2">
+						<div className="flex gap-2 mt-4 md:mt-0">
 							<Button variant="outline" size="sm" asChild>
 								<a
 									href="https://github.com/theopenco/llmgateway/issues/new?assignees=&labels=enhancement%2Cmodel-request&projects=&template=model-request.md&title=%5BModel+Request%5D+"

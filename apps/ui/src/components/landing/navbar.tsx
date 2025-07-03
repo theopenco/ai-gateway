@@ -126,7 +126,7 @@ export const Navbar = () => {
 								<Button
 									asChild
 									className={cn(
-										"bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-700 dark:hover:bg-zinc-200 font-medium",
+										"bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-700 dark:hover:bg-zinc-200 font-medium w-full md:w-fit",
 									)}
 								>
 									<AuthLink>Get Started</AuthLink>

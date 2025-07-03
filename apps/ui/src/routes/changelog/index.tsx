@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { allChangelogs, type Changelog } from "content-collections";
 
 import { ChangelogComponent } from "@/components/changelog";
+import { ProductHuntBanner } from "@/components/shared/product-hunt-banner";
 
 export const Route = createFileRoute("/changelog/")({
 	loader: async () => {
@@ -10,7 +11,7 @@ export const Route = createFileRoute("/changelog/")({
 				(a: Changelog, b: Changelog) =>
 					new Date(b.date).getTime() - new Date(a.date).getTime(),
 			)
-			.map(({ content, ...entry }: Changelog) => entry);
+			.map(({ ...entry }: Changelog) => entry);
 		return { entries: sortedEntries };
 	},
 	head: () => ({
@@ -42,5 +43,10 @@ export const Route = createFileRoute("/changelog/")({
 
 function Changelog() {
 	const { entries } = Route.useLoaderData();
-	return <ChangelogComponent entries={entries} />;
+	return (
+		<>
+			<ProductHuntBanner />
+			<ChangelogComponent entries={entries} />
+		</>
+	);
 }
