@@ -2,7 +2,9 @@ name: llmgateway-unified
 
 services:
   llmgateway:
-    image: ghcr.io/theopenco/llmgateway-unified:latest
+    build:
+      context: ..
+      dockerfile: infra/unified.dockerfile
     container_name: llmgateway
     restart: unless-stopped
     ports:

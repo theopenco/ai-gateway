@@ -31,6 +31,8 @@ docker run -d \
   ghcr.io/theopenco/llmgateway-unified:latest
 ```
 
+Note: it is recommended to use the latest version tag from here instead of `latest`: https://github.com/theopenco/llmgateway/releases
+
 ### Using Docker Compose (Alternative for unified image)
 
 ```bash
@@ -46,6 +48,8 @@ cp .env.example .env
 docker compose -f docker-compose.unified.yml up -d
 ```
 
+Note: it is recommended to replace the `latest` version tag in the image with the latest version from here: https://github.com/theopenco/llmgateway/releases
+
 ## Option 2: Separate Services with Docker Compose
 
 This option uses separate containers for each service, offering more flexibility.
@@ -60,8 +64,10 @@ cp .env.example .env
 # Edit .env with your configuration
 
 # Start the services
-docker compose -f infra/docker-compose.prod.yml up -d
+docker compose -f infra/docker-compose.split.yml up -d
 ```
+
+Note: it is recommended to replace the `latest` version tag in all images in the compose file with the latest version from here: https://github.com/theopenco/llmgateway/releases
 
 ## Accessing Your LLMGateway
 
@@ -107,14 +113,18 @@ docker stop llmgateway
 
 ```bash
 # View logs
-docker compose -f infra/docker-compose.prod.yml logs -f
+docker compose -f infra/docker-compose.split.yml logs -f
 
 # Restart services
-docker compose -f infra/docker-compose.prod.yml restart
+docker compose -f infra/docker-compose.split.yml restart
 
 # Stop services
-docker compose -f infra/docker-compose.prod.yml down
+docker compose -f infra/docker-compose.split.yml down
 ```
+
+## Build locally
+
+To build locally, you can use the \*.local.yml compose file in the `infra` directory, which will build the images from the source code.
 
 ## All provider API keys
 
