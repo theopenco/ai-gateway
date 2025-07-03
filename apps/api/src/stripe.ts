@@ -421,7 +421,7 @@ async function handlePaymentIntentFailed(
 	event: Stripe.PaymentIntentPaymentFailedEvent,
 ) {
 	const paymentIntent = event.data.object;
-	const { metadata } = paymentIntent;
+	const { metadata, amount } = paymentIntent;
 
 	const result = await resolveOrganizationFromStripeEvent({
 		metadata,
@@ -433,6 +433,12 @@ async function handlePaymentIntentFailed(
 	}
 
 	const { organizationId } = result;
+
+	// Convert amount from cents to dollars
+	const totalAmountInDollars = amount / 100;
+
+	// Get the credit amount from metadata if available
+	const creditAmount = metadata?.baseAmount ? parseFloat(metadata.baseAmount) : null;
 
 	// Check if this is an auto top-up with an existing pending transaction
 	const transactionId = metadata?.transactionId;
@@ -456,7 +462,30 @@ async function handlePaymentIntentFailed(
 			console.warn(
 				`Could not find pending transaction ${transactionId} for organization ${organizationId}`,
 			);
+			// Fallback: create new failed transaction record
+			await db.insert(tables.transaction).values({
+				organizationId,
+				type: "credit_topup",
+				creditAmount: creditAmount ? creditAmount.toString() : null,
+				amount: totalAmountInDollars.toString(),
+				currency: paymentIntent.currency.toUpperCase(),
+				status: "failed",
+				stripePaymentIntentId: paymentIntent.id,
+				description: `Credit top-up failed via Stripe (fallback): ${paymentIntent.last_payment_error?.message || "Unknown error"}`,
+			});
 		}
+	} else {
+		// Create new failed transaction record (for manual top-ups or payments without transactionId)
+		await db.insert(tables.transaction).values({
+			organizationId,
+			type: "credit_topup",
+			creditAmount: creditAmount ? creditAmount.toString() : null,
+			amount: totalAmountInDollars.toString(),
+			currency: paymentIntent.currency.toUpperCase(),
+			status: "failed",
+			stripePaymentIntentId: paymentIntent.id,
+			description: `Credit top-up failed via Stripe: ${paymentIntent.last_payment_error?.message || "Unknown error"}`,
+		});
 	}
 
 	console.log(
