@@ -44,7 +44,7 @@ export const Route = createFileRoute("/providers/$id")({
 				{ property: "og:description", content: loaderData.description },
 				{
 					property: "og:image",
-					content: `/static/providers/${loaderData.id}.png`,
+					content: `/providers/${loaderData.id}.png`,
 				},
 				{ property: "og:type", content: "website" },
 				{
@@ -59,7 +59,7 @@ export const Route = createFileRoute("/providers/$id")({
 				{ name: "twitter:description", content: loaderData.description },
 				{
 					name: "twitter:image",
-					content: `/static/providers/${loaderData.id}.png`,
+					content: `/providers/${loaderData.id}.png`,
 				},
 			],
 		};

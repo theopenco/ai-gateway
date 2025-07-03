@@ -5,7 +5,7 @@ date: "2025-06-14"
 title: "Self-Hosting Just Got Easier"
 summary: "New and improved self-hosting documentation for teams and enterprises looking to deploy LLM Gateway on their own infrastructure."
 image:
-  src: "/static/changelog/self-host.png"
+  src: "/changelog/self-host.png"
   alt: "Improved self-hosting setup guide for LLM Gateway"
   width: 800
   height: 400

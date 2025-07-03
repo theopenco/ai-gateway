@@ -5,7 +5,7 @@ date: "2025-06-26"
 title: "New Providers: Groq and xAI Support + Always-Visible Credits"
 summary: "Added support for Groq and xAI providers with their latest models, plus credits are now always visible in the sidebar for easy access."
 image:
-  src: "/static/changelog/groq-xai-providers.png"
+  src: "/changelog/groq-xai-providers.png"
   alt: "Updated dashboard showing organization and project selection"
   width: 800
   height: 400

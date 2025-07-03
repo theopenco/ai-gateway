@@ -5,7 +5,7 @@ date: "2025-05-11"
 title: "Deepseek Discount + Mistral Joins the Lineup"
 summary: "Massive savings with Deepseek models and the arrival of Mistral models for all users. Discover new performance benchmarks at lower costs."
 image:
-  src: "/static/changelog/cloudrift.png"
+  src: "/changelog/cloudrift.png"
   alt: "Deepseek and Mistral models added to LLM Gateway with discount banner"
   width: 800
   height: 400

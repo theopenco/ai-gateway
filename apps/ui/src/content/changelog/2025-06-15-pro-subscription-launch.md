@@ -5,7 +5,7 @@ date: "2025-06-15"
 title: "Pro Subscription Launch"
 summary: "Bring your own LLM provider keys or use credits with zero gateway fees. Includes premium analytics, higher rate limits, and priority email support."
 image:
-  src: "/static/changelog/pricing.png"
+  src: "/changelog/pricing.png"
   alt: "Pro subscription dashboard showing provider key management and billing controls"
   width: 800
   height: 400
