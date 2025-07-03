@@ -22,8 +22,9 @@ async function sendBeacon(data: BeaconData): Promise<void> {
 	});
 
 	if (!response.ok) {
+		const errorText = await response.text();
 		throw new Error(
-			`Failed to send beacon: ${response.status} ${response.statusText}`,
+			`Failed to send beacon: ${response.status} ${response.statusText} - ${errorText}`,
 		);
 	}
 }
