@@ -11,7 +11,7 @@ interface BeaconData {
  * Sends installation beacon data to the tracking endpoint
  */
 async function sendBeacon(data: BeaconData): Promise<void> {
-	const response = await fetch("https://api.llmgateway.io/beacon", {
+	const response = await fetch("https://internal.llmgateway.io/beacon", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
