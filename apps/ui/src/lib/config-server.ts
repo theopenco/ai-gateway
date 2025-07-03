@@ -14,13 +14,13 @@ export const getConfig = createServerFn({
 	method: "GET",
 }).handler((): AppConfig => {
 	return {
-		hosted: process.env.VITE_HOSTED === "true",
-		apiUrl: process.env.VITE_API_URL || "http://localhost:4002",
+		hosted: process.env.HOSTED === "true",
+		apiUrl: process.env.API_URL || "http://localhost:4002",
 		githubUrl:
-			process.env.VITE_GITHUB_URL || "https://github.com/theopenco/llmgateway",
-		docsUrl: process.env.VITE_DOCS_URL || "http://localhost:3005",
-		posthogKey: process.env.VITE_POSTHOG_KEY,
-		posthogHost: process.env.VITE_POSTHOG_HOST,
-		crispId: process.env.VITE_CRISP_ID,
+			process.env.GITHUB_URL || "https://github.com/theopenco/llmgateway",
+		docsUrl: process.env.DOCS_URL || "http://localhost:3005",
+		posthogKey: process.env.POSTHOG_KEY,
+		posthogHost: process.env.POSTHOG_HOST,
+		crispId: process.env.CRISP_ID,
 	};
 });

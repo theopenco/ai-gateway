@@ -26,9 +26,7 @@ export async function generateMetadata({
 	const image = ["/docs-og", ...slug, "image.png"].join("/");
 
 	return {
-		metadataBase: new URL(
-			process.env.VITE_DOCS_URL || "https://docs.llmgateway.io",
-		),
+		metadataBase: new URL(process.env.DOCS_URL || "https://docs.llmgateway.io"),
 		title: page.data.title,
 		description: page.data.description,
 		openGraph: {
