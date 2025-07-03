@@ -11,6 +11,8 @@ const inter = Inter({
 	subsets: ["latin"],
 });
 
+export const dynamic = "force-dynamic";
+
 export default function Layout({ children }: { children: ReactNode }) {
 	// Access environment variables directly on the server
 	const posthogKey = process.env.POSTHOG_KEY || "";
