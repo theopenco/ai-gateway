@@ -79,6 +79,7 @@ COPY --from=builder /app/packages/db/migrations ./migrations
 EXPOSE 80
 ENV PORT=80
 ENV NODE_ENV=production
+ENV TELEMETRY_ACTIVE=true
 CMD ["pnpm", "start"]
 
 FROM runtime AS gateway
