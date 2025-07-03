@@ -34,9 +34,6 @@ async function sendBeacon(data: BeaconData): Promise<void> {
 export async function sendInstallationBeacon(): Promise<void> {
 	// Check if telemetry is active via environment variable
 	if (process.env.TELEMETRY_ACTIVE !== "true") {
-		console.log(
-			"Telemetry disabled - TELEMETRY_ACTIVE environment variable not set to 'true'",
-		);
 		return;
 	}
 
