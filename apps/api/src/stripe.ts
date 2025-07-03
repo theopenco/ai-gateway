@@ -438,7 +438,9 @@ async function handlePaymentIntentFailed(
 	const totalAmountInDollars = amount / 100;
 
 	// Get the credit amount from metadata if available
-	const creditAmount = metadata?.baseAmount ? parseFloat(metadata.baseAmount) : null;
+	const creditAmount = metadata?.baseAmount
+		? parseFloat(metadata.baseAmount)
+		: null;
 
 	// Check if this is an auto top-up with an existing pending transaction
 	const transactionId = metadata?.transactionId;
