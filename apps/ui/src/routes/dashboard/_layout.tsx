@@ -1,4 +1,9 @@
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+	Outlet,
+	createFileRoute,
+	useRouterState,
+} from "@tanstack/react-router";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -18,6 +23,8 @@ export const Route = createFileRoute("/dashboard/_layout")({
 
 function RouteComponent() {
 	const posthog = usePostHog();
+	const { location } = useRouterState();
+	const queryClient = useQueryClient();
 	const [organizations, setOrganizations] = useState<Organization[]>([]);
 	const [selectedOrganization, setSelectedOrganization] =
 		useState<Organization | null>(null);
@@ -83,6 +90,12 @@ function RouteComponent() {
 	useEffect(() => {
 		posthog.capture("page_viewed_dashboard");
 	}, [posthog]);
+
+	// Refetch organizations query when navigating between dashboard pages
+	useEffect(() => {
+		const orgsQueryKey = api.queryOptions("get", "/orgs").queryKey;
+		queryClient.invalidateQueries({ queryKey: orgsQueryKey });
+	}, [location.pathname, api, queryClient]);
 
 	const handleOrganizationCreated = (org: Organization) => {
 		setOrganizations((prev) => [...prev, org]);
