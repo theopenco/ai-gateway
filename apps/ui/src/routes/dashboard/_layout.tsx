@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -18,13 +18,24 @@ export const Route = createFileRoute("/dashboard/_layout")({
 
 function RouteComponent() {
 	const posthog = usePostHog();
+	const navigate = useNavigate();
 	const [organizations, setOrganizations] = useState<Organization[]>([]);
 	const [selectedOrganization, setSelectedOrganization] =
 		useState<Organization | null>(null);
 	const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 	const api = useApi();
 
-	useUser({ redirectTo: "/login", redirectWhen: "unauthenticated" });
+	const { user } = useUser({
+		redirectTo: "/login",
+		redirectWhen: "unauthenticated",
+	});
+
+	// Check email verification
+	useEffect(() => {
+		if (user && !user.emailVerified) {
+			navigate({ to: "/verify", replace: true });
+		}
+	}, [user, navigate]);
 
 	// Fetch organizations
 	const { data: organizationsData } = api.useQuery("get", "/orgs");

@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as VerifyImport } from './routes/verify'
 import { Route as SignupImport } from './routes/signup'
 import { Route as PlaygroundImport } from './routes/playground'
 import { Route as OnboardingImport } from './routes/onboarding'
@@ -49,6 +50,12 @@ const DashboardImport = createFileRoute('/dashboard')()
 const DashboardRoute = DashboardImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const VerifyRoute = VerifyImport.update({
+  id: '/verify',
+  path: '/verify',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -268,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupImport
       parentRoute: typeof rootRoute
     }
+    '/verify': {
+      id: '/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof VerifyImport
+      parentRoute: typeof rootRoute
+    }
     '/changelog/$slug': {
       id: '/changelog/$slug'
       path: '/changelog/$slug'
@@ -485,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/playground': typeof PlaygroundRoute
   '/signup': typeof SignupRoute
+  '/verify': typeof VerifyRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
   '/compare/open-router': typeof CompareOpenRouterRoute
   '/dashboard': typeof DashboardLayoutRouteWithChildren
@@ -514,6 +529,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/playground': typeof PlaygroundRoute
   '/signup': typeof SignupRoute
+  '/verify': typeof VerifyRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
   '/compare/open-router': typeof CompareOpenRouterRoute
   '/dashboard': typeof DashboardLayoutIndexRoute
@@ -542,6 +558,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/playground': typeof PlaygroundRoute
   '/signup': typeof SignupRoute
+  '/verify': typeof VerifyRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
   '/compare/open-router': typeof CompareOpenRouterRoute
   '/dashboard': typeof DashboardRouteWithChildren
@@ -574,6 +591,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/playground'
     | '/signup'
+    | '/verify'
     | '/changelog/$slug'
     | '/compare/open-router'
     | '/dashboard'
@@ -602,6 +620,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/playground'
     | '/signup'
+    | '/verify'
     | '/changelog/$slug'
     | '/compare/open-router'
     | '/dashboard'
@@ -628,6 +647,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/playground'
     | '/signup'
+    | '/verify'
     | '/changelog/$slug'
     | '/compare/open-router'
     | '/dashboard'
@@ -659,6 +679,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   PlaygroundRoute: typeof PlaygroundRoute
   SignupRoute: typeof SignupRoute
+  VerifyRoute: typeof VerifyRoute
   ChangelogSlugRoute: typeof ChangelogSlugRoute
   CompareOpenRouterRoute: typeof CompareOpenRouterRoute
   DashboardRoute: typeof DashboardRouteWithChildren
@@ -674,6 +695,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   PlaygroundRoute: PlaygroundRoute,
   SignupRoute: SignupRoute,
+  VerifyRoute: VerifyRoute,
   ChangelogSlugRoute: ChangelogSlugRoute,
   CompareOpenRouterRoute: CompareOpenRouterRoute,
   DashboardRoute: DashboardRouteWithChildren,
@@ -698,6 +720,7 @@ export const routeTree = rootRoute
         "/onboarding",
         "/playground",
         "/signup",
+        "/verify",
         "/changelog/$slug",
         "/compare/open-router",
         "/dashboard",
@@ -725,6 +748,9 @@ export const routeTree = rootRoute
     },
     "/signup": {
       "filePath": "signup.tsx"
+    },
+    "/verify": {
+      "filePath": "verify.tsx"
     },
     "/changelog/$slug": {
       "filePath": "changelog/$slug.tsx"

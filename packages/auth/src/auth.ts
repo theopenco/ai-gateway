@@ -52,7 +52,6 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	}),
 	emailAndPassword: {
 		enabled: true,
-		autoSignIn: true,
 	},
 	emailVerification: {
 		sendOnSignUp: true,
