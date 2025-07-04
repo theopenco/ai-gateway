@@ -202,7 +202,7 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 									{/* Column 1: Content */}
 									<div className="text-center lg:text-left">
 										<AnimatedGroup variants={transitionVariants}>
-											<h1 className="max-w-4xl mx-auto lg:mx-0 text-balance text-4xl md:text-6xl xl:text-6xl">
+											<h1 className="max-w-4xl mx-auto lg:mx-0 text-balance text-4xl md:text-6xl xl:text-6xl font-bold">
 												Use any model, from any provider
 												<br />— with just one API.
 											</h1>
