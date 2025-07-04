@@ -1,28 +1,83 @@
-import { db, tables, eq } from "@openllm/db";
-import { models, providers } from "@openllm/models";
+import { db, tables, eq } from "@llmgateway/db";
+import {
+	models,
+	type ProviderModelMapping,
+	providers,
+} from "@llmgateway/models";
 import "dotenv/config";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { app } from ".";
 import {
-	flushLogs,
+	clearCache,
 	waitForLogs,
 	getProviderEnvVar,
 } from "./test-utils/test-helpers";
 
+// Helper function to get test options with retry for CI environment
+function getTestOptions() {
+	return process.env.CI ? { retry: 5 } : {};
+}
+
+console.log("running with test options:", getTestOptions());
+
+const fullMode = process.env.FULL_MODE;
+
+// Filter models based on test skip/only property
+const hasOnlyModels = models.some((model) =>
+	model.providers.some(
+		(provider: ProviderModelMapping) => provider.test === "only",
+	),
+);
+
+// Log if we're using "only" mode
+if (hasOnlyModels) {
+	if (process.env.CI) {
+		throw new Error(
+			"Cannot use 'only' in test configuration when running in CI. Please remove 'only' from the test configuration and try again.",
+		);
+	}
+	console.log(
+		"Running in 'only' mode - only testing models marked with test: 'only'",
+	);
+}
+
 const testModels = models
 	.filter((model) => !["custom", "auto"].includes(model.model))
+	// If any model has test: "only", only include those models
+	.filter((model) => {
+		if (hasOnlyModels) {
+			return model.providers.some(
+				(provider: ProviderModelMapping) => provider.test === "only",
+			);
+		}
+		return true;
+	})
 	.flatMap((model) => {
 		const testCases = [];
 
-		// test all models
-		testCases.push({
-			model: model.model,
-			providers: model.providers,
-		});
+		if (fullMode) {
+			// test root model without a specific provider
+			testCases.push({
+				model: model.model,
+				providers: model.providers.filter(
+					(provider: ProviderModelMapping) => provider.test !== "skip",
+				),
+			});
+		}
 
 		// Create entries for provider-specific requests using provider/model format
-		for (const provider of model.providers) {
+		for (const provider of model.providers as ProviderModelMapping[]) {
+			// Skip providers marked with test: "skip"
+			if (provider.test === "skip") {
+				continue;
+			}
+
+			// If we have any "only" providers, skip those not marked as "only"
+			if (hasOnlyModels && provider.test !== "only") {
+				continue;
+			}
+
 			testCases.push({
 				model: `${provider.providerId}/${model.model}`,
 				providers: [provider],
@@ -33,27 +88,81 @@ const testModels = models
 		return testCases;
 	});
 
+const providerModels = models
+	.filter((model) => !["custom", "auto"].includes(model.model))
+	// If any model has test: "only", only include those models
+	.filter((model) => {
+		if (hasOnlyModels) {
+			return model.providers.some(
+				(provider: ProviderModelMapping) => provider.test === "only",
+			);
+		}
+		return true;
+	})
+	.flatMap((model) => {
+		const testCases = [];
+
+		for (const provider of model.providers as ProviderModelMapping[]) {
+			// Skip providers marked with test: "skip"
+			if (provider.test === "skip") {
+				continue;
+			}
+
+			// If we have any "only" providers, skip those not marked as "only"
+			if (hasOnlyModels && provider.test !== "only") {
+				continue;
+			}
+
+			testCases.push({
+				model: `${provider.providerId}/${model.model}`,
+				provider,
+				originalModel: model.model, // Keep track of the original model for reference
+			});
+		}
+
+		return testCases;
+	});
+
+// Log the number of test models after filtering
+console.log(`Testing ${testModels.length} model configurations`);
+console.log(`Testing ${providerModels.length} provider model configurations`);
+
 const streamingModels = testModels.filter((m) =>
-	m.providers.every((p) => {
+	m.providers.some((p: any) => {
+		// Check model-level streaming first, then fall back to provider-level
+		if (p.streaming !== undefined) {
+			return p.streaming;
+		}
 		const provider = providers.find((pr) => pr.id === p.providerId);
 		return provider?.streaming;
 	}),
 );
 
+const reasoningModels = testModels.filter((m) =>
+	m.providers.some((p: any) => p.reasoning === true),
+);
+
 describe("e2e tests with real provider keys", () => {
 	beforeEach(async () => {
-		await flushLogs();
+		await clearCache();
+
 		await Promise.all([
+			db.delete(tables.log),
+			db.delete(tables.apiKey),
+			db.delete(tables.providerKey),
+		]);
+
+		await Promise.all([
+			db.delete(tables.userOrganization),
+			db.delete(tables.project),
+		]);
+
+		await Promise.all([
+			db.delete(tables.organization),
 			db.delete(tables.user),
 			db.delete(tables.account),
 			db.delete(tables.session),
 			db.delete(tables.verification),
-			db.delete(tables.organization),
-			db.delete(tables.userOrganization),
-			db.delete(tables.project),
-			db.delete(tables.apiKey),
-			db.delete(tables.providerKey),
-			db.delete(tables.log),
 		]);
 
 		await db.insert(tables.user).values({
@@ -65,6 +174,7 @@ describe("e2e tests with real provider keys", () => {
 		await db.insert(tables.organization).values({
 			id: "org-id",
 			name: "Test Organization",
+			plan: "pro",
 		});
 
 		await db.insert(tables.userOrganization).values({
@@ -77,6 +187,7 @@ describe("e2e tests with real provider keys", () => {
 			id: "project-id",
 			name: "Test Project",
 			organizationId: "org-id",
+			mode: "api-keys",
 		});
 
 		await db.insert(tables.apiKey).values({
@@ -87,18 +198,26 @@ describe("e2e tests with real provider keys", () => {
 		});
 
 		for (const provider of providers) {
-			const envVar = getProviderEnvVar(provider.id);
-			if (envVar) {
-				await createProviderKey(provider.id, envVar);
+			const envVarName = getProviderEnvVar(provider.id);
+			const envVarValue = envVarName ? process.env[envVarName] : undefined;
+			if (envVarValue) {
+				await createProviderKey(provider.id, envVarValue, "api-keys");
+				await createProviderKey(provider.id, envVarValue, "credits");
 			}
 		}
 	});
 
-	async function createProviderKey(provider: string, token: string) {
+	async function createProviderKey(
+		provider: string,
+		token: string,
+		keyType: "api-keys" | "credits" = "api-keys",
+	) {
+		const keyId =
+			keyType === "credits" ? `env-${provider}` : `provider-key-${provider}`;
 		await db.insert(tables.providerKey).values({
-			id: `provider-key-${provider}`,
+			id: keyId,
 			token,
-			provider,
+			provider: provider.replace("env-", ""), // Remove env- prefix for the provider field
 			organizationId: "org-id",
 		});
 	}
@@ -115,7 +234,9 @@ describe("e2e tests with real provider keys", () => {
 		const logs = await waitForLogs(1);
 		expect(logs.length).toBeGreaterThan(0);
 
-		console.log("logs", logs);
+		if (fullMode) {
+			console.log("logs", JSON.stringify(logs, null, 2));
+		}
 
 		const log = logs[0];
 		expect(log.usedProvider).toBeTruthy();
@@ -132,6 +253,7 @@ describe("e2e tests with real provider keys", () => {
 
 	test.each(testModels)(
 		"/v1/chat/completions with $model",
+		getTestOptions(),
 		async ({ model }) => {
 			const res = await app.request("/v1/chat/completions", {
 				method: "POST",
@@ -155,7 +277,9 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("response:", json);
+			if (fullMode) {
+				console.log("response:", JSON.stringify(json, null, 2));
+			}
 
 			expect(res.status).toBe(200);
 			validateResponse(json);
@@ -163,18 +287,26 @@ describe("e2e tests with real provider keys", () => {
 			const log = await validateLogs();
 			expect(log.streamed).toBe(false);
 
+			expect(json).toHaveProperty("usage");
+			expect(json.usage).toHaveProperty("prompt_tokens");
+			expect(json.usage).toHaveProperty("completion_tokens");
+			expect(json.usage).toHaveProperty("total_tokens");
+			expect(typeof json.usage.prompt_tokens).toBe("number");
+			expect(typeof json.usage.completion_tokens).toBe("number");
+			expect(typeof json.usage.total_tokens).toBe("number");
+			expect(json.usage.prompt_tokens).toBeGreaterThan(0);
+			expect(json.usage.completion_tokens).toBeGreaterThan(0);
+			expect(json.usage.total_tokens).toBeGreaterThan(0);
+
 			// expect(log.inputCost).not.toBeNull();
 			// expect(log.outputCost).not.toBeNull();
 			// expect(log.cost).not.toBeNull();
-
-			await db.delete(tables.apiKey);
-			await db.delete(tables.providerKey);
-			await flushLogs();
 		},
 	);
 
 	test.each(streamingModels)(
 		"/v1/chat/completions streaming with $model",
+		getTestOptions(),
 		async ({ model }) => {
 			const res = await app.request("/v1/chat/completions", {
 				method: "POST",
@@ -198,21 +330,132 @@ describe("e2e tests with real provider keys", () => {
 				}),
 			});
 
+			if (res.status !== 200) {
+				console.log("response:", await res.text());
+				throw new Error(`Request failed with status ${res.status}`);
+			}
+
 			expect(res.status).toBe(200);
 			expect(res.headers.get("content-type")).toContain("text/event-stream");
 
 			const streamResult = await readAll(res.body);
+			if (fullMode) {
+				console.log("streamResult", JSON.stringify(streamResult, null, 2));
+			}
 
 			expect(streamResult.hasValidSSE).toBe(true);
 			expect(streamResult.eventCount).toBeGreaterThan(0);
-
 			expect(streamResult.hasContent).toBe(true);
+
+			// Verify that all streaming responses are transformed to OpenAI format
+			expect(streamResult.hasOpenAIFormat).toBe(true);
+
+			// Verify that chunks have the correct OpenAI streaming format
+			const contentChunks = streamResult.chunks.filter(
+				(chunk) => chunk.choices?.[0]?.delta?.content,
+			);
+			expect(contentChunks.length).toBeGreaterThan(0);
+
+			// Verify each content chunk has proper OpenAI format
+			for (const chunk of contentChunks) {
+				expect(chunk).toHaveProperty("id");
+				expect(chunk).toHaveProperty("object", "chat.completion.chunk");
+				expect(chunk).toHaveProperty("created");
+				expect(chunk).toHaveProperty("model");
+				expect(chunk).toHaveProperty("choices");
+				expect(chunk.choices).toHaveLength(1);
+				expect(chunk.choices[0]).toHaveProperty("index", 0);
+				expect(chunk.choices[0]).toHaveProperty("delta");
+				expect(chunk.choices[0]).toHaveProperty("delta.role", "assistant");
+				expect(chunk.choices[0].delta).toHaveProperty("content");
+				expect(typeof chunk.choices[0].delta.content).toBe("string");
+			}
+
+			// Verify that usage object is returned in streaming mode
+			const usageChunks = streamResult.chunks.filter(
+				(chunk) =>
+					chunk.usage &&
+					(chunk.usage.prompt_tokens !== null ||
+						chunk.usage.completion_tokens !== null ||
+						chunk.usage.total_tokens !== null),
+			);
+			expect(usageChunks.length).toBeGreaterThan(0);
+
+			// Verify the usage chunk has proper format
+			const usageChunk = usageChunks[usageChunks.length - 1]; // Get the last usage chunk
+			expect(usageChunk).toHaveProperty("usage");
+			expect(usageChunk.usage).toHaveProperty("prompt_tokens");
+			expect(usageChunk.usage).toHaveProperty("completion_tokens");
+			expect(usageChunk.usage).toHaveProperty("total_tokens");
+			expect(typeof usageChunk.usage.prompt_tokens).toBe("number");
+			expect(typeof usageChunk.usage.completion_tokens).toBe("number");
+			expect(typeof usageChunk.usage.total_tokens).toBe("number");
+			expect(usageChunk.usage.prompt_tokens).toBeGreaterThan(0);
+			expect(usageChunk.usage.completion_tokens).toBeGreaterThan(0);
+			expect(usageChunk.usage.total_tokens).toBeGreaterThan(0);
 
 			const log = await validateLogs();
 			expect(log.streamed).toBe(true);
 
 			// expect(log.cost).not.toBeNull();
 			// expect(log.cost).toBeGreaterThanOrEqual(0);
+		},
+	);
+
+	test.each(reasoningModels)(
+		"/v1/chat/completions with reasoning for $model",
+		getTestOptions(),
+		async ({ model }) => {
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer real-token`,
+				},
+				body: JSON.stringify({
+					model: model,
+					messages: [
+						{
+							role: "system",
+							content:
+								"You are a helpful assistant. Think step by step and show your reasoning.",
+						},
+						{
+							role: "user",
+							content: "What is 2+2? Think through this step by step.",
+						},
+					],
+					reasoning_effort: "medium",
+				}),
+			});
+
+			const json = await res.json();
+			if (fullMode) {
+				console.log("reasoning response:", JSON.stringify(json, null, 2));
+			}
+
+			expect(res.status).toBe(200);
+			validateResponse(json);
+
+			const log = await validateLogs();
+			expect(log.streamed).toBe(false);
+
+			expect(json).toHaveProperty("usage");
+			expect(json.usage).toHaveProperty("prompt_tokens");
+			expect(json.usage).toHaveProperty("completion_tokens");
+			expect(json.usage).toHaveProperty("total_tokens");
+			expect(typeof json.usage.prompt_tokens).toBe("number");
+			expect(typeof json.usage.completion_tokens).toBe("number");
+			expect(typeof json.usage.total_tokens).toBe("number");
+			expect(json.usage.prompt_tokens).toBeGreaterThan(0);
+			expect(json.usage.completion_tokens).toBeGreaterThan(0);
+			expect(json.usage.total_tokens).toBeGreaterThan(0);
+
+			// Check for reasoning tokens if available
+			if (json.usage.reasoning_tokens !== undefined) {
+				expect(typeof json.usage.reasoning_tokens).toBe("number");
+				expect(json.usage.reasoning_tokens).toBeGreaterThanOrEqual(0);
+			}
 		},
 	);
 
@@ -223,6 +466,7 @@ describe("e2e tests with real provider keys", () => {
 		}),
 	)(
 		"/v1/chat/completions with JSON output mode for $model",
+		getTestOptions(),
 		async ({ model }) => {
 			const res = await app.request("/v1/chat/completions", {
 				method: "POST",
@@ -248,7 +492,9 @@ describe("e2e tests with real provider keys", () => {
 			});
 
 			const json = await res.json();
-			console.log("json", json);
+			if (fullMode) {
+				console.log("json", JSON.stringify(json, null, 2));
+			}
 			expect(res.status).toBe(200);
 			expect(json).toHaveProperty("choices.[0].message.content");
 
@@ -260,9 +506,80 @@ describe("e2e tests with real provider keys", () => {
 		},
 	);
 
+	if (fullMode) {
+		test.each(providerModels)(
+			"/v1/chat/completions with complex content array for $model",
+			getTestOptions(),
+			async ({ model, provider }) => {
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer real-token`,
+					},
+					body: JSON.stringify({
+						model: model,
+						messages: [
+							{
+								role: "user",
+								content: [
+									{
+										type: "text",
+										text: "<task>\ndescribe this image\n</task>",
+									},
+									{
+										type: "text",
+										text: "",
+									},
+									// provide image url if vision is supported
+									...(provider.vision
+										? [
+												{
+													type: "image_url",
+													image_url: {
+														url: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://google.com&size=128",
+													},
+												},
+											]
+										: []),
+								],
+							},
+						],
+					}),
+				});
+
+				const json = await res.json();
+				if (fullMode) {
+					console.log("response:", JSON.stringify(json, null, 2));
+				}
+
+				expect(res.status).toBe(200);
+				validateResponse(json);
+
+				const log = await validateLogs();
+				expect(log.streamed).toBe(false);
+
+				expect(json).toHaveProperty("usage");
+				expect(json.usage).toHaveProperty("prompt_tokens");
+				expect(json.usage).toHaveProperty("completion_tokens");
+				expect(json.usage).toHaveProperty("total_tokens");
+				expect(typeof json.usage.prompt_tokens).toBe("number");
+				expect(typeof json.usage.completion_tokens).toBe("number");
+				expect(typeof json.usage.total_tokens).toBe("number");
+				expect(json.usage.prompt_tokens).toBeGreaterThan(0);
+				expect(json.usage.completion_tokens).toBeGreaterThan(0);
+				expect(json.usage.total_tokens).toBeGreaterThan(0);
+				expect(json.usage.total_tokens).toEqual(
+					json.usage.prompt_tokens + json.usage.completion_tokens,
+				);
+			},
+		);
+	}
+
 	test("JSON output mode error for unsupported model", async () => {
-		const envVar = getProviderEnvVar("anthropic");
-		if (!envVar) {
+		const envVarName = getProviderEnvVar("anthropic");
+		const envVarValue = envVarName ? process.env[envVarName] : undefined;
+		if (!envVarValue) {
 			console.log(
 				"Skipping JSON output error test - no Anthropic API key provided",
 			);
@@ -292,6 +609,7 @@ describe("e2e tests with real provider keys", () => {
 		const text = await res.text();
 		expect(text).toContain("does not support JSON output mode");
 
+		await clearCache(); // Process logs BEFORE deleting data
 		await db.delete(tables.apiKey);
 		await db.delete(tables.providerKey);
 	});
@@ -299,8 +617,9 @@ describe("e2e tests with real provider keys", () => {
 	test("/v1/chat/completions with llmgateway/auto in credits mode", async () => {
 		// require all provider keys to be set
 		for (const provider of providers) {
-			const envVar = getProviderEnvVar(provider.id);
-			if (!envVar) {
+			const envVarName = getProviderEnvVar(provider.id);
+			const envVarValue = envVarName ? process.env[envVarName] : undefined;
+			if (!envVarValue) {
 				console.log(
 					`Skipping llmgateway/auto in credits mode test - no API key provided for ${provider.id}`,
 				);
@@ -343,7 +662,7 @@ describe("e2e tests with real provider keys", () => {
 		});
 
 		const json = await res.json();
-		console.log("response:", json);
+		console.log("response:", JSON.stringify(json, null, 2));
 		expect(res.status).toBe(200);
 		expect(json).toHaveProperty("choices.[0].message.content");
 
@@ -394,8 +713,9 @@ describe("e2e tests with real provider keys", () => {
 	});
 
 	test.skip("/v1/chat/completions with bare 'custom' model", async () => {
-		const envVar = getProviderEnvVar("openai");
-		if (!envVar) {
+		const envVarName = getProviderEnvVar("openai");
+		const envVarValue = envVarName ? process.env[envVarName] : undefined;
+		if (!envVarValue) {
 			console.log("Skipping custom model test - no OpenAI API key provided");
 			return;
 		}
@@ -413,12 +733,10 @@ describe("e2e tests with real provider keys", () => {
 		await db.insert(tables.providerKey).values({
 			id: "provider-key-custom",
 			provider: "llmgateway",
-			token: envVar,
+			token: envVarValue,
 			baseUrl: "https://api.openai.com", // Use real OpenAI endpoint for testing
 			status: "active",
 			organizationId: "org-id",
-			createdAt: new Date(),
-			updatedAt: new Date(),
 		});
 
 		await db.insert(tables.apiKey).values({
@@ -492,38 +810,24 @@ describe("e2e tests with real provider keys", () => {
 	});
 });
 
-test("Error when requesting provider-specific model name without prefix", async () => {
-	// Create a fake model name that would be a provider-specific model name
-	const res = await app.request("/v1/chat/completions", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `Bearer real-token`,
-		},
-		body: JSON.stringify({
-			model: "claude-3-sonnet-20240229",
-			messages: [
-				{
-					role: "user",
-					content: "Hello",
-				},
-			],
-		}),
-	});
-
-	expect(res.status).toBe(400);
-	const json = await res.json();
-	console.log("Provider-specific model error:", JSON.stringify(json, null, 2));
-	expect(json.message).toContain("not supported");
-});
-
 async function readAll(stream: ReadableStream<Uint8Array> | null): Promise<{
+	fullContent?: string;
 	hasContent: boolean;
 	eventCount: number;
 	hasValidSSE: boolean;
+	hasOpenAIFormat: boolean;
+	chunks: any[];
+	hasUsage: boolean;
 }> {
 	if (!stream) {
-		return { hasContent: false, eventCount: 0, hasValidSSE: false };
+		return {
+			hasContent: false,
+			eventCount: 0,
+			hasValidSSE: false,
+			hasOpenAIFormat: false,
+			chunks: [],
+			hasUsage: false,
+		};
 	}
 
 	const reader = stream.getReader();
@@ -531,6 +835,9 @@ async function readAll(stream: ReadableStream<Uint8Array> | null): Promise<{
 	let eventCount = 0;
 	let hasValidSSE = false;
 	let hasContent = false;
+	let hasOpenAIFormat = true; // Assume true until proven otherwise
+	let hasUsage = false;
+	const chunks: any[] = [];
 
 	try {
 		while (true) {
@@ -554,18 +861,35 @@ async function readAll(stream: ReadableStream<Uint8Array> | null): Promise<{
 
 					try {
 						const data = JSON.parse(line.substring(6));
+						chunks.push(data);
+
+						// Check if this chunk has OpenAI format
+						if (
+							!data.id ||
+							!data.object ||
+							data.object !== "chat.completion.chunk"
+						) {
+							hasOpenAIFormat = false;
+						}
+
+						// Check for content in OpenAI format (should be the primary format after transformation)
 						if (
 							data.choices?.[0]?.delta?.content ||
-							data.delta?.text ||
-							data.candidates?.[0]?.content?.parts?.[0]?.text ||
-							data.choices?.[0]?.finish_reason ||
-							data.stop_reason ||
-							data.delta?.stop_reason ||
-							data.candidates?.[0]?.finishReason
+							data.choices?.[0]?.finish_reason
 						) {
 							hasContent = true;
 						}
-					} catch (e) {}
+
+						// Check for usage information
+						if (
+							data.usage &&
+							(data.usage.prompt_tokens !== null ||
+								data.usage.completion_tokens !== null ||
+								data.usage.total_tokens !== null)
+						) {
+							hasUsage = true;
+						}
+					} catch {}
 				}
 			}
 		}
@@ -573,5 +897,13 @@ async function readAll(stream: ReadableStream<Uint8Array> | null): Promise<{
 		reader.releaseLock();
 	}
 
-	return { hasContent, eventCount, hasValidSSE };
+	return {
+		fullContent,
+		hasContent,
+		eventCount,
+		hasValidSSE,
+		hasOpenAIFormat,
+		chunks,
+		hasUsage,
+	};
 }

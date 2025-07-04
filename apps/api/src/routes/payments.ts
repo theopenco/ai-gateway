@@ -1,9 +1,10 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { db, eq, sql, tables } from "@openllm/db";
+import { db, eq, tables } from "@llmgateway/db";
 import { HTTPException } from "hono/http-exception";
 import Stripe from "stripe";
 import { z } from "zod";
 
+import { calculateFees } from "../lib/fee-calculator";
 import { ensureStripeCustomer } from "../stripe";
 
 import type { ServerTypes } from "../vars";
@@ -76,21 +77,27 @@ payments.openapi(createPaymentIntent, async (c) => {
 	try {
 		const stripeCustomerId = await ensureStripeCustomer(organizationId);
 
+		const feeBreakdown = calculateFees({
+			amount,
+			organizationPlan: userOrganization.organization.plan,
+		});
+
 		const paymentIntent = await stripe.paymentIntents.create({
-			amount: amount * 100, // Convert to cents
+			amount: Math.round(feeBreakdown.totalAmount * 100),
 			currency: "usd",
-			description: `Credit purchase for ${amount} USD`,
+			description: `Credit purchase for ${amount} USD (including fees)`,
 			customer: stripeCustomerId,
 			metadata: {
 				organizationId,
+				baseAmount: amount.toString(),
+				totalFees: feeBreakdown.totalFees.toString(),
 			},
 		});
 
 		return c.json({
 			clientSecret: paymentIntent.client_secret || "",
 		});
-	} catch (error) {
-		console.error("Stripe error:", error);
+	} catch (_error) {
 		throw new HTTPException(500, {
 			message: "Failed to create payment intent",
 		});
@@ -152,8 +159,7 @@ payments.openapi(createSetupIntent, async (c) => {
 		return c.json({
 			clientSecret: setupIntent.client_secret || "",
 		});
-	} catch (error) {
-		console.error("Stripe error:", error);
+	} catch (_error) {
 		throw new HTTPException(500, {
 			message: "Failed to create setup intent",
 		});
@@ -248,8 +254,7 @@ payments.openapi(getPaymentMethods, async (c) => {
 		return c.json({
 			paymentMethods: enhancedPaymentMethods,
 		});
-	} catch (error) {
-		console.error("Error fetching payment methods:", error);
+	} catch (_error) {
 		throw new HTTPException(500, {
 			message: "Failed to fetch payment methods",
 		});
@@ -330,7 +335,6 @@ payments.openapi(setDefaultPaymentMethod, async (c) => {
 			.update(tables.paymentMethod)
 			.set({
 				isDefault: false,
-				updatedAt: new Date(),
 			})
 			.where(eq(tables.paymentMethod.organizationId, organizationId));
 
@@ -338,15 +342,13 @@ payments.openapi(setDefaultPaymentMethod, async (c) => {
 			.update(tables.paymentMethod)
 			.set({
 				isDefault: true,
-				updatedAt: new Date(),
 			})
 			.where(eq(tables.paymentMethod.id, paymentMethodId));
 
 		return c.json({
 			success: true,
 		});
-	} catch (error) {
-		console.error("Error setting default payment method:", error);
+	} catch (_error) {
 		throw new HTTPException(500, {
 			message: "Failed to set default payment method",
 		});
@@ -426,8 +428,7 @@ payments.openapi(deletePaymentMethod, async (c) => {
 		return c.json({
 			success: true,
 		});
-	} catch (error) {
-		console.error("Error deleting payment method:", error);
+	} catch (_error) {
 		throw new HTTPException(500, {
 			message: "Failed to delete payment method",
 		});
@@ -514,41 +515,133 @@ payments.openapi(topUpWithSavedMethod, async (c) => {
 			});
 		}
 
+		const stripePaymentMethod = await stripe.paymentMethods.retrieve(
+			paymentMethod.stripePaymentMethodId,
+		);
+
+		const cardCountry = stripePaymentMethod.card?.country || undefined;
+
+		const feeBreakdown = calculateFees({
+			amount,
+			organizationPlan: userOrganization.organization.plan,
+			cardCountry,
+		});
+
 		const paymentIntent = await stripe.paymentIntents.create({
-			amount: amount * 100, // Convert to cents
+			amount: Math.round(feeBreakdown.totalAmount * 100),
 			currency: "usd",
-			description: `Credit purchase for ${amount} USD`,
+			description: `Credit purchase for ${amount} USD (including fees)`,
 			payment_method: paymentMethod.stripePaymentMethodId,
 			customer: stripeCustomerId,
 			confirm: true,
 			off_session: true,
 			metadata: {
 				organizationId: userOrganization.organization.id,
+				baseAmount: amount.toString(),
+				totalFees: feeBreakdown.totalFees.toString(),
 			},
 		});
 
-		// If payment is successful, immediately add credits to the organization
-		if (paymentIntent.status === "succeeded") {
-			await db
-				.update(tables.organization)
-				.set({
-					credits: sql`${tables.organization.credits} + ${amount}`,
-					updatedAt: new Date(),
-				})
-				.where(eq(tables.organization.id, userOrganization.organization.id));
-
-			console.log(
-				`Added ${amount} credits to organization ${userOrganization.organization.id}`,
-			);
+		if (paymentIntent.status !== "succeeded") {
+			throw new HTTPException(400, {
+				message: `Payment failed: ${paymentIntent.status}`,
+			});
 		}
 
 		return c.json({
 			success: true,
 		});
-	} catch (error) {
-		console.error("Stripe error:", error);
+	} catch (_error) {
 		throw new HTTPException(500, {
 			message: "Failed to process payment",
 		});
 	}
+});
+const calculateFeesRoute = createRoute({
+	method: "post",
+	path: "/calculate-fees",
+	request: {
+		body: {
+			content: {
+				"application/json": {
+					schema: z.object({
+						amount: z.number().int().min(5),
+						paymentMethodId: z.string().optional(),
+					}),
+				},
+			},
+		},
+	},
+	responses: {
+		200: {
+			content: {
+				"application/json": {
+					schema: z.object({
+						baseAmount: z.number(),
+						stripeFee: z.number(),
+						internationalFee: z.number(),
+						planFee: z.number(),
+						totalFees: z.number(),
+						totalAmount: z.number(),
+					}),
+				},
+			},
+			description: "Fee calculation completed successfully",
+		},
+	},
+});
+
+payments.openapi(calculateFeesRoute, async (c) => {
+	const user = c.get("user");
+
+	if (!user) {
+		throw new HTTPException(401, {
+			message: "Unauthorized",
+		});
+	}
+
+	const { amount, paymentMethodId } = c.req.valid("json");
+
+	const userOrganization = await db.query.userOrganization.findFirst({
+		where: {
+			userId: user.id,
+		},
+		with: {
+			organization: true,
+		},
+	});
+
+	if (!userOrganization || !userOrganization.organization) {
+		throw new HTTPException(404, {
+			message: "Organization not found",
+		});
+	}
+
+	let cardCountry: string | undefined;
+
+	if (paymentMethodId) {
+		const paymentMethod = await db.query.paymentMethod.findFirst({
+			where: {
+				id: paymentMethodId,
+				organizationId: userOrganization.organization.id,
+			},
+		});
+
+		if (paymentMethod) {
+			try {
+				const stripePaymentMethod = await stripe.paymentMethods.retrieve(
+					paymentMethod.stripePaymentMethodId,
+				);
+				cardCountry = stripePaymentMethod.card?.country || undefined;
+			} catch {}
+		}
+	}
+
+	const feeBreakdown = calculateFees({
+		amount,
+		organizationPlan: userOrganization.organization.plan,
+		cardCountry,
+	});
+
+	return c.json(feeBreakdown);
 });

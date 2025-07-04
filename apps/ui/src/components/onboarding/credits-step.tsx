@@ -1,5 +1,10 @@
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import {
+	CardElement,
+	useStripe as useStripeElements,
+	useElements,
+} from "@stripe/react-stripe-js";
 import { CreditCard, Check } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
 import * as React from "react";
 
@@ -14,7 +19,8 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Step } from "@/lib/components/stepper";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useAppConfigValue } from "@/lib/config";
+import { useApi } from "@/lib/fetch-client";
 
 const CREDIT_OPTIONS = [
 	{ value: "10", label: "$10", description: "Good for testing" },
@@ -23,21 +29,19 @@ const CREDIT_OPTIONS = [
 ];
 
 export function CreditsStep() {
+	const config = useAppConfigValue();
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedAmount, setSelectedAmount] = useState("50");
 	const [isSuccess, setIsSuccess] = useState(false);
+	const posthog = usePostHog();
+	const api = useApi();
 
-	const stripe = useStripe();
+	const stripe = useStripeElements();
 	const elements = useElements();
 
-	const { mutateAsync: createPaymentIntent } = $api.useMutation(
+	const { mutateAsync: createPaymentIntent } = api.useMutation(
 		"post",
 		"/payments/create-payment-intent",
-	);
-
-	const { mutateAsync: createSetupIntent } = $api.useMutation(
-		"post",
-		"/payments/create-setup-intent",
 	);
 
 	async function handleSubmit(e: React.FormEvent) {
@@ -73,6 +77,10 @@ export function CreditsStep() {
 			}
 
 			setIsSuccess(true);
+			posthog.capture("credits_purchased", {
+				amount: Number(selectedAmount),
+				source: "onboarding",
+			});
 			toast({
 				title: "Payment successful",
 				description: `$${selectedAmount} has been added to your account.`,
@@ -110,7 +118,20 @@ export function CreditsStep() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{!isSuccess ? (
+						{!config.hosted ? (
+							<div className="flex flex-col gap-4 items-center text-center">
+								<div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+									<Check className="h-6 w-6 text-green-600 dark:text-green-300" />
+								</div>
+								<div>
+									<h3 className="text-xl font-bold">Only on llmgateway.io</h3>
+									<p className="text-muted-foreground mt-1">
+										Credits are only available on{" "}
+										<a href="https://llmgateway.io/">llmgateway.io</a>.
+									</p>
+								</div>
+							</div>
+						) : !isSuccess ? (
 							<form onSubmit={handleSubmit} className="space-y-6">
 								<div className="space-y-4">
 									<label className="text-sm font-medium">Select Amount</label>

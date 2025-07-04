@@ -23,7 +23,7 @@ import {
 	TooltipTrigger,
 } from "@/lib/components/tooltip";
 
-import type { Log } from "@/lib/types";
+import type { Log } from "@llmgateway/db";
 
 export function LogCard({ log }: { log: Log }) {
 	const [isExpanded, setIsExpanded] = useState(false);
@@ -60,26 +60,23 @@ export function LogCard({ log }: { log: Log }) {
 	}
 
 	return (
-		<div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+		<div className="rounded-lg border bg-card text-card-foreground shadow-sm max-w-full overflow-hidden">
 			<div
 				className={`flex items-start gap-4 p-4 ${isExpanded ? "border-b" : ""}`}
 			>
 				<div className={`mt-0.5 rounded-full p-1.5 ${bgColor}`}>
 					<StatusIcon className={`h-5 w-5 ${color}`} />
 				</div>
-				<div className="flex-1 space-y-1">
-					<div className="flex items-center justify-between">
-						<p
-							className={`font-medium ${isExpanded ? "line-clamp-2" : "line-clamp-1"}`}
-						>
-							{log.content || <i className="italic">empty response</i>}
+				<div className="flex-1 space-y-1 min-w-0">
+					<div className="flex items-start justify-between gap-4">
+						<p className="font-medium break-words max-w-none">
+							{log.content || <i className="italic">–</i>}
 						</p>
 						<Badge
 							variant={log.hasError ? "destructive" : "default"}
-							className="ml-2"
+							className="flex-shrink-0"
 						>
-							{/* {log.unifiedFinishReason || log.finishReason} */}
-							{log.finishReason}
+							{log.unifiedFinishReason}
 						</Badge>
 					</div>
 					<div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-sm text-muted-foreground">
@@ -101,7 +98,9 @@ export function LogCard({ log }: { log: Log }) {
 						</div>
 						<div className="flex items-center gap-1">
 							<Coins className="h-3.5 w-3.5" />
-							<span>{log.cost ? `$${log.cost.toFixed(6)}` : "?"}</span>
+							<span>
+								{log.cost ? `$${log.cost.toFixed(6)}` : log.cached ? "$0" : "?"}
+							</span>
 						</div>
 						<span className="ml-auto">{formattedTime}</span>
 					</div>
@@ -131,8 +130,6 @@ export function LogCard({ log }: { log: Log }) {
 								<div className="font-mono text-xs">{log.projectId}</div>
 								<div className="text-muted-foreground">API Key</div>
 								<div className="font-mono text-xs">{log.apiKeyId}</div>
-								<div className="text-muted-foreground">Provider Key</div>
-								<div className="font-mono text-xs">{log.providerKeyId}</div>
 								<div className="text-muted-foreground">Requested Model</div>
 								<div>{log.requestedModel}</div>
 								<div className="text-muted-foreground">Used Model</div>
@@ -162,6 +159,14 @@ export function LogCard({ log }: { log: Log }) {
 								<div>{log.completionTokens}</div>
 								<div className="text-muted-foreground">Total Tokens</div>
 								<div className="font-medium">{log.totalTokens}</div>
+								{log.reasoningTokens && (
+									<>
+										<div className="text-muted-foreground">
+											Reasoning Tokens
+										</div>
+										<div>{log.reasoningTokens}</div>
+									</>
+								)}
 								<div className="text-muted-foreground">
 									Original Finish Reason
 								</div>
@@ -218,6 +223,10 @@ export function LogCard({ log }: { log: Log }) {
 								<div>
 									{log.outputCost ? `$${log.outputCost.toFixed(6)}` : "?"}
 								</div>
+								<div className="text-muted-foreground">Request Cost</div>
+								<div>
+									{log.requestCost ? `$${log.requestCost.toFixed(6)}` : "?"}
+								</div>
 								<div className="text-muted-foreground">Total Cost</div>
 								<div className="font-medium">
 									{log.cost ? `$${log.cost.toFixed(6)}` : "?"}
@@ -233,13 +242,10 @@ export function LogCard({ log }: { log: Log }) {
 								<div className="font-mono text-xs">{log.organizationId}</div>
 								<div className="text-muted-foreground">API Key ID</div>
 								<div className="font-mono text-xs">{log.apiKeyId}</div>
-								<div className="text-muted-foreground">Provider Key ID</div>
-								<div className="font-mono text-xs">{log.providerKeyId}</div>
 								<div className="text-muted-foreground">Mode</div>
-								{/* <div>{log.mode || "api-keys"}</div> */}
-								<div>api-keys</div>
+								<div>{log.mode || "?"}</div>
 								<div className="text-muted-foreground">Used Mode</div>
-								<div>{log.usedModel || "api-keys"}</div>
+								<div>{log.usedMode || "?"}</div>
 							</div>
 						</div>
 					</div>
@@ -306,7 +312,7 @@ export function LogCard({ log }: { log: Log }) {
 							</TooltipProvider>
 						</div>
 					</div>
-					{log.hasError && log.errorDetails && (
+					{log.hasError && !!log.errorDetails && (
 						<div className="space-y-2">
 							<h4 className="text-sm font-medium text-red-600">
 								Error Details
@@ -326,16 +332,16 @@ export function LogCard({ log }: { log: Log }) {
 					<div className="space-y-2">
 						<h4 className="text-sm font-medium">Message Context</h4>
 						<div className="rounded-md border p-3">
-							<pre className="max-h-60 text-xs overflow-auto">
-								{JSON.stringify(log.messages, null, 2)}
+							<pre className="max-h-60 text-xs overflow-auto whitespace-pre-wrap break-words">
+								{log.messages ? JSON.stringify(log.messages, null, 2) : "–"}
 							</pre>
 						</div>
 					</div>
 					<div className="space-y-2">
 						<h4 className="text-sm font-medium">Response</h4>
 						<div className="rounded-md border p-3">
-							<pre className="max-h-60 text-xs text-wrap overflow-auto">
-								{log.content}
+							<pre className="max-h-60 text-xs overflow-auto whitespace-pre-wrap break-words">
+								{log.content || "–"}
 							</pre>
 						</div>
 					</div>

@@ -1,42 +1,32 @@
-export interface ErrorDetails {
-	statusCode: number;
-	statusText: string;
-	responseText: string;
-}
-
-export interface Log {
+export interface Organization {
 	id: string;
 	createdAt: string;
 	updatedAt: string;
-	organizationId: string;
-	projectId: string;
-	apiKeyId: string;
-	providerKeyId: string;
-	duration: number;
-	requestedModel: string;
-	requestedProvider: string | null;
-	usedModel: string;
-	usedProvider: string;
-	responseSize: number;
-	content: string | null;
-	finishReason: string | null;
-	promptTokens: string | null;
-	completionTokens: string | null;
-	totalTokens: string | null;
-	messages?: unknown;
-	temperature: number | null;
-	maxTokens: number | null;
-	topP: number | null;
-	frequencyPenalty: number | null;
-	presencePenalty: number | null;
-	hasError: boolean | null;
-	errorDetails?: any;
-	cost: number | null;
-	inputCost: number | null;
-	outputCost: number | null;
-	estimatedCost: boolean | null;
-	canceled: boolean | null;
-	streamed: boolean | null;
-	cached: boolean | null;
-	unifiedFinishReason?: string | null;
+	name: string;
+	credits: string;
+	plan: "free" | "pro";
+	planExpiresAt: string | null;
+	retentionLevel: "retain" | "none";
+	status: "active" | "inactive" | "deleted" | null;
+	autoTopUpEnabled: boolean;
+	autoTopUpThreshold: string | null;
+	autoTopUpAmount: string | null;
 }
+
+export interface Project {
+	id: string;
+	createdAt: string;
+	updatedAt: string;
+	name: string;
+	organizationId: string;
+	cachingEnabled: boolean;
+	cacheDurationSeconds: number;
+	mode: "api-keys" | "credits" | "hybrid";
+	status: "active" | "inactive" | "deleted" | null;
+}
+
+export type User = {
+	id: string;
+	email: string;
+	name: string | null;
+} | null;

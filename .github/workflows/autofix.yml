@@ -1,0 +1,19 @@
+name: ci
+
+on: pull_request_target
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+
+    if: ${{ github.actor == 'dependabot[bot]' }}
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Autofix
+        uses: steebchen/actions/autofix@v0.11.0
+        with:
+          token: ${{ secrets.GH_TOKEN }}

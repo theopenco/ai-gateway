@@ -1,4 +1,4 @@
-import { providers } from "@openllm/models";
+import { providers } from "@llmgateway/models";
 import { useState } from "react";
 import {
 	Cell,
@@ -10,13 +10,39 @@ import {
 } from "recharts";
 
 import { Button } from "@/lib/components/button";
-import { $api } from "@/lib/fetch-client";
+import { useDashboardContext } from "@/lib/dashboard-context";
+import { useApi } from "@/lib/fetch-client";
 
 export function CostBreakdownChart() {
 	const [days, setDays] = useState<7 | 30>(7);
-	const { data, isLoading, error } = $api.useSuspenseQuery("get", "/activity", {
-		params: { query: { days: String(days) } },
-	});
+	const { selectedProject } = useDashboardContext();
+
+	const api = useApi();
+	const { data, isLoading, error } = api.useQuery(
+		"get",
+		"/activity",
+		{
+			params: {
+				query: {
+					days: String(days),
+					...(selectedProject?.id ? { projectId: selectedProject.id } : {}),
+				},
+			},
+		},
+		{
+			enabled: !!selectedProject?.id,
+		},
+	);
+
+	if (!selectedProject) {
+		return (
+			<div className="flex h-[350px] items-center justify-center">
+				<p className="text-muted-foreground">
+					Please select a project to view cost breakdown
+				</p>
+			</div>
+		);
+	}
 
 	if (isLoading) {
 		return (
@@ -37,7 +63,14 @@ export function CostBreakdownChart() {
 	if (!data || data.activity.length === 0) {
 		return (
 			<div className="flex h-[350px] items-center justify-center">
-				<p className="text-muted-foreground">No cost data available</p>
+				<p className="text-muted-foreground">
+					No cost data available
+					{selectedProject && (
+						<span className="block mt-1 text-sm">
+							Project: {selectedProject.name}
+						</span>
+					)}
+				</p>
 			</div>
 		);
 	}
@@ -118,6 +151,9 @@ export function CostBreakdownChart() {
 				<p className="text-sm text-muted-foreground">
 					Total Cost:{" "}
 					<span className="font-medium">${totalCost.toFixed(4)}</span>
+					{selectedProject && (
+						<span className="block mt-1">Project: {selectedProject.name}</span>
+					)}
 				</p>
 			</div>
 		</div>

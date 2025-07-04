@@ -1,4 +1,4 @@
-import { type Model, type ModelDefinition, models } from "@openllm/models";
+import { type Model, type ModelDefinition, models } from "@llmgateway/models";
 import { encode, encodeChat } from "gpt-tokenizer";
 
 // Define ChatMessage type to match what gpt-tokenizer expects
@@ -26,13 +26,20 @@ export function calculateCosts(
 		completion?: string;
 	},
 ) {
-	// Find the model info
-	const modelInfo = models.find((m) => m.model === model) as ModelDefinition;
+	// Find the model info - try both base model name and provider model name
+	let modelInfo = models.find((m) => m.model === model) as ModelDefinition;
+
+	if (!modelInfo) {
+		modelInfo = models.find((m) =>
+			m.providers.some((p) => p.modelName === model),
+		) as ModelDefinition;
+	}
 
 	if (!modelInfo) {
 		return {
 			inputCost: null,
 			outputCost: null,
+			requestCost: null,
 			totalCost: null,
 			promptTokens,
 			completionTokens,
@@ -89,6 +96,7 @@ export function calculateCosts(
 		return {
 			inputCost: null,
 			outputCost: null,
+			requestCost: null,
 			totalCost: null,
 			promptTokens: calculatedPromptTokens,
 			completionTokens: calculatedCompletionTokens,
@@ -105,6 +113,7 @@ export function calculateCosts(
 		return {
 			inputCost: null,
 			outputCost: null,
+			requestCost: null,
 			totalCost: null,
 			promptTokens: calculatedPromptTokens,
 			completionTokens: calculatedCompletionTokens,
@@ -114,14 +123,17 @@ export function calculateCosts(
 
 	const inputPrice = providerInfo.inputPrice || 0;
 	const outputPrice = providerInfo.outputPrice || 0;
+	const requestPrice = providerInfo.requestPrice || 0;
 
 	const inputCost = calculatedPromptTokens * inputPrice;
 	const outputCost = calculatedCompletionTokens * outputPrice;
-	const totalCost = inputCost + outputCost;
+	const requestCost = requestPrice;
+	const totalCost = inputCost + outputCost + requestCost;
 
 	return {
 		inputCost,
 		outputCost,
+		requestCost,
 		totalCost,
 		promptTokens: calculatedPromptTokens,
 		completionTokens: calculatedCompletionTokens,

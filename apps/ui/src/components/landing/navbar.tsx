@@ -4,16 +4,22 @@ import { useEffect, useState } from "react";
 
 import { GitHubStars } from "./github-stars";
 import { ThemeToggle } from "./theme-toggle";
+import { AuthLink } from "../shared/auth-link";
 import { Button } from "@/lib/components/button";
+import { useAppConfigValue } from "@/lib/config";
 import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
 
-const menuItems = [
-	{ name: "Features", href: "#features" },
-	{ name: "Documentation", href: "https://docs.llmgateway.io", external: true },
-];
-
 export const Navbar = () => {
+	const config = useAppConfigValue();
+
+	const menuItems = [
+		{ name: "Pricing", href: "/#pricing", external: false },
+		{ name: "Docs", href: config.docsUrl, external: true },
+		{ name: "Models", href: "/models", external: false },
+		{ name: "Playground", href: "/playground", external: false },
+		{ name: "Changelog", href: "/changelog", external: false },
+	];
 	const [menuState, setMenuState] = useState(false);
 	const [isScrolled, setIsScrolled] = useState(false);
 
@@ -35,7 +41,7 @@ export const Navbar = () => {
 					className={cn(
 						"mx-auto mt-2 max-w-6xl px-6 transition-all duration-300 lg:px-12",
 						isScrolled &&
-							"bg-background/50 max-w-4xl rounded-2xl border backdrop-blur-lg lg:px-5",
+							"bg-background/50 max-w-6xl rounded-2xl border backdrop-blur-lg lg:px-5",
 					)}
 				>
 					<div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
@@ -62,7 +68,7 @@ export const Navbar = () => {
 							</button>
 						</div>
 
-						<div className="absolute inset-0 m-auto hidden size-fit lg:block">
+						<div className="m-auto hidden size-fit lg:block">
 							<ul className="flex gap-8 text-sm">
 								{menuItems.map((item, index) => (
 									<li key={index}>
@@ -71,14 +77,14 @@ export const Navbar = () => {
 												href={item.href}
 												target="_blank"
 												rel="noopener noreferrer"
-												className="text-muted-foreground hover:text-accent-foreground block duration-150"
+												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-4 py-2"
 											>
 												{item.name}
 											</a>
 										) : (
 											<Link
 												to={item.href}
-												className="text-muted-foreground hover:text-accent-foreground block duration-150"
+												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-4 py-2"
 											>
 												{item.name}
 											</Link>
@@ -120,10 +126,10 @@ export const Navbar = () => {
 								<Button
 									asChild
 									className={cn(
-										"bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-700 dark:hover:bg-zinc-200 font-medium",
+										"bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-700 dark:hover:bg-zinc-200 font-medium w-full md:w-fit",
 									)}
 								>
-									<Link to="/dashboard">Get Started</Link>
+									<AuthLink>Get Started</AuthLink>
 								</Button>
 								<ThemeToggle />
 							</div>

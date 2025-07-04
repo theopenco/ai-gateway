@@ -1,6 +1,5 @@
-import { db, tables } from "@openllm/db";
+import { db, tables } from "@llmgateway/db";
 import {
-	afterEach,
 	afterAll,
 	beforeEach,
 	beforeAll,
@@ -14,7 +13,7 @@ import {
 	startMockServer,
 	stopMockServer,
 } from "./test-utils/mock-openai-server";
-import { flushLogs, waitForLogs } from "./test-utils/test-helpers";
+import { clearCache, waitForLogs } from "./test-utils/test-helpers";
 
 describe("test", () => {
 	let mockServerUrl: string;
@@ -31,20 +30,27 @@ describe("test", () => {
 		stopMockServer();
 	});
 
-	afterEach(async () => {
+	beforeEach(async () => {
+		await clearCache();
+
 		await Promise.all([
+			db.delete(tables.log),
+			db.delete(tables.apiKey),
+			db.delete(tables.providerKey),
+		]);
+
+		await Promise.all([
+			db.delete(tables.userOrganization),
+			db.delete(tables.project),
+		]);
+
+		await Promise.all([
+			db.delete(tables.organization),
 			db.delete(tables.user),
 			db.delete(tables.account),
 			db.delete(tables.session),
 			db.delete(tables.verification),
-			db.delete(tables.organization),
-			db.delete(tables.userOrganization),
-			db.delete(tables.project),
-			db.delete(tables.apiKey),
-			db.delete(tables.providerKey),
-			db.delete(tables.log),
 		]);
-		await flushLogs();
 	});
 
 	beforeEach(async () => {
@@ -57,6 +63,7 @@ describe("test", () => {
 		await db.insert(tables.organization).values({
 			id: "org-id",
 			name: "Test Organization",
+			plan: "pro",
 		});
 
 		await db.insert(tables.userOrganization).values({
@@ -69,6 +76,7 @@ describe("test", () => {
 			id: "project-id",
 			name: "Test Project",
 			organizationId: "org-id",
+			mode: "api-keys",
 		});
 	});
 
@@ -77,6 +85,7 @@ describe("test", () => {
 		expect(res.status).toBe(200);
 		const data = await res.json();
 		expect(data).toHaveProperty("message", "OK");
+		expect(data).toHaveProperty("version");
 		expect(data).toHaveProperty("health");
 		expect(data.health).toHaveProperty("status");
 		expect(data.health).toHaveProperty("redis");
@@ -127,6 +136,142 @@ describe("test", () => {
 		expect(logs.length).toBe(1);
 		expect(logs[0].finishReason).toBe("stop");
 		expect(logs[0].content).toMatch(/Hello!/);
+	});
+
+	test("Reasoning effort error for unsupported model", async () => {
+		const res = await app.request("/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer real-token`,
+			},
+			body: JSON.stringify({
+				model: "gpt-4o-mini",
+				messages: [
+					{
+						role: "user",
+						content: "Hello",
+					},
+				],
+				reasoning_effort: "medium",
+			}),
+		});
+
+		expect(res.status).toBe(400);
+
+		const json = await res.json();
+		expect(json.message).toContain("does not support reasoning");
+	});
+
+	test("Max tokens validation error when exceeding model limit", async () => {
+		await db.insert(tables.apiKey).values({
+			id: "token-id",
+			token: "real-token",
+			projectId: "project-id",
+			description: "Test API Key",
+		});
+
+		// Create provider key for OpenAI with mock server URL as baseUrl
+		await db.insert(tables.providerKey).values({
+			id: "provider-key-id",
+			token: "sk-test-key",
+			provider: "openai",
+			organizationId: "org-id",
+			baseUrl: mockServerUrl,
+		});
+
+		const res = await app.request("/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer real-token`,
+			},
+			body: JSON.stringify({
+				model: "openai/gpt-4",
+				messages: [
+					{
+						role: "user",
+						content: "Hello",
+					},
+				],
+				max_tokens: 10000, // This exceeds gpt-4's maxOutput of 8192
+			}),
+		});
+
+		expect(res.status).toBe(400);
+
+		const json = await res.json();
+		expect(json.message).toContain("exceeds the maximum output tokens allowed");
+		expect(json.message).toContain("10000");
+		expect(json.message).toContain("8192");
+	});
+
+	test("Max tokens validation allows valid token count", async () => {
+		await db.insert(tables.apiKey).values({
+			id: "token-id",
+			token: "real-token",
+			projectId: "project-id",
+			description: "Test API Key",
+		});
+
+		// Create provider key for OpenAI with mock server URL as baseUrl
+		await db.insert(tables.providerKey).values({
+			id: "provider-key-id",
+			token: "sk-test-key",
+			provider: "openai",
+			organizationId: "org-id",
+			baseUrl: mockServerUrl,
+		});
+
+		const res = await app.request("/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer real-token`,
+			},
+			body: JSON.stringify({
+				model: "openai/gpt-4",
+				messages: [
+					{
+						role: "user",
+						content: "Hello",
+					},
+				],
+				max_tokens: 4000, // This is within gpt-4's maxOutput of 8192
+			}),
+		});
+
+		expect(res.status).toBe(200);
+		const json = await res.json();
+		expect(json).toHaveProperty("choices.[0].message.content");
+	});
+
+	test("Error when requesting provider-specific model name without prefix", async () => {
+		// Create a fake model name that would be a provider-specific model name
+		const res = await app.request("/v1/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer real-token`,
+			},
+			body: JSON.stringify({
+				model: "claude-3-sonnet-20240229",
+				messages: [
+					{
+						role: "user",
+						content: "Hello",
+					},
+				],
+			}),
+		});
+
+		expect(res.status).toBe(400);
+		const json = await res.json();
+		console.log(
+			"Provider-specific model error:",
+			JSON.stringify(json, null, 2),
+		);
+		expect(json.message).toContain("not supported");
 	});
 
 	// invalid model test

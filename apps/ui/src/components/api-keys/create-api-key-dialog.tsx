@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Copy } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
 
 import { Button } from "@/lib/components/button";
@@ -15,50 +16,60 @@ import {
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useApi } from "@/lib/fetch-client";
 
+import type { Project } from "@/lib/types";
 import type React from "react";
+
+interface CreateApiKeyDialogProps {
+	children: React.ReactNode;
+	selectedProject: Project;
+}
 
 export function CreateApiKeyDialog({
 	children,
-}: {
-	children: React.ReactNode;
-}) {
+	selectedProject,
+}: CreateApiKeyDialogProps) {
 	const queryClient = useQueryClient();
+	const posthog = usePostHog();
 	const [open, setOpen] = useState(false);
 	const [step, setStep] = useState<"form" | "created">("form");
 	const [name, setName] = useState("");
 	const [apiKey, setApiKey] = useState("");
+	const api = useApi();
 
-	const { mutate: createApiKey } = $api.useMutation("post", "/keys/api");
+	const { mutate: createApiKey } = api.useMutation("post", "/keys/api");
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!name.trim()) {
+			toast({ title: "Please enter an API key name.", variant: "destructive" });
+			return;
+		}
+
 		createApiKey(
 			{
 				body: {
-					description: name,
+					description: name.trim(),
+					projectId: selectedProject.id,
 				},
 			},
 			{
 				onSuccess: (data) => {
 					const createdKey = data.apiKey;
 
-					const newCachedKey = {
-						id: createdKey.id,
-						createdAt: createdKey.createdAt,
-						updatedAt: createdKey.updatedAt,
+					const queryKey = api.queryOptions("get", "/keys/api", {
+						params: { query: { projectId: selectedProject.id } },
+					}).queryKey;
+
+					void queryClient.invalidateQueries({ queryKey });
+
+					posthog.capture("api_key_created", {
 						description: createdKey.description,
-						status: createdKey.status,
-						projectId: createdKey.projectId,
-						maskedToken: "test-token•••••••••••",
-					};
+						keyId: createdKey.id,
+					});
 
-					const queryKey = $api.queryOptions("get", "/keys/api").queryKey;
-
-					queryClient.invalidateQueries({ queryKey });
-
-					setApiKey(data.apiKey.token);
+					setApiKey(createdKey.token);
 					setStep("created");
 				},
 				onError: () => {
@@ -95,6 +106,9 @@ export function CreateApiKeyDialog({
 							<DialogTitle>Create API Key</DialogTitle>
 							<DialogDescription>
 								Create a new API key to access LLM Gateway.
+								<span className="block mt-1">
+									Project: {selectedProject.name}
+								</span>
 							</DialogDescription>
 						</DialogHeader>
 						<form onSubmit={handleSubmit} className="space-y-4 py-4">

@@ -2,11 +2,11 @@
 	"$schema": "https://turbo.build/schema.json",
 	"remoteCache": {
 		"teamSlug": "ducktors",
-		"apiUrl": "https://trrc.ducktors.dev"
+		"apiUrl": "https://do-trrc.ducktors.dev"
 	},
 	"dangerouslyDisablePackageManagerCheck": true,
 	"globalDependencies": [
-		"tsup.config.ts",
+		".npmrc",
 		"package.json",
 		"pnpm-lock.yaml",
 		"pnpm-workspace.yaml",
@@ -20,19 +20,20 @@
 			"outputs": [
 				"dist/**",
 				".next/**",
-				".source/**",
 				".vercel/**",
 				".output/**",
 				".vinxi/**",
 				"out/**",
+				".source/**",
 				"openapi.json"
 			]
 		},
 		"generate": {
 			"dependsOn": ["^generate"],
-			"cache": false
+			"outputs": ["openapi.json", "content/**", "migrations", "**/v1.d.ts"]
 		},
 		"dev": {
+			"persistent": true,
 			"cache": false
 		},
 		"lint": {},

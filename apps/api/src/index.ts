@@ -1,17 +1,44 @@
 import { swaggerUI } from "@hono/swagger-ui";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { db } from "@openllm/db";
+import { db } from "@llmgateway/db";
 import "dotenv/config";
+import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
 import { authHandler } from "./auth/handler";
 import { routes } from "./routes";
+import { beacon } from "./routes/beacon";
 import { stripeRoutes } from "./stripe";
 
 import type { ServerTypes } from "./vars";
 
+export const config = {
+	servers: [
+		{
+			url: "http://localhost:4002",
+		},
+	],
+	openapi: "3.0.0",
+	info: {
+		version: "1.0.0",
+		title: "My API",
+	},
+};
+
 export const app = new OpenAPIHono<ServerTypes>();
+
+app.use(
+	"*",
+	cors({
+		origin: process.env.UI_URL || "http://localhost:3002",
+		allowHeaders: ["Content-Type", "Authorization", "Cache-Control"],
+		allowMethods: ["POST", "GET", "OPTIONS", "PUT", "PATCH", "DELETE"],
+		exposeHeaders: ["Content-Length"],
+		maxAge: 600,
+		credentials: true,
+	}),
+);
 
 app.onError((error, c) => {
 	if (error instanceof HTTPException) {
@@ -55,6 +82,7 @@ const root = createRoute({
 					schema: z
 						.object({
 							message: z.string(),
+							version: z.string(),
 							health: z.object({
 								status: z.string(),
 								database: z.object({
@@ -87,29 +115,21 @@ app.openapi(root, async (c) => {
 		console.error("Database healthcheck failed:", error);
 	}
 
-	return c.json({ message: "OK", health });
+	return c.json({
+		message: "OK",
+		version: process.env.APP_VERSION || "v0.0.0-unknown",
+		health,
+	});
 });
 
 app.route("/stripe", stripeRoutes);
 
+app.route("/", beacon);
+
+app.doc("/json", config);
+
+app.get("/docs", swaggerUI({ url: "./json" }));
+
 app.route("/", authHandler);
 
 app.route("/", routes);
-
-app.doc("/json", {
-	servers: [
-		{
-			url:
-				process.env.NODE_ENV === "production"
-					? "https://api.llmgateway.io"
-					: "http://localhost:3002/api",
-		},
-	],
-	openapi: "3.0.0",
-	info: {
-		version: "1.0.0",
-		title: "My API",
-	},
-});
-
-app.get("/docs", swaggerUI({ url: "./json" }));

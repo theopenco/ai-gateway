@@ -1,0 +1,86 @@
+name: claude
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    # Optional: Only run on specific file changes
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if most recent commit is from Claude
+        id: check-author
+        run: |
+          # Get the most recent actual commit (HEAD~1 to skip the merge commit)
+          AUTHOR_EMAIL=$(git log --no-merges -1 --pretty=format:'%ae')
+          AUTHOR_NAME=$(git log --no-merges -1 --pretty=format:'%an')
+          COMMIT_TITLE=$(git log --no-merges -1 --pretty=format:'%s')
+
+          echo "Most recent commit author: $AUTHOR_NAME <$AUTHOR_EMAIL>"
+          echo "Most recent commit title: $COMMIT_TITLE"
+
+          if [[ "$AUTHOR_EMAIL" == *"claude[bot]"* ]] || [[ "$AUTHOR_NAME" == *"claude[bot]"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping review - most recent commit is from Claude"
+          elif [[ "$COMMIT_TITLE" == *"WIP"* ]] || [[ "$COMMIT_TITLE" == "Merge"* ]] || [[ "$COMMIT_TITLE" == "automated"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping review - most recent commit title contains WIP"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "Proceeding with review - most recent commit is not from Claude and doesn't contain WIP"
+          fi
+
+      - name: Run Claude Code Review
+        id: claude-review
+        if: |
+          steps.check-author.outputs.skip != 'true' &&
+          github.event.pull_request.user.login != 'dependabot[bot]' &&
+          !contains(github.event.pull_request.title, 'WIP')
+
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.CLAUDE_CODE_API_KEY }}
+
+          # Direct prompt for automated review (no @claude mention needed)
+          direct_prompt: |
+            Please review this pull request and provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
+
+            Only comment when something is off, wrong, or could be improved; if a given implementation is already perfect do not comment on it.
+
+            Remember the following:
+            1. **Start a review**: Use `mcp__github__create_pending_pull_request_review` to begin a pending review
+            2. **Get diff information**: Use `mcp__github__get_pull_request_diff` to understand the code changes and line numbers
+            3. **Add inline comments**: Use `mcp__github__add_pull_request_review_comment_to_pending_review` for each specific piece of feedback on particular lines, including code change suggestions where appropriate
+            4. **Submit the review**: Use `mcp__github__submit_pending_pull_request_review` with event type "COMMENT" (not "REQUEST_CHANGES") to publish all comments as a non-blocking review
+
+            Provide specific, actionable feedback with inline comments for line-specific issues and include an overall summary when submitting the review.
+
+            **Important**: Submit as "COMMENT" type so the review doesn't block the PR.
+
+          allowed_tools: "Bash:*,Bash(*),Bash,Bash(sed:*),Bash(od:*),Bash(rg:*),Bash(pnpm format:*),Bash(pnpm build:*),Bash(pnpm push-dev:*),Bash(pnpm push-test:*),Bash(pnpm generate:*),Bash(pnpm test:*),Bash(pnpm push-test:*),Bash(pnpm run:*),Bash(pnpm -w run format),Bash(pnpm -w run test:e2e --run),WebFetch(domain:ai.google.dev),Bash(*),mcp__github__create_pending_pull_request_review,mcp__github__add_pull_request_review_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request_diff"

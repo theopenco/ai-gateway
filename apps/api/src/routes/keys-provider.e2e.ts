@@ -1,5 +1,5 @@
-import { db, tables } from "@openllm/db";
-import { providers } from "@openllm/models";
+import { db, tables } from "@llmgateway/db";
+import { providers } from "@llmgateway/models";
 import "dotenv/config";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
@@ -20,6 +20,7 @@ describe("e2e tests for provider keys", () => {
 		await db.insert(tables.organization).values({
 			id: "test-org-id",
 			name: "Test Organization",
+			plan: "pro",
 		});
 
 		await db.insert(tables.userOrganization).values({
@@ -32,6 +33,7 @@ describe("e2e tests for provider keys", () => {
 			id: "test-project-id",
 			name: "Test Project",
 			organizationId: "test-org-id",
+			mode: "api-keys",
 		});
 	});
 
@@ -45,8 +47,9 @@ describe("e2e tests for provider keys", () => {
 	test.each(testProviders)(
 		"POST /keys/provider with $name key",
 		async ({ providerId }) => {
-			const envVar = getProviderEnvVar(providerId);
-			if (!envVar) {
+			const envVarName = getProviderEnvVar(providerId);
+			const envVarValue = envVarName ? process.env[envVarName] : undefined;
+			if (!envVarValue) {
 				console.log(`Skipping ${providerId} test - no API key provided`);
 				return;
 			}
@@ -59,7 +62,7 @@ describe("e2e tests for provider keys", () => {
 				},
 				body: JSON.stringify({
 					provider: providerId,
-					token: envVar,
+					token: envVarValue,
 					organizationId: "test-org-id",
 				}),
 			});
@@ -69,7 +72,7 @@ describe("e2e tests for provider keys", () => {
 			expect(res.status).toBe(200);
 			expect(json).toHaveProperty("providerKey");
 			expect(json.providerKey.provider).toBe(providerId);
-			expect(json.providerKey.token).toBe(envVar);
+			expect(json.providerKey.token).toBe(envVarValue);
 
 			const providerKey = await db.query.providerKey.findFirst({
 				where: {
@@ -83,7 +86,7 @@ describe("e2e tests for provider keys", () => {
 			});
 			expect(providerKey).not.toBeNull();
 			expect(providerKey?.provider).toBe(providerId);
-			expect(providerKey?.token).toBe(envVar);
+			expect(providerKey?.token).toBe(envVarValue);
 		},
 	);
 

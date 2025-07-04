@@ -2,47 +2,70 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useState } from "react";
 
-import { useDefaultProject } from "@/hooks/useDefaultProject";
+import { Badge } from "@/lib/components/badge";
 import { Button } from "@/lib/components/button";
 import { Label } from "@/lib/components/label";
 import { RadioGroup, RadioGroupItem } from "@/lib/components/radio-group";
 import { Separator } from "@/lib/components/separator";
 import { useToast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useAppConfigValue } from "@/lib/config";
+import { useDashboardContext } from "@/lib/dashboard-context";
+import { useApi } from "@/lib/fetch-client";
 
 export function ProjectModeSettings() {
+	const config = useAppConfigValue();
 	const { toast } = useToast();
-	const { data: defaultProject, isError } = useDefaultProject();
+	const { selectedProject, selectedOrganization } = useDashboardContext();
 	const queryClient = useQueryClient();
 
-	const updateProject = $api.useMutation("patch", "/projects/{id}", {
+	const api = useApi();
+	const updateProject = api.useMutation("patch", "/projects/{id}", {
 		onSuccess: (data) => {
-			const queryKey = $api.queryOptions("get", "/orgs/{id}/projects", {
-				params: { path: { id: data.project.organizationId } },
-			}).queryKey;
-			queryClient.invalidateQueries({ queryKey });
+			if (selectedOrganization) {
+				const queryKey = api.queryOptions("get", "/orgs/{id}/projects", {
+					params: { path: { id: data.project.organizationId } },
+				}).queryKey;
+				queryClient.invalidateQueries({ queryKey });
+			}
 		},
 	});
 
 	const [mode, setMode] = useState<"api-keys" | "credits" | "hybrid">(
-		defaultProject?.mode || "api-keys",
+		selectedProject?.mode || "api-keys",
 	);
 
-	if (isError || !defaultProject) {
+	const isProPlan = selectedOrganization?.plan === "pro";
+
+	if (!selectedProject) {
 		return (
 			<div className="space-y-2">
 				<h3 className="text-lg font-medium">Project Mode</h3>
 				<p className="text-muted-foreground text-sm">
-					Unable to load project settings.
+					Please select a project to configure mode settings.
 				</p>
 			</div>
 		);
 	}
 
 	const handleSave = async () => {
+		// Check if trying to set api-keys or hybrid mode without pro plan (only if paid mode is enabled)
+		if (
+			(mode === "api-keys" || mode === "hybrid") &&
+			config.hosted &&
+			!isProPlan
+		) {
+			toast({
+				title: "Upgrade Required",
+				description:
+					"Provider keys are only available on the Pro plan. Please upgrade to use API keys mode.",
+				variant: "destructive",
+			});
+			return;
+		}
+
 		try {
 			await updateProject.mutateAsync({
-				params: { path: { id: defaultProject.id } },
+				params: { path: { id: selectedProject.id } },
 				body: { mode },
 			});
 
@@ -66,6 +89,11 @@ export function ProjectModeSettings() {
 				<p className="text-muted-foreground text-sm">
 					Configure how your project consumes LLM services
 				</p>
+				{selectedProject && (
+					<p className="text-muted-foreground text-sm mt-1">
+						Project: {selectedProject.name}
+					</p>
+				)}
 			</div>
 
 			<Separator />
@@ -83,25 +111,50 @@ export function ProjectModeSettings() {
 							id: "api-keys",
 							label: "API Keys",
 							desc: "Use your own provider API keys (OpenAI, Anthropic, etc.)",
+							requiresPro: true,
 						},
 						{
 							id: "credits",
 							label: "Credits",
 							desc: "Use your organization credits and our internal API keys",
+							requiresPro: false,
 						},
 						{
 							id: "hybrid",
 							label: "Hybrid",
 							desc: "Use your own API keys when available, fall back to credits when needed",
+							requiresPro: true,
 						},
-					].map(({ id, label, desc }) => (
+					].map(({ id, label, desc, requiresPro }) => (
 						<div key={id} className="flex items-start space-x-2">
-							<RadioGroupItem value={id} id={id} />
-							<div className="space-y-1">
-								<Label htmlFor={id} className="font-medium">
-									{label}
-								</Label>
-								<p className="text-muted-foreground text-sm">{desc}</p>
+							<RadioGroupItem
+								value={id}
+								id={id}
+								disabled={requiresPro && config.hosted && !isProPlan}
+							/>
+							<div className="space-y-1 flex-1">
+								<div className="flex items-center gap-2">
+									<Label
+										htmlFor={id}
+										className={`font-medium ${requiresPro && config.hosted && !isProPlan ? "text-muted-foreground" : ""}`}
+									>
+										{label}
+									</Label>
+									{requiresPro && config.hosted && !isProPlan && (
+										<Badge variant="outline" className="text-xs">
+											Pro Only
+										</Badge>
+									)}
+								</div>
+								<p
+									className={`text-sm ${
+										requiresPro && config.hosted && !isProPlan
+											? "text-muted-foreground"
+											: "text-muted-foreground"
+									}`}
+								>
+									{desc}
+								</p>
 							</div>
 						</div>
 					))}

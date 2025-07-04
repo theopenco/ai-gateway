@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { models as modelsList } from "@openllm/models";
+import { models as modelsList } from "@llmgateway/models";
 import { HTTPException } from "hono/http-exception";
 
 import type { ServerTypes } from "../vars";
@@ -53,6 +53,9 @@ const listModelsResponseSchema = z.object({
 });
 
 const listModels = createRoute({
+	operationId: "v1_models",
+	summary: "Models",
+	description: "List all available models",
 	method: "get",
 	path: "/",
 	request: {},

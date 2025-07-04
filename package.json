@@ -1,5 +1,5 @@
 {
-	"name": "openllm",
+	"name": "llmgateway",
 	"private": true,
 	"workspaces": [
 		"apps/*",
@@ -15,15 +15,15 @@
 		"postinstall": "husky && sync-editorconfig || true",
 		"lint": "eslint . && prettier --check .",
 		"migrate": "pnpm --filter db migrate",
+		"prepare-codex": "mv ~/.nvm ~/.nvm-bak && export PATH=\"${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH\" && . ~/.bashrc && sudo service postgresql start && sudo service redis-server start && sleep 20 && pnpm sync",
 		"push-dev": "pnpm --filter db push",
-		"push-test": "cross-env-shell \"DATABASE_URL=${DATABASE_URL:-postgres://postgres:pw@localhost:5389/test}\" pnpm --filter db push",
+		"push-test": "cross-env-shell \"DATABASE_URL=${DATABASE_URL:-postgres://postgres:pw@localhost:5432/test}\" pnpm --filter db push",
 		"reset": "pnpm --filter db reset",
 		"seed": "pnpm --filter db seed",
 		"setup": "docker compose down -v && docker compose up -d && sleep 5 && pnpm push-test && pnpm push-dev && pnpm seed",
 		"sync": "pnpm push-dev; pnpm push-test",
-		"test": "pnpm test:unit",
-		"test:e2e": "cross-env-shell \"DATABASE_URL=${DATABASE_URL:-postgres://postgres:pw@localhost:5389/test}\" E2E_TEST=true vitest run -c vitest/vitest.e2e.config.mts --no-file-parallelism",
-		"test:unit": "cross-env-shell \"DATABASE_URL=${DATABASE_URL:-postgres://postgres:pw@localhost:5389/test}\" vitest run --no-file-parallelism"
+		"test:e2e": "cross-env-shell \"DATABASE_URL=${DATABASE_URL:-postgres://postgres:pw@localhost:5432/test}\" E2E_TEST=true vitest run -c vitest/vitest.e2e.config.mts --no-file-parallelism",
+		"test:unit": "cross-env-shell \"DATABASE_URL=${DATABASE_URL:-postgres://postgres:pw@localhost:5432/test}\" vitest run --no-file-parallelism"
 	},
 	"commitlint": {
 		"extends": "@steebchen/commitlint-config"
@@ -31,15 +31,15 @@
 	"prettier": "@steebchen/prettier-config",
 	"devDependencies": {
 		"@steebchen/commitlint-config": "^1.5.2",
-		"@steebchen/eslint-config": "^1.5.2",
+		"@steebchen/eslint-config": "^1.10.0",
 		"@steebchen/lint-next": "^1.19.4",
 		"@steebchen/prettier-config": "^1.4.2",
 		"commitlint": "19.8.1",
 		"concurrently": "^9.1.2",
 		"cross-env-shell": "7.0.3",
 		"dotenv": "16.5.0",
-		"esbuild-fix-imports-plugin": "1.0.20",
-		"eslint": "^9.24.0",
+		"esbuild-fix-imports-plugin": "1.0.21",
+		"eslint": "^9.28.0",
 		"husky": "^9.1.7",
 		"lint-staged": "16.0.0",
 		"nodemon": "3.1.10",
@@ -52,7 +52,7 @@
 		"typescript": "5.8.3",
 		"vite": "^6.3.4",
 		"vite-tsconfig-paths": "^5.1.4",
-		"vitest": "^3.1.1"
+		"vitest": "^3.2.3"
 	},
 	"disabledLinters": [
 		"eslint-plugin-tailwindcss"

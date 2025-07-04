@@ -1,12 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { usePostHog } from "posthog-js/react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { ProductHuntBanner } from "@/components/shared/product-hunt-banner";
 import { useUser } from "@/hooks/useUser";
-import { signUp } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
 import {
 	Form,
@@ -32,8 +35,20 @@ export const Route = createFileRoute("/signup")({
 });
 
 function RouteComponent() {
+	const QueryClient = useQueryClient();
+	const posthog = usePostHog();
+	const navigate = useNavigate();
 	const [isLoading, setIsLoading] = useState(false);
-	useUser({ redirectTo: "/dashboard", redirectWhen: "authenticated" });
+	const { signUp } = useAuth();
+	useUser({
+		redirectTo: "/dashboard",
+		redirectWhen: "authenticated",
+		checkOnboarding: true,
+	});
+
+	useEffect(() => {
+		posthog.capture("page_viewed_signup");
+	}, [posthog]);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -52,23 +67,30 @@ function RouteComponent() {
 				name: values.name,
 				email: values.email,
 				password: values.password,
-				callbackURL: "/onboarding",
 			},
 			{
-				onSuccess: () => {
+				onSuccess: (ctx) => {
+					QueryClient.clear();
+					posthog.identify(ctx.data.user.id, {
+						email: ctx.data.user.email,
+						name: ctx.data.user.name,
+					});
+					posthog.capture("user_signed_up", {
+						email: values.email,
+						name: values.name,
+					});
 					toast({
 						title: "Account created",
 						description:
 							"Please check your email to verify your account before signing in.",
 					});
 					// Redirect to login page instead of dashboard since verification is required
-					window.location.href = "/login";
+					navigate({ to: "/login" });
 				},
 				onError: (ctx) => {
 					toast({
 						title: ctx.error.message || "Failed to sign up",
 						variant: "destructive",
-						className: "text-white",
 					});
 				},
 			},
@@ -78,7 +100,6 @@ function RouteComponent() {
 			toast({
 				title: error.message || "Failed to sign up",
 				variant: "destructive",
-				className: "text-white",
 			});
 		}
 
@@ -86,82 +107,89 @@ function RouteComponent() {
 	}
 
 	return (
-		<div className="max-w-[64rm] mx-auto flex h-screen w-screen flex-col items-center justify-center">
-			<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-				<div className="flex flex-col space-y-2 text-center">
-					<h1 className="text-2xl font-semibold tracking-tight">
-						Create an account
-					</h1>
-					<p className="text-sm text-muted-foreground">
-						Enter your email below to create your account
+		<>
+			<ProductHuntBanner />
+			<div className="px-4 sm:px-0 max-w-[64rm] mx-auto flex h-screen w-screen flex-col items-center justify-center">
+				<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+					<div className="flex flex-col space-y-2 text-center">
+						<h1 className="text-2xl font-semibold tracking-tight">
+							Create an account
+						</h1>
+						<p className="text-sm text-muted-foreground">
+							Enter your email below to create your account
+						</p>
+					</div>
+					<Form {...form}>
+						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+							<FormField
+								control={form.control}
+								name="name"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Name</FormLabel>
+										<FormControl>
+											<Input placeholder="John Doe" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="email"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Email</FormLabel>
+										<FormControl>
+											<Input
+												placeholder="name@example.com"
+												type="email"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="password"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Password</FormLabel>
+										<FormControl>
+											<Input
+												placeholder="••••••••"
+												type="password"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<Button type="submit" className="w-full" disabled={isLoading}>
+								{isLoading ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Creating account...
+									</>
+								) : (
+									"Create account"
+								)}
+							</Button>
+						</form>
+					</Form>
+					<p className="px-8 text-center text-sm text-muted-foreground">
+						<Link
+							to="/login"
+							className="hover:text-brand underline underline-offset-4"
+						>
+							Already have an account? Sign in
+						</Link>
 					</p>
 				</div>
-				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-						<FormField
-							control={form.control}
-							name="name"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Name</FormLabel>
-									<FormControl>
-										<Input placeholder="John Doe" {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="email"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Email</FormLabel>
-									<FormControl>
-										<Input
-											placeholder="name@example.com"
-											type="email"
-											{...field}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="password"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Password</FormLabel>
-									<FormControl>
-										<Input placeholder="••••••••" type="password" {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<Button type="submit" className="w-full" disabled={isLoading}>
-							{isLoading ? (
-								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Creating account...
-								</>
-							) : (
-								"Create account"
-							)}
-						</Button>
-					</form>
-				</Form>
-				<p className="px-8 text-center text-sm text-muted-foreground">
-					<Link
-						to="/login"
-						className="hover:text-brand underline underline-offset-4"
-					>
-						Already have an account? Sign in
-					</Link>
-				</p>
 			</div>
-		</div>
+		</>
 	);
 }

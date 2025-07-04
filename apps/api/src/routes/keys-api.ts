@@ -1,7 +1,9 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { eq, db, shortid, tables } from "@openllm/db";
+import { eq, db, shortid, tables } from "@llmgateway/db";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+
+import { maskToken } from "../lib/maskToken";
 
 import type { ServerTypes } from "../vars";
 
@@ -22,6 +24,14 @@ const apiKeySchema = z.object({
 // Schema for creating a new API key
 const createApiKeySchema = z.object({
 	description: z.string().min(1).max(255),
+	projectId: z.string().min(1),
+});
+
+// Schema for listing API keys
+const listApiKeysQuerySchema = z.object({
+	projectId: z.string().optional().openapi({
+		description: "Filter API keys by project ID",
+	}),
 });
 
 // Schema for updating an API key status
@@ -69,9 +79,9 @@ keysApi.openapi(create, async (c) => {
 		});
 	}
 
-	const { description } = await c.req.json();
+	const { description, projectId } = c.req.valid("json");
 
-	// Get the user's projects
+	// Get the user's organizations
 	const userOrgs = await db.query.userOrganization.findMany({
 		where: {
 			userId: {
@@ -87,17 +97,29 @@ keysApi.openapi(create, async (c) => {
 		},
 	});
 
-	if (!userOrgs.length || !userOrgs[0].organization?.projects.length) {
+	if (!userOrgs.length) {
 		throw new HTTPException(400, {
-			message: "No projects found for user",
+			message: "No organizations found for user",
 		});
 	}
 
-	// Use the first project for simplicity
-	const projectId = userOrgs[0].organization.projects[0].id;
+	// Get all project IDs the user has access to
+	const projectIds = userOrgs.flatMap((org) =>
+		org
+			.organization!.projects.filter((project) => project.status !== "deleted")
+			.map((project) => project.id),
+	);
+
+	if (!projectIds.includes(projectId)) {
+		throw new HTTPException(403, {
+			message: "You don't have access to this project",
+		});
+	}
 
 	// Generate a token with a prefix for better identification
-	const token = `llmgtwy_` + shortid(40);
+	const prefix =
+		process.env.NODE_ENV === "development" ? `llmgdev_` : "llmgtwy_";
+	const token = prefix + shortid(40);
 
 	// Create the API key
 	const [apiKey] = await db
@@ -121,7 +143,9 @@ keysApi.openapi(create, async (c) => {
 const list = createRoute({
 	method: "get",
 	path: "/api",
-	request: {},
+	request: {
+		query: listApiKeysQuerySchema,
+	},
 	responses: {
 		200: {
 			content: {
@@ -151,6 +175,9 @@ keysApi.openapi(list, async (c) => {
 		});
 	}
 
+	const query = c.req.valid("query");
+	const { projectId } = query;
+
 	// Get the user's projects
 	const userOrgs = await db.query.userOrganization.findMany({
 		where: {
@@ -173,14 +200,22 @@ keysApi.openapi(list, async (c) => {
 
 	// Get all project IDs the user has access to
 	const projectIds = userOrgs.flatMap((org) =>
-		org.organization!.projects.map((project) => project.id),
+		org
+			.organization!.projects.filter((project) => project.status !== "deleted")
+			.map((project) => project.id),
 	);
 
-	// Get all API keys for these projects
+	if (projectId && !projectIds.includes(projectId)) {
+		throw new HTTPException(403, {
+			message: "You don't have access to this project",
+		});
+	}
+
+	// Get API keys for the specified project or all accessible projects
 	const apiKeys = await db.query.apiKey.findMany({
 		where: {
 			projectId: {
-				in: projectIds,
+				in: projectId ? [projectId] : projectIds,
 			},
 		},
 	});
@@ -188,7 +223,7 @@ keysApi.openapi(list, async (c) => {
 	return c.json({
 		apiKeys: apiKeys.map((key) => ({
 			...key,
-			maskedToken: `${key.token.substring(0, 10)}•••••••••••`,
+			maskedToken: maskToken(key.token),
 			token: undefined,
 		})),
 	});
@@ -265,7 +300,9 @@ keysApi.openapi(deleteKey, async (c) => {
 
 	// Get all project IDs the user has access to
 	const projectIds = userOrgs.flatMap((org) =>
-		org.organization!.projects.map((project) => project.id),
+		org
+			.organization!.projects.filter((project) => project.status !== "deleted")
+			.map((project) => project.id),
 	);
 
 	// Find the API key
@@ -363,7 +400,7 @@ keysApi.openapi(updateStatus, async (c) => {
 	}
 
 	const { id } = c.req.param();
-	const { status } = await c.req.json();
+	const { status } = c.req.valid("json");
 
 	// Get the user's projects
 	const userOrgs = await db.query.userOrganization.findMany({
@@ -383,7 +420,9 @@ keysApi.openapi(updateStatus, async (c) => {
 
 	// Get all project IDs the user has access to
 	const projectIds = userOrgs.flatMap((org) =>
-		org.organization!.projects.map((project) => project.id),
+		org
+			.organization!.projects.filter((project) => project.status !== "deleted")
+			.map((project) => project.id),
 	);
 
 	// Find the API key
@@ -417,7 +456,7 @@ keysApi.openapi(updateStatus, async (c) => {
 		message: `API key status updated to ${status}`,
 		apiKey: {
 			...updatedApiKey,
-			maskedToken: `${updatedApiKey.token.substring(0, 8)}•••••••••••`,
+			maskedToken: maskToken(updatedApiKey.token),
 			token: undefined,
 		},
 	});

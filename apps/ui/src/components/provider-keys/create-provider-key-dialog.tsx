@@ -1,14 +1,12 @@
-import { providers, type ProviderId } from "@openllm/models";
+import { providers } from "@llmgateway/models";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePostHog } from "posthog-js/react";
 import React, { useState } from "react";
 
-import anthropicLogo from "@/assets/models/anthropic.svg?react";
-import GoogleVertexLogo from "@/assets/models/google-vertex-ai.svg?react";
-import InferenceLogo from "@/assets/models/inference-net.svg?react";
-import KlusterLogo from "@/assets/models/kluster-ai.svg?react";
-import OpenAiLogo from "@/assets/models/openai.svg?react";
-import OpenLLMLogo from "@/assets/models/openllm.svg?react";
-import { useDefaultOrganization } from "@/hooks/useOrganization";
+import { ProviderSelect } from "./provider-select";
+import { UpgradeToProDialog } from "@/components/shared/upgrade-to-pro-dialog";
+import { Alert, AlertDescription } from "@/lib/components/alert";
+import { Badge } from "@/lib/components/badge";
 import { Button } from "@/lib/components/button";
 import {
 	Dialog,
@@ -21,65 +19,88 @@ import {
 } from "@/lib/components/dialog";
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/lib/components/select";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
+import { useAppConfigValue } from "@/lib/config";
+import { useApi } from "@/lib/fetch-client";
 
-const providerLogoComponents: Partial<
-	Record<ProviderId, React.FC<React.SVGProps<SVGSVGElement>> | null>
-> = {
-	llmgateway: OpenLLMLogo,
-	openai: OpenAiLogo,
-	anthropic: anthropicLogo,
-	"google-vertex": GoogleVertexLogo,
-	"inference.net": InferenceLogo,
-	"kluster.ai": KlusterLogo,
-};
+import type { Organization } from "@/lib/types";
+
+interface CreateProviderKeyDialogProps {
+	children: React.ReactNode;
+	selectedOrganization: Organization;
+	preselectedProvider?: string;
+}
 
 export function CreateProviderKeyDialog({
 	children,
-}: {
-	children: React.ReactNode;
-}) {
+	selectedOrganization,
+	preselectedProvider,
+}: CreateProviderKeyDialogProps) {
+	const config = useAppConfigValue();
+	const posthog = usePostHog();
 	const [open, setOpen] = useState(false);
-	const [selectedProvider, setSelectedProvider] = useState("");
+	const [selectedProvider, setSelectedProvider] = useState(
+		preselectedProvider || "",
+	);
 	const [baseUrl, setBaseUrl] = useState("");
 	const [token, setToken] = useState("");
 	const [isValidating, setIsValidating] = useState(false);
 
-	const queryKey = $api.queryOptions("get", "/keys/provider").queryKey;
+	const api = useApi();
+	const queryKey = api.queryOptions("get", "/keys/provider").queryKey;
 	const queryClient = useQueryClient();
 
-	const { data: organization } = useDefaultOrganization();
+	const { data: providerKeysData, isPending: isLoading } = api.useSuspenseQuery(
+		"get",
+		"/keys/provider",
+	);
 
-	const { data: providerKeysData, isPending: isLoading } =
-		$api.useSuspenseQuery("get", "/keys/provider");
+	const isProPlan = selectedOrganization.plan === "pro";
 
-	const createMutation = $api.useMutation("post", "/keys/provider");
+	const createMutation = api.useMutation("post", "/keys/provider");
+
+	// Filter provider keys by selected organization
+	const organizationProviderKeys =
+		providerKeysData?.providerKeys.filter(
+			(key) => key.organizationId === selectedOrganization.id,
+		) || [];
 
 	const availableProviders = providers.filter((provider) => {
 		if (provider.id === "llmgateway") {
 			return false;
 		}
 
-		if (isLoading || !providerKeysData?.providerKeys) {
+		// If a provider is preselected, always include it even if it has a key
+		if (preselectedProvider && provider.id === preselectedProvider) {
 			return true;
 		}
 
-		const existingKey = providerKeysData.providerKeys.find(
+		const existingKey = organizationProviderKeys.find(
 			(key: any) => key.provider === provider.id && key.status !== "deleted",
 		);
 		return !existingKey;
 	});
 
+	// Update selectedProvider when preselectedProvider changes or dialog opens
+	React.useEffect(() => {
+		if (open && preselectedProvider) {
+			setSelectedProvider(preselectedProvider);
+		}
+	}, [open, preselectedProvider]);
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
+
+		// Only enforce pro plan requirement if paid mode is enabled
+		if (config.hosted && !isProPlan) {
+			toast({
+				title: "Upgrade Required",
+				description:
+					"Provider keys are only available on the Pro plan. Please upgrade to use your own API keys.",
+				variant: "destructive",
+			});
+			return;
+		}
 
 		if (!selectedProvider || !token) {
 			toast({
@@ -88,7 +109,6 @@ export function CreateProviderKeyDialog({
 					? "Please select a provider"
 					: "Please enter the provider API key",
 				variant: "destructive",
-				className: "text-white",
 			});
 			return;
 		}
@@ -98,7 +118,6 @@ export function CreateProviderKeyDialog({
 				title: "Error",
 				description: "Base URL is required for LLM Gateway provider",
 				variant: "destructive",
-				className: "text-white",
 			});
 			return;
 		}
@@ -111,20 +130,10 @@ export function CreateProviderKeyDialog({
 		} = {
 			provider: selectedProvider,
 			token,
-			organizationId: organization?.id || "",
+			organizationId: selectedOrganization.id,
 		};
 		if (baseUrl) {
 			payload.baseUrl = baseUrl;
-		}
-
-		if (!payload.organizationId) {
-			toast({
-				title: "Error",
-				description: "No organization found. Please try refreshing the page.",
-				variant: "destructive",
-				className: "text-white",
-			});
-			return;
 		}
 
 		setIsValidating(true);
@@ -133,13 +142,17 @@ export function CreateProviderKeyDialog({
 		createMutation.mutate(
 			{ body: payload },
 			{
-				onSuccess: (newKey) => {
+				onSuccess: () => {
 					setIsValidating(false);
+					posthog.capture("provider_key_added", {
+						provider: selectedProvider,
+						hasBaseUrl: !!baseUrl,
+					});
 					toast({
 						title: "Provider Key Created",
 						description: "The provider key has been validated and saved.",
 					});
-					queryClient.invalidateQueries({ queryKey });
+					void queryClient.invalidateQueries({ queryKey });
 					setOpen(false);
 				},
 				onError: (error: any) => {
@@ -148,7 +161,6 @@ export function CreateProviderKeyDialog({
 						title: "Error",
 						description: error?.message ?? "Failed to create key",
 						variant: "destructive",
-						className: "text-white",
 					});
 				},
 			},
@@ -158,7 +170,7 @@ export function CreateProviderKeyDialog({
 	const handleClose = () => {
 		setOpen(false);
 		setTimeout(() => {
-			setSelectedProvider("");
+			setSelectedProvider(preselectedProvider || "");
 			setBaseUrl("");
 			setToken("");
 		}, 300);
@@ -169,52 +181,53 @@ export function CreateProviderKeyDialog({
 			<DialogTrigger asChild>{children}</DialogTrigger>
 			<DialogContent className="sm:max-w-[500px]">
 				<DialogHeader>
-					<DialogTitle>Add Provider Key</DialogTitle>
+					<DialogTitle>
+						{preselectedProvider
+							? `Add ${providers.find((p) => p.id === preselectedProvider)?.name} Key`
+							: "Add Provider Key"}
+					</DialogTitle>
 					<DialogDescription>
-						Create a new provider key to connect to an LLM provider.
+						{preselectedProvider
+							? `Add an API key for ${providers.find((p) => p.id === preselectedProvider)?.name} to enable direct access.`
+							: "Create a new provider key to connect to an LLM provider."}
+						<span className="block mt-1">
+							Organization: {selectedOrganization.name}
+						</span>
 					</DialogDescription>
 				</DialogHeader>
+				{config.hosted && !isProPlan && (
+					<Alert>
+						<AlertDescription className="flex items-center justify-between gap-2">
+							<span>Provider keys are only available on the Pro plan.</span>
+							<div className="flex items-center gap-2">
+								<Badge variant="outline">Pro Only</Badge>
+								<UpgradeToProDialog>
+									<Button size="sm" variant="outline">
+										Upgrade
+									</Button>
+								</UpgradeToProDialog>
+							</div>
+						</AlertDescription>
+					</Alert>
+				)}
 				<form onSubmit={handleSubmit} className="space-y-4 py-4">
 					<div className="space-y-2">
 						<Label htmlFor="provider">Provider</Label>
-						<Select
+						<ProviderSelect
 							onValueChange={setSelectedProvider}
 							value={selectedProvider}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select provider..." />
-							</SelectTrigger>
-							<SelectContent>
-								{isLoading ? (
-									<SelectItem value="loading" disabled>
-										Loading providers...
-									</SelectItem>
-								) : availableProviders.length > 0 ? (
-									availableProviders.map((provider) => {
-										const Logo = providerLogoComponents[provider.id];
-										return (
-											<SelectItem key={provider.id} value={provider.id}>
-												<div className="flex items-center gap-2">
-													{Logo && <Logo className="h-4 w-4 text-white" />}
-													<span>{provider.name}</span>
-												</div>
-											</SelectItem>
-										);
-									})
-								) : (
-									<SelectItem value="none" disabled>
-										All providers already have keys
-									</SelectItem>
-								)}
-							</SelectContent>
-						</Select>
+							providers={availableProviders}
+							loading={isLoading}
+							disabled={!!preselectedProvider}
+						/>
 					</div>
 
 					<div className="space-y-2">
 						<Label htmlFor="token">Provider API Key</Label>
 						<Input
 							id="token"
-							placeholder="Enter the provider's API key"
+							type="password"
+							placeholder="sk-..."
 							value={token}
 							onChange={(e) => setToken(e.target.value)}
 							required
@@ -223,17 +236,15 @@ export function CreateProviderKeyDialog({
 
 					{selectedProvider === "llmgateway" && (
 						<div className="space-y-2">
-							<Label htmlFor="baseUrl">Base URL</Label>
+							<Label htmlFor="base-url">Base URL</Label>
 							<Input
-								id="baseUrl"
-								placeholder="e.g. https://api.example.com"
+								id="base-url"
+								type="url"
+								placeholder="https://api.llmgateway.com"
 								value={baseUrl}
 								onChange={(e) => setBaseUrl(e.target.value)}
 								required
 							/>
-							<p className="text-muted-foreground text-xs">
-								Required for LLM Gateway provider
-							</p>
 						</div>
 					)}
 
@@ -241,13 +252,8 @@ export function CreateProviderKeyDialog({
 						<Button type="button" variant="outline" onClick={handleClose}>
 							Cancel
 						</Button>
-						<Button
-							type="submit"
-							disabled={
-								availableProviders.length === 0 || isLoading || isValidating
-							}
-						>
-							{isValidating ? "Validating..." : "Add Provider Key"}
+						<Button type="submit" disabled={isValidating}>
+							{isValidating ? "Validating..." : "Add Key"}
 						</Button>
 					</DialogFooter>
 				</form>

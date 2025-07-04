@@ -1,11 +1,12 @@
 "use client";
 
-import { models } from "@openllm/models";
+import { models } from "@llmgateway/models";
 
 import { Badge } from "@/lib/components/badge";
 import { Card } from "@/lib/components/card";
+import { formatContextSize } from "@/lib/utils";
 
-import type { ModelDefinition } from "@openllm/models";
+import type { ModelDefinition } from "@llmgateway/models";
 
 export function ModelsList() {
 	return (
@@ -23,15 +24,29 @@ export function ModelsList() {
 						{model.providers.map((provider) => (
 							<div key={provider.providerId} className="mt-2">
 								<div className="font-medium">{provider.providerId}:</div>
+								{provider.contextSize && (
+									<div>Context: {formatContextSize(provider.contextSize)}</div>
+								)}
 								{provider.inputPrice !== undefined && (
-									<div>Input: ${provider.inputPrice.toFixed(8)} / token</div>
+									<div>
+										Input: ${(provider.inputPrice * 1e6).toFixed(2)} / M tokens
+									</div>
 								)}
 								{provider.outputPrice !== undefined && (
-									<div>Output: ${provider.outputPrice.toFixed(8)} / token</div>
+									<div>
+										Output: ${(provider.outputPrice * 1e6).toFixed(2)} / M
+										tokens
+									</div>
 								)}
 								{provider.imageInputPrice !== undefined && (
 									<div>
 										Image: ${provider.imageInputPrice.toFixed(5)} / input
+									</div>
+								)}
+								{provider.requestPrice !== undefined && (
+									<div>
+										Request: ${(provider.requestPrice * 1000).toFixed(2)} / 1K
+										requests
 									</div>
 								)}
 							</div>

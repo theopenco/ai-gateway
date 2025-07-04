@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { KeySquare, Trash2, Loader2 } from "lucide-react";
 
+import { useAuthClient } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
 import {
 	Table,
@@ -11,25 +12,26 @@ import {
 	TableRow,
 } from "@/lib/components/table";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
-
-import type { Passkey } from "./types";
+import { useApi } from "@/lib/fetch-client";
 
 export function PasskeyList() {
+	const authClient = useAuthClient();
+	const api = useApi();
+
 	const {
 		data,
 		isPending: isLoading,
-		isError,
+		error,
 		refetch,
-	} = $api.useSuspenseQuery("get", "/user/me/passkeys");
+	} = authClient.useListPasskeys();
 
-	const passkeys: Passkey[] = data?.passkeys ?? [];
+	const passkeys = data ?? [];
 
 	const {
 		mutate: deletePasskey,
 		isPending: isDeleting,
 		variables: deletingId,
-	} = $api.useMutation("delete", "/user/me/passkeys/{id}", {
+	} = api.useMutation("delete", "/user/me/passkeys/{id}", {
 		onSuccess: () => {
 			toast({
 				title: "Passkey deleted",
@@ -42,7 +44,6 @@ export function PasskeyList() {
 			toast({
 				title: "Error deleting passkey",
 				variant: "destructive",
-				className: "text-white",
 			});
 		},
 	});
@@ -55,7 +56,7 @@ export function PasskeyList() {
 		);
 	}
 
-	if (isError) {
+	if (error) {
 		return (
 			<div className="text-center py-4 text-destructive">
 				<p>Failed to load passkeys.</p>

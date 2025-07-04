@@ -10,6 +10,10 @@ export interface ProviderDefinition {
 	jsonOutput?: boolean;
 	// Color used for UI representation (hex code)
 	color?: string;
+	// Website URL
+	website?: string;
+	// Announcement text
+	announcement?: string | null;
 }
 
 export const providers = [
@@ -21,6 +25,8 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		color: "#6366f1",
+		website: "https://llmgateway.io",
+		announcement: null,
 	},
 	{
 		id: "openai",
@@ -31,6 +37,8 @@ export const providers = [
 		cancellation: true,
 		jsonOutput: true,
 		color: "#0ea5e9",
+		website: "https://openai.com",
+		announcement: null,
 	},
 	{
 		id: "anthropic",
@@ -40,6 +48,8 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		color: "#8b5cf6",
+		website: "https://anthropic.com",
+		announcement: null,
 	},
 	{
 		id: "google-vertex",
@@ -49,6 +59,8 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		color: "#d95656",
+		website: "https://cloud.google.com/vertex-ai",
+		announcement: null,
 	},
 	{
 		id: "google-ai-studio",
@@ -58,6 +70,8 @@ export const providers = [
 		streaming: false,
 		cancellation: true,
 		color: "#4285f4",
+		website: "https://ai.google.com",
+		announcement: null,
 	},
 	{
 		id: "inference.net",
@@ -67,6 +81,8 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		color: "#10b981",
+		website: "https://inference.net",
+		announcement: null,
 	},
 	{
 		id: "kluster.ai",
@@ -76,6 +92,8 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		color: "#f59e0b",
+		website: "https://kluster.ai",
+		announcement: null,
 	},
 	{
 		id: "together.ai",
@@ -85,6 +103,76 @@ export const providers = [
 		streaming: false,
 		cancellation: true,
 		color: "#ff6b35",
+		website: "https://together.ai",
+		announcement: null,
+	},
+	{
+		id: "cloudrift",
+		name: "CloudRift",
+		description:
+			"CloudRift is a platform for running large language models in the cloud with fast inference.",
+		streaming: true,
+		cancellation: true,
+		color: "#00d4aa",
+		website: "https://www.cloudrift.ai",
+		announcement: "DeepSeek are now 40-60% cheaper until July 15th!",
+	},
+	{
+		id: "mistral",
+		name: "Mistral AI",
+		description: "Mistral AI's large language models",
+		streaming: true,
+		cancellation: true,
+		jsonOutput: true,
+		color: "#FF7000",
+		website: "https://mistral.ai",
+		announcement: null,
+	},
+	{
+		id: "xai",
+		name: "xAI",
+		description: "xAI's Grok large language models",
+		streaming: true,
+		cancellation: true,
+		jsonOutput: true,
+		color: "#000000",
+		website: "https://x.ai",
+		announcement: null,
+	},
+	{
+		id: "groq",
+		name: "Groq",
+		description: "Groq's ultra-fast LPU inference with various models",
+		streaming: true,
+		cancellation: true,
+		jsonOutput: true,
+		color: "#F55036",
+		website: "https://groq.com",
+		announcement: null,
+	},
+	{
+		id: "deepseek",
+		name: "DeepSeek",
+		description:
+			"DeepSeek's high-performance language models with OpenAI-compatible API",
+		streaming: true,
+		cancellation: true,
+		jsonOutput: true,
+		color: "#FF6B00",
+		website: "https://deepseek.com",
+		announcement: null,
+	},
+	{
+		id: "perplexity",
+		name: "Perplexity",
+		description:
+			"Perplexity's AI models for search and conversation with real-time web access",
+		streaming: true,
+		cancellation: true,
+		jsonOutput: false,
+		color: "#20B2AA",
+		website: "https://perplexity.ai",
+		announcement: null,
 	},
 ] as const satisfies ProviderDefinition[];
 

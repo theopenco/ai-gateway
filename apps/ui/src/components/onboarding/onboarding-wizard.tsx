@@ -1,19 +1,22 @@
 import { Elements } from "@stripe/react-stripe-js";
 import { useNavigate } from "@tanstack/react-router";
+import { usePostHog } from "posthog-js/react";
 import * as React from "react";
 import { useState } from "react";
 
 import { ApiKeyStep } from "./api-key-step";
 import { CreditsStep } from "./credits-step";
+import { PlanChoiceStep } from "./plan-choice-step";
 import { ProviderKeyStep } from "./provider-key-step";
 import { WelcomeStep } from "./welcome-step";
 import { Card, CardContent } from "@/lib/components/card";
 import { Stepper } from "@/lib/components/stepper";
-import { loadStripeNow } from "@/lib/stripe";
+import { useApi } from "@/lib/fetch-client";
+import { useStripe } from "@/lib/stripe";
 
-const stripePromise = loadStripeNow();
+type FlowType = "credits" | "byok" | null;
 
-const STEPS = [
+const getSteps = (flowType: FlowType) => [
 	{
 		id: "welcome",
 		title: "Welcome",
@@ -25,54 +28,108 @@ const STEPS = [
 		component: ApiKeyStep,
 	},
 	{
-		id: "provider-key",
-		title: "Provider Key",
-		component: ProviderKeyStep,
-		optional: true,
+		id: "plan-choice",
+		title: "Choose Plan",
+		component: PlanChoiceStep,
 	},
 	{
-		id: "credits",
-		title: "Credits",
-		component: CreditsStep,
-		optional: true,
+		id: flowType === "credits" ? "credits" : "provider-key",
+		title: flowType === "credits" ? "Credits" : "Provider Key",
+		component: flowType === "credits" ? CreditsStep : ProviderKeyStep,
 	},
 ];
 
 export function OnboardingWizard() {
 	const [activeStep, setActiveStep] = useState(0);
+	const [flowType, setFlowType] = useState<FlowType>(null);
 	const navigate = useNavigate();
+	const posthog = usePostHog();
+	const { stripe, isLoading: stripeLoading } = useStripe();
+	const api = useApi();
+	const completeOnboarding = api.useMutation(
+		"post",
+		"/user/me/complete-onboarding",
+	);
 
-	const handleStepChange = (step: number) => {
+	const STEPS = getSteps(flowType);
+
+	const handleStepChange = async (step: number) => {
 		if (step >= STEPS.length) {
+			posthog.capture("onboarding_completed", {
+				completedSteps: STEPS.map((step) => step.id),
+				flowType,
+			});
+
+			await completeOnboarding.mutateAsync({});
 			navigate({ to: "/dashboard" });
 			return;
 		}
 		setActiveStep(step);
 	};
 
-	const CurrentStepComponent = STEPS[activeStep].component;
+	const handleSelectCredits = () => {
+		setFlowType("credits");
+		setActiveStep(3);
+	};
+
+	const handleSelectBYOK = () => {
+		setFlowType("byok");
+		setActiveStep(3);
+	};
+
+	// Special handling for PlanChoiceStep to pass callbacks
+	const renderCurrentStep = () => {
+		if (activeStep === 2) {
+			return (
+				<PlanChoiceStep
+					onSelectCredits={handleSelectCredits}
+					onSelectBYOK={handleSelectBYOK}
+				/>
+			);
+		}
+
+		// For credits step, wrap with Stripe Elements
+		if (activeStep === 3 && flowType === "credits") {
+			return stripeLoading ? (
+				<div className="p-6 text-center">Loading payment form...</div>
+			) : (
+				<Elements stripe={stripe}>
+					<CreditsStep />
+				</Elements>
+			);
+		}
+
+		// For BYOK step
+		if (activeStep === 3 && flowType === "byok") {
+			return <ProviderKeyStep />;
+		}
+
+		// For other steps
+		if (activeStep === 0) {
+			return <WelcomeStep />;
+		}
+
+		if (activeStep === 1) {
+			return <ApiKeyStep />;
+		}
+
+		return null;
+	};
 
 	return (
 		<div className="container mx-auto max-w-3xl py-10">
 			<Card>
 				<CardContent className="p-6 sm:p-8">
 					<Stepper
-						steps={STEPS.map(({ id, title, optional }) => ({
+						steps={STEPS.map(({ id, title }) => ({
 							id,
 							title,
-							optional,
 						}))}
 						activeStep={activeStep}
 						onStepChange={handleStepChange}
 						className="mb-6"
 					>
-						{activeStep === 3 ? (
-							<Elements stripe={stripePromise}>
-								<CurrentStepComponent />
-							</Elements>
-						) : (
-							<CurrentStepComponent />
-						)}
+						{renderCurrentStep()}
 					</Stepper>
 				</CardContent>
 			</Card>

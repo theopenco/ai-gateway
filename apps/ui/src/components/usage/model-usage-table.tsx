@@ -11,7 +11,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/lib/components/table";
-import { $api } from "@/lib/fetch-client";
+import { useDashboardContext } from "@/lib/dashboard-context";
+import { useApi } from "@/lib/fetch-client";
 
 import type { ActivityModelUsage } from "@/types/activity";
 
@@ -22,9 +23,24 @@ export function ModelUsageTable() {
 	const [days, setDays] = useState<7 | 30>(7);
 	const [sortColumn, setSortColumn] = useState<SortColumn>("totalTokens");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-	const { data, isLoading, error } = $api.useSuspenseQuery("get", "/activity", {
-		params: { query: { days: String(days) } },
-	});
+	const { selectedProject } = useDashboardContext();
+
+	const api = useApi();
+	const { data, isLoading, error } = api.useQuery(
+		"get",
+		"/activity",
+		{
+			params: {
+				query: {
+					days: String(days),
+					...(selectedProject?.id ? { projectId: selectedProject.id } : {}),
+				},
+			},
+		},
+		{
+			enabled: !!selectedProject?.id,
+		},
+	);
 
 	const handleSort = (column: SortColumn) => {
 		if (sortColumn === column) {
@@ -48,6 +64,16 @@ export function ModelUsageTable() {
 		);
 	};
 
+	if (!selectedProject) {
+		return (
+			<div className="flex h-[350px] items-center justify-center">
+				<p className="text-muted-foreground">
+					Please select a project to view model usage data
+				</p>
+			</div>
+		);
+	}
+
 	if (isLoading) {
 		return (
 			<div className="flex h-[350px] items-center justify-center">
@@ -67,7 +93,14 @@ export function ModelUsageTable() {
 	if (!data || data.activity.length === 0) {
 		return (
 			<div className="flex h-[350px] items-center justify-center">
-				<p className="text-muted-foreground">No model usage data available</p>
+				<p className="text-muted-foreground">
+					No model usage data available
+					{selectedProject && (
+						<span className="block mt-1 text-sm">
+							Project: {selectedProject.name}
+						</span>
+					)}
+				</p>
 			</div>
 		);
 	}

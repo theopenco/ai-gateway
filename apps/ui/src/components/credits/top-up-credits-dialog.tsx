@@ -2,7 +2,7 @@ import {
 	CardElement,
 	Elements,
 	useElements,
-	useStripe,
+	useStripe as useStripeElements,
 } from "@stripe/react-stripe-js";
 import { CreditCard, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -20,13 +20,13 @@ import {
 } from "@/lib/components/dialog";
 import { Input } from "@/lib/components/input";
 import { Label } from "@/lib/components/label";
-import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
-import { loadStripeNow } from "@/lib/stripe";
+import { useToast } from "@/lib/components/use-toast";
+import { useDashboardContext } from "@/lib/dashboard-context";
+import { useApi } from "@/lib/fetch-client";
+import Spinner from "@/lib/icons/Spinner";
+import { useStripe } from "@/lib/stripe";
 
 import type React from "react";
-
-const stripePromise = loadStripeNow();
 
 export function TopUpCreditsButton() {
 	return (
@@ -43,7 +43,7 @@ interface TopUpCreditsDialogProps {
 	children: React.ReactNode;
 }
 
-function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
+export function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [step, setStep] = useState<
 		"amount" | "payment" | "select-payment" | "confirm-payment" | "success"
@@ -53,8 +53,10 @@ function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
 	const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
 		string | null
 	>(null);
+	const { stripe, isLoading: stripeLoading } = useStripe();
+	const api = useApi();
 
-	const { data: paymentMethodsData } = $api.useSuspenseQuery(
+	const { data: paymentMethodsData } = api.useSuspenseQuery(
 		"get",
 		"/payments/payment-methods",
 	);
@@ -119,16 +121,20 @@ function TopUpCreditsDialog({ children }: TopUpCreditsDialogProps) {
 						loading={loading}
 					/>
 				) : step === "payment" ? (
-					<Elements stripe={stripePromise}>
-						<PaymentStep
-							amount={amount}
-							onBack={() => setStep("amount")}
-							onSuccess={() => setStep("success")}
-							onCancel={handleClose}
-							setLoading={setLoading}
-							loading={loading}
-						/>
-					</Elements>
+					stripeLoading ? (
+						<div className="p-6 text-center">Loading payment form...</div>
+					) : (
+						<Elements stripe={stripe}>
+							<PaymentStep
+								amount={amount}
+								onBack={() => setStep("amount")}
+								onSuccess={() => setStep("success")}
+								onCancel={handleClose}
+								setLoading={setLoading}
+								loading={loading}
+							/>
+						</Elements>
+					)
 				) : (
 					<SuccessStep onClose={handleClose} />
 				)}
@@ -149,6 +155,18 @@ function AmountStep({
 	onCancel: () => void;
 }) {
 	const presetAmounts = [10, 25, 50, 100];
+	const { selectedOrganization } = useDashboardContext();
+	const api = useApi();
+	const { data: feeData, isLoading: feeDataLoading } = api.useQuery(
+		"post",
+		"/payments/calculate-fees",
+		{
+			body: { amount },
+		},
+		{
+			enabled: amount >= 5,
+		},
+	);
 
 	return (
 		<>
@@ -183,12 +201,63 @@ function AmountStep({
 						</Button>
 					))}
 				</div>
+
+				{amount >= 5 && (
+					<div className="border rounded-lg p-4 bg-muted/50">
+						<p className="font-medium mb-2">Fee Breakdown</p>
+						{feeDataLoading ? (
+							<div className="flex items-center justify-center py-4">
+								<Spinner className="h-5 w-5 animate-spin text-muted-foreground" />
+								<span className="ml-2 text-sm text-muted-foreground">
+									Calculating fees...
+								</span>
+							</div>
+						) : feeData ? (
+							<div className="space-y-1 text-sm">
+								<div className="flex justify-between">
+									<span>Credits</span>
+									<span>${feeData.baseAmount.toFixed(2)}</span>
+								</div>
+								<div className="flex justify-between">
+									<span>Stripe fees ($0.35 + 2.9%)</span>
+									<span>${feeData.stripeFee.toFixed(2)}</span>
+								</div>
+								{feeData.internationalFee > 0 && (
+									<div className="flex justify-between">
+										<span>International card fee (1.5%)</span>
+										<span>${feeData.internationalFee.toFixed(2)}</span>
+									</div>
+								)}
+								{feeData.planFee > 0 && (
+									<div className="flex justify-between">
+										<span>Service fee (5% - Free plan)</span>
+										<span>${feeData.planFee.toFixed(2)}</span>
+									</div>
+								)}
+								{selectedOrganization?.plan === "pro" && (
+									<div className="flex justify-between text-green-600">
+										<span>Service fee (Pro plan)</span>
+										<span>$0.00</span>
+									</div>
+								)}
+								<div className="border-t pt-1 flex justify-between font-medium">
+									<span>Total</span>
+									<span>${feeData.totalAmount.toFixed(2)}</span>
+								</div>
+							</div>
+						) : null}
+					</div>
+				)}
 			</div>
 			<DialogFooter>
 				<Button type="button" variant="outline" onClick={onCancel}>
 					Cancel
 				</Button>
-				<Button type="button" onClick={onNext} disabled={amount < 5}>
+				<Button
+					type="button"
+					onClick={onNext}
+					disabled={amount < 5 || feeDataLoading}
+				>
 					Continue
 				</Button>
 			</DialogFooter>
@@ -211,13 +280,15 @@ function PaymentStep({
 	loading: boolean;
 	setLoading: (loading: boolean) => void;
 }) {
-	const stripe = useStripe();
+	const stripe = useStripeElements();
 	const elements = useElements();
-	const { mutateAsync: topUpMutation } = $api.useMutation(
+	const { toast } = useToast();
+	const api = useApi();
+	const { mutateAsync: topUpMutation } = api.useMutation(
 		"post",
 		"/payments/create-payment-intent",
 	);
-	const { mutateAsync: setupIntentMutation } = $api.useMutation(
+	const { mutateAsync: setupIntentMutation } = api.useMutation(
 		"post",
 		"/payments/create-setup-intent",
 	);
@@ -348,7 +419,7 @@ function PaymentStep({
 						Cancel
 					</Button>
 					<Button type="submit" disabled={!stripe || loading}>
-						{loading ? "Processing..." : `Pay $${amount}`}
+						{loading ? "Processing..." : `Continue`}
 					</Button>
 				</DialogFooter>
 			</form>
@@ -479,9 +550,20 @@ function ConfirmPaymentStep({
 	loading: boolean;
 	setLoading: (loading: boolean) => void;
 }) {
-	const { mutateAsync: topUpMutation } = $api.useMutation(
+	const { toast } = useToast();
+	const { selectedOrganization } = useDashboardContext();
+	const api = useApi();
+	const { mutateAsync: topUpMutation } = api.useMutation(
 		"post",
 		"/payments/top-up-with-saved-method",
+	);
+
+	const { data: feeData, isLoading: feeDataLoading } = api.useQuery(
+		"post",
+		"/payments/calculate-fees",
+		{
+			body: { amount, paymentMethodId },
+		},
 	);
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -508,15 +590,56 @@ function ConfirmPaymentStep({
 			<DialogHeader>
 				<DialogTitle>Confirm Payment</DialogTitle>
 				<DialogDescription>
-					Confirm your payment of ${amount} to add credits.
+					Review your payment details before confirming.
 				</DialogDescription>
 			</DialogHeader>
 			<form onSubmit={handleSubmit} className="space-y-4 py-4">
 				<div className="border rounded-lg p-4">
-					<p className="font-medium">Payment Summary</p>
-					<p className="text-sm text-muted-foreground mt-2">
-						Amount: ${amount}
-					</p>
+					<p className="font-medium mb-3">Payment Summary</p>
+					{feeDataLoading ? (
+						<div className="flex items-center justify-center py-4">
+							<Spinner className="h-5 w-5 animate-spin text-muted-foreground" />
+							<span className="ml-2 text-sm text-muted-foreground">
+								Calculating fees...
+							</span>
+						</div>
+					) : feeData ? (
+						<div className="space-y-2 text-sm">
+							<div className="flex justify-between">
+								<span>Credits</span>
+								<span>${feeData.baseAmount.toFixed(2)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span>Stripe fees ($0.35 + 2.9%)</span>
+								<span>${feeData.stripeFee.toFixed(2)}</span>
+							</div>
+							{feeData.internationalFee > 0 && (
+								<div className="flex justify-between">
+									<span>International card fee (1.5%)</span>
+									<span>${feeData.internationalFee.toFixed(2)}</span>
+								</div>
+							)}
+							{feeData.planFee > 0 && (
+								<div className="flex justify-between">
+									<span>Service fee (5% - Free plan)</span>
+									<span>${feeData.planFee.toFixed(2)}</span>
+								</div>
+							)}
+							{selectedOrganization?.plan === "pro" &&
+								feeData.planFee === 0 && (
+									<div className="flex justify-between text-green-600">
+										<span>Service fee (Pro plan)</span>
+										<span>$0.00</span>
+									</div>
+								)}
+							<div className="border-t pt-2 flex justify-between font-medium">
+								<span>Total</span>
+								<span>${feeData.totalAmount.toFixed(2)}</span>
+							</div>
+						</div>
+					) : (
+						<p className="text-sm text-muted-foreground">Amount: ${amount}</p>
+					)}
 				</div>
 				<DialogFooter className="flex space-x-2 justify-end">
 					<Button
@@ -535,8 +658,10 @@ function ConfirmPaymentStep({
 					>
 						Cancel
 					</Button>
-					<Button type="submit" disabled={loading}>
-						{loading ? "Processing..." : `Pay $${amount}`}
+					<Button type="submit" disabled={loading || feeDataLoading}>
+						{loading
+							? "Processing..."
+							: `Pay ${feeData ? `$${feeData.totalAmount.toFixed(2)}` : `$${amount}`}`}
 					</Button>
 				</DialogFooter>
 			</form>

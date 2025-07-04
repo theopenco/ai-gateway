@@ -1,4 +1,4 @@
-import { db, tables } from "@openllm/db";
+import { db, tables } from "@llmgateway/db";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { app } from "..";
@@ -94,7 +94,6 @@ describe("logs route", () => {
 				organizationId: "test-org-id",
 				projectId: "test-project-id",
 				apiKeyId: "test-api-key-id",
-				providerKeyId: "test-provider-key-id",
 				duration: 100,
 				requestedModel: "gpt-4",
 				requestedProvider: "openai",
@@ -109,6 +108,8 @@ describe("logs route", () => {
 				temperature: 0.7,
 				maxTokens: 100,
 				messages: JSON.stringify([{ role: "user", content: "Hello" }]),
+				mode: "api-keys",
+				usedMode: "api-keys",
 			},
 			{
 				id: "test-log-id-2",
@@ -116,7 +117,6 @@ describe("logs route", () => {
 				organizationId: "test-org-id",
 				projectId: "test-project-id-2",
 				apiKeyId: "test-api-key-id-2",
-				providerKeyId: "test-provider-key-id-2",
 				duration: 200,
 				requestedModel: "claude-3-haiku",
 				requestedProvider: "anthropic",
@@ -131,6 +131,8 @@ describe("logs route", () => {
 				temperature: 0.8,
 				maxTokens: 200,
 				messages: JSON.stringify([{ role: "user", content: "Hello 2" }]),
+				mode: "api-keys",
+				usedMode: "api-keys",
 			},
 		]);
 	});
@@ -200,7 +202,6 @@ describe("logs route", () => {
 					organizationId: "test-org-id",
 					projectId: "test-project-id",
 					apiKeyId: "test-api-key-id",
-					providerKeyId: "test-provider-key-id",
 					duration: 100 + i,
 					requestedModel: "gpt-4",
 					requestedProvider: "openai",
@@ -215,7 +216,9 @@ describe("logs route", () => {
 					temperature: 0.7,
 					maxTokens: 100,
 					messages: JSON.stringify([{ role: "user", content: `Hello ${i}` }]),
-				});
+					mode: "api-keys",
+					usedMode: "api-keys",
+				} as const);
 			}
 			await db.insert(tables.log).values(additionalLogs);
 		});

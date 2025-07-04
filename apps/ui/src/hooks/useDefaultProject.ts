@@ -1,61 +1,35 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-
-const API_BASE_ORGS = "/api/orgs";
-
-export interface Project {
-	id: string;
-	name: string;
-	cachingEnabled: boolean;
-	cacheDurationSeconds: number;
-	organizationId: string;
-	mode: "api-keys" | "credits";
-}
-
-export interface Organization {
-	id: string;
-	name: string;
-}
+import { useApi } from "@/lib/fetch-client";
 
 export function useDefaultProject() {
-	return useSuspenseQuery({
-		queryKey: ["defaultProject"],
-		queryFn: async () => {
-			const orgsRes = await fetch(API_BASE_ORGS, {
-				credentials: "include",
-			});
+	const api = useApi();
 
-			if (!orgsRes.ok) {
-				const errorText = await orgsRes.text();
-				throw new Error(`Failed to fetch organizations: ${errorText}`);
-			}
+	const { data: orgsData, isError: orgsError } = api.useSuspenseQuery(
+		"get",
+		"/orgs",
+	);
 
-			const orgsData: { organizations: Organization[] } = await orgsRes.json();
+	if (orgsError || !orgsData?.organizations?.length) {
+		return { data: null, isError: true };
+	}
 
-			if (!orgsData.organizations || orgsData.organizations.length === 0) {
-				throw new Error("No organizations found");
-			}
+	const defaultOrg = orgsData.organizations[0];
 
-			const defaultOrg = orgsData.organizations[0];
-
-			const projectsRes = await fetch(
-				`${API_BASE_ORGS}/${defaultOrg.id}/projects`,
-				{
-					credentials: "include",
-				},
-			);
-
-			if (!projectsRes.ok) {
-				const errorText = await projectsRes.text();
-				throw new Error(`Failed to fetch projects: ${errorText}`);
-			}
-
-			const projectsData: { projects: Project[] } = await projectsRes.json();
-
-			if (!projectsData.projects || projectsData.projects.length === 0) {
-				throw new Error("No projects found for the default organization");
-			}
-
-			return projectsData.projects[0];
+	const { data: projectsData, isError: projectsError } = api.useSuspenseQuery(
+		"get",
+		"/orgs/{id}/projects",
+		{
+			params: {
+				path: { id: defaultOrg.id },
+			},
 		},
-	});
+	);
+
+	if (projectsError || !projectsData?.projects?.length) {
+		return { data: null, isError: true };
+	}
+
+	return {
+		data: projectsData.projects[0],
+		isError: false,
+	};
 }

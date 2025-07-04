@@ -1,38 +1,32 @@
-import { authClient } from "@/lib/auth-client";
 import { toast } from "@/lib/components/use-toast";
 
-import type { QueryClient } from "@tanstack/react-query";
+// This function needs to be converted to a hook or used within a component
+// since we can't use hooks in a standalone function
+export function createAddPasskeyFunction(authClient: any) {
+	return async function addPasskey() {
+		try {
+			const result = await authClient.passkey.addPasskey({
+				authenticatorAttachment: "cross-platform",
+			});
 
-export async function addPasskey(queryClient: QueryClient) {
-	try {
-		const result = await authClient.passkey.addPasskey({
-			authenticatorAttachment: "cross-platform",
-		});
+			if (result?.error) {
+				toast({
+					title: "Error adding passkey",
+					description: result.error.message || "Please try again",
+				});
+				return;
+			}
 
-		if (result?.error) {
+			toast({
+				title: "Passkey added",
+				description: "You can now sign in using your passkey",
+			});
+		} catch {
 			toast({
 				title: "Error adding passkey",
-				description: result.error.message || "Please try again",
+				description: "An unexpected error occurred",
 				variant: "destructive",
-				className: "text-white",
 			});
-			return;
 		}
-
-		await queryClient.refetchQueries({
-			queryKey: ["get", "/user/me/passkeys"],
-		});
-
-		toast({
-			title: "Passkey added",
-			description: "You can now sign in using your passkey",
-		});
-	} catch {
-		toast({
-			title: "Error adding passkey",
-			description: "An unexpected error occurred",
-			variant: "destructive",
-			className: "text-white",
-		});
-	}
+	};
 }

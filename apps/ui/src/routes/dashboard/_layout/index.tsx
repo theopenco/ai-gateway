@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
 	AlertCircle,
@@ -9,11 +10,12 @@ import {
 	Zap,
 	Activity,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { TopUpCreditsButton } from "@/components/credits/top-up-credits-dialog";
 import { DashboardLoading } from "@/components/dashboard/dashboard-loading";
 import { Overview } from "@/components/dashboard/overview";
+import { UpgradeToProDialog } from "@/components/shared/upgrade-to-pro-dialog";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -23,7 +25,10 @@ import {
 	CardTitle,
 } from "@/lib/components/card";
 import { Tabs, TabsList, TabsTrigger } from "@/lib/components/tabs";
-import { $api } from "@/lib/fetch-client";
+import { useAppConfigValue } from "@/lib/config";
+import { useDashboardContext } from "@/lib/dashboard-context";
+import { useApi } from "@/lib/fetch-client";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
 	component: Dashboard,
@@ -32,28 +37,59 @@ export const Route = createFileRoute("/dashboard/_layout/")({
 });
 
 export default function Dashboard() {
+	const config = useAppConfigValue();
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [days, setDays] = useState<7 | 30>(7);
-	const { data, isLoading } = $api.useSuspenseQuery("get", "/activity", {
-		params: { query: { days: String(days) } },
-	});
-	const {
-		data: { organizations },
-		isLoading: isLoadingOrg,
-	} = $api.useSuspenseQuery("get", "/orgs");
+	const { selectedOrganization, selectedProject } = useDashboardContext();
+	const api = useApi();
 
-	const organization = organizations[0];
+	// Only fetch activity data if we have a selected project
+	const { data, isLoading } = api.useQuery(
+		"get",
+		"/activity",
+		{
+			params: {
+				query: {
+					days: String(days),
+					projectId: selectedProject?.id || "",
+				},
+			},
+		},
+		{
+			enabled: !!selectedProject?.id,
+		},
+	);
+
+	// Invalidate activity query when project changes
+	useEffect(() => {
+		if (selectedProject?.id) {
+			const queryKey = api.queryOptions("get", "/activity", {
+				params: {
+					query: {
+						days: String(days),
+						projectId: selectedProject.id,
+					},
+				},
+			}).queryKey;
+
+			queryClient.invalidateQueries({ queryKey });
+		}
+	}, [selectedProject?.id, queryClient, days]);
 
 	// Calculate total stats from activity data
+	const activityData = data?.activity || [];
 	const totalRequests =
-		data.activity?.reduce((sum, day) => sum + day.requestCount, 0) || 0;
+		activityData.reduce((sum, day) => sum + day.requestCount, 0) || 0;
 	const totalTokens =
-		data.activity?.reduce((sum, day) => sum + day.totalTokens, 0) || 0;
-	const totalCost = data.activity?.reduce((sum, day) => sum + day.cost, 0) || 0;
+		activityData.reduce((sum, day) => sum + day.totalTokens, 0) || 0;
+	const totalCost = activityData.reduce((sum, day) => sum + day.cost, 0) || 0;
 	const totalInputCost =
-		data.activity?.reduce((sum, day) => sum + day.inputCost, 0) || 0;
+		activityData.reduce((sum, day) => sum + day.inputCost, 0) || 0;
 	const totalOutputCost =
-		data.activity?.reduce((sum, day) => sum + day.outputCost, 0) || 0;
+		activityData.reduce((sum, day) => sum + day.outputCost, 0) || 0;
+	const totalRequestCost =
+		activityData.reduce((sum, day) => sum + day.requestCost, 0) || 0;
 
 	// Format tokens for display (k for thousands, M for millions)
 	const formatTokens = (tokens: number) => {
@@ -66,35 +102,110 @@ export default function Dashboard() {
 		return tokens.toString();
 	};
 
+	const hasActivity =
+		activityData.length > 0 &&
+		totalRequests > 0 &&
+		selectedOrganization?.credits;
+
+	const shouldShowGetStartedState =
+		!isLoading &&
+		selectedOrganization &&
+		selectedOrganization.credits === "0" &&
+		selectedOrganization.plan !== "pro";
+
 	return (
 		<div className="flex flex-col">
 			<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
-				<div className="flex items-center justify-between space-y-2">
-					<h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-					<div className="flex items-center space-x-2">
-						<TopUpCreditsButton />
-						<Button asChild>
-							<Link to="/dashboard/provider-keys">
-								<Plus className="mr-2 h-4 w-4" />
-								Add Provider
-							</Link>
-						</Button>
+				<div className="flex flex-col md:flex-row items-center justify-between space-y-2">
+					<div>
+						<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+						{selectedProject && (
+							<p className="text-sm text-muted-foreground mt-1">
+								Project: {selectedProject.name}
+								{selectedOrganization && (
+									<span className="ml-2">
+										• Organization: {selectedOrganization.name}
+									</span>
+								)}
+							</p>
+						)}
 					</div>
+					{hasActivity && (
+						<div className="flex items-center space-x-2">
+							{selectedOrganization && <TopUpCreditsButton />}
+							<Button asChild>
+								<Link to="/dashboard/provider-keys">
+									<Plus className="mr-2 h-4 w-4" />
+									Add Provider
+								</Link>
+							</Button>
+						</div>
+					)}
 				</div>
 
-				<Tabs
-					defaultValue="7days"
-					onValueChange={(value) => setDays(value === "7days" ? 7 : 30)}
-					className="mb-2"
-				>
-					<TabsList>
-						<TabsTrigger value="7days">Last 7 Days</TabsTrigger>
-						<TabsTrigger value="30days">Last 30 Days</TabsTrigger>
-					</TabsList>
-				</Tabs>
+				{hasActivity && (
+					<Tabs
+						defaultValue="7days"
+						onValueChange={(value) => setDays(value === "7days" ? 7 : 30)}
+						className="mb-2"
+					>
+						<TabsList>
+							<TabsTrigger value="7days">Last 7 Days</TabsTrigger>
+							<TabsTrigger value="30days">Last 30 Days</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				)}
 
 				<div className="space-y-4">
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+					{shouldShowGetStartedState && (
+						<div className="flex flex-col gap-3 py-12">
+							<div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full">
+								<CreditCard className="w-8 h-8 text-muted-foreground" />
+							</div>
+							<h3 className="text-xl font-semibold">
+								You have no credits yet.
+							</h3>
+							<p className="text-muted-foreground max-w-md">
+								Add credits to your organization to start making API requests
+								and track your LLM usage.
+							</p>
+
+							<div className="flex flex-col sm:flex-row gap-3">
+								<TopUpCreditsButton />
+								<UpgradeToProDialog>
+									<Button variant="outline">
+										<Key className="mr-2 h-4 w-4" />
+										Bring Your Own Keys
+									</Button>
+								</UpgradeToProDialog>
+							</div>
+						</div>
+					)}
+
+					<div
+						className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-4", {
+							"pointer-events-none opacity-20": shouldShowGetStartedState,
+						})}
+					>
+						<Card>
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="text-sm font-medium">
+									Organization Credits
+								</CardTitle>
+								<CreditCard className="text-muted-foreground h-4 w-4" />
+							</CardHeader>
+							<CardContent>
+								<div className="text-2xl font-bold truncate overflow-ellipsis">
+									$
+									{selectedOrganization
+										? Number(selectedOrganization.credits).toFixed(8)
+										: "0.00"}
+								</div>
+								<p className="text-muted-foreground text-xs">
+									Available balance
+								</p>
+							</CardContent>
+						</Card>
 						<Card>
 							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 								<CardTitle className="text-sm font-medium">
@@ -115,14 +226,14 @@ export default function Dashboard() {
 										</div>
 										<p className="text-muted-foreground text-xs">
 											Last {days} days
-											{data && data.activity.length > 0 && (
+											{activityData.length > 0 && (
 												<span className="ml-1">
 													•{" "}
 													{(
-														data.activity.reduce(
+														activityData.reduce(
 															(sum, day) => sum + day.cacheRate,
 															0,
-														) / data.activity.length
+														) / activityData.length
 													).toFixed(1)}
 													% cached
 												</span>
@@ -179,46 +290,38 @@ export default function Dashboard() {
 											<span>${totalInputCost.toFixed(2)} input</span>
 											&nbsp;+&nbsp;
 											<span>${totalOutputCost.toFixed(2)} output</span>
-										</p>
-									</>
-								)}
-							</CardContent>
-						</Card>
-						<Card>
-							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-								<CardTitle className="text-sm font-medium">
-									Organization Credits
-								</CardTitle>
-								<CreditCard className="text-muted-foreground h-4 w-4" />
-							</CardHeader>
-							<CardContent>
-								{isLoadingOrg ? (
-									<>
-										<div className="text-2xl font-bold">Loading...</div>
-										<p className="text-muted-foreground text-xs">–</p>
-									</>
-								) : (
-									<>
-										<div className="text-2xl font-bold truncate overflow-ellipsis">
-											${Number(organization?.credits).toFixed(8)}
-										</div>
-										<p className="text-muted-foreground text-xs">
-											Available balance
+											{totalRequestCost > 0 && (
+												<>
+													&nbsp;+&nbsp;
+													<span>${totalRequestCost.toFixed(2)} requests</span>
+												</>
+											)}
 										</p>
 									</>
 								)}
 							</CardContent>
 						</Card>
 					</div>
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+					<div
+						className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-7", {
+							"pointer-events-none opacity-20": shouldShowGetStartedState,
+						})}
+					>
 						<Card className="col-span-4">
 							<CardHeader>
 								<CardTitle>Usage Overview</CardTitle>
-								<CardDescription>Total Requests</CardDescription>
+								<CardDescription>
+									Total Requests
+									{selectedProject && (
+										<span className="block mt-1 text-sm">
+											Filtered by project: {selectedProject.name}
+										</span>
+									)}
+								</CardDescription>
 							</CardHeader>
 							<CardContent className="pl-2">
 								<Overview
-									data={data.activity}
+									data={activityData}
 									isLoading={isLoading}
 									days={days}
 								/>
@@ -236,17 +339,29 @@ export default function Dashboard() {
 									variant="outline"
 									className="justify-start"
 									onClick={() => navigate({ to: "/dashboard/api-keys" })}
+									disabled={!selectedProject}
 								>
 									<Key className="mr-2 h-4 w-4" />
 									Generate API Key
+									{!selectedProject && (
+										<span className="ml-auto text-xs text-muted-foreground">
+											Select project
+										</span>
+									)}
 								</Button>
 								<Button
 									variant="outline"
 									className="justify-start"
 									onClick={() => navigate({ to: "/dashboard/provider-keys" })}
+									disabled={!selectedOrganization}
 								>
 									<KeyRound className="mr-2 h-4 w-4" />
 									Add Provider Key
+									{!selectedOrganization && (
+										<span className="ml-auto text-xs text-muted-foreground">
+											Select org
+										</span>
+									)}
 								</Button>
 								<Button
 									variant="outline"
@@ -257,7 +372,7 @@ export default function Dashboard() {
 									Add Provider
 								</Button>
 								<Button variant="outline" className="justify-start" asChild>
-									<a href="https://docs.llmgateway.io/" target="_blank">
+									<a href={config.docsUrl} target="_blank">
 										<ArrowUpRight className="mr-2 h-4 w-4" />
 										View Documentation
 									</a>

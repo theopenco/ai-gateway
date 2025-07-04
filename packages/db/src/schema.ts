@@ -10,6 +10,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { customAlphabet } from "nanoid";
 
+import type { errorDetails } from "./types";
+import type z from "zod";
+
 export const UnifiedFinishReason = {
 	COMPLETED: "completed",
 	LENGTH_LIMIT: "length_limit",
@@ -40,6 +43,7 @@ export const user = pgTable("user", {
 	email: text().notNull().unique(),
 	emailVerified: boolean().notNull().default(false),
 	image: text(),
+	onboardingCompleted: boolean().notNull().default(false),
 });
 
 export const session = pgTable("session", {
@@ -96,8 +100,58 @@ export const organization = pgTable("organization", {
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 	name: text().notNull(),
-	stripeCustomerId: text(),
+	stripeCustomerId: text().unique(),
+	stripeSubscriptionId: text().unique(),
 	credits: decimal().notNull().default("0"),
+	autoTopUpEnabled: boolean().notNull().default(false),
+	autoTopUpThreshold: decimal().default("10"),
+	autoTopUpAmount: decimal().default("10"),
+	plan: text({
+		enum: ["free", "pro"],
+	})
+		.notNull()
+		.default("free"),
+	planExpiresAt: timestamp(),
+	subscriptionCancelled: boolean().notNull().default(false),
+	retentionLevel: text({
+		enum: ["retain", "none"],
+	})
+		.notNull()
+		.default("retain"),
+	status: text({
+		enum: ["active", "inactive", "deleted"],
+	}).default("active"),
+});
+
+export const transaction = pgTable("transaction", {
+	id: text().primaryKey().notNull().$defaultFn(shortid),
+	createdAt: timestamp().notNull().defaultNow(),
+	updatedAt: timestamp()
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	organizationId: text()
+		.notNull()
+		.references(() => organization.id, { onDelete: "cascade" }),
+	type: text({
+		enum: [
+			"subscription_start",
+			"subscription_cancel",
+			"subscription_end",
+			"credit_topup",
+		],
+	}).notNull(),
+	amount: decimal(),
+	creditAmount: decimal(),
+	currency: text().notNull().default("USD"),
+	status: text({
+		enum: ["pending", "completed", "failed"],
+	})
+		.notNull()
+		.default("completed"),
+	stripePaymentIntentId: text(),
+	stripeInvoiceId: text(),
+	description: text(),
 });
 
 export const userOrganization = pgTable("user_organization", {
@@ -107,8 +161,12 @@ export const userOrganization = pgTable("user_organization", {
 		.notNull()
 		.defaultNow()
 		.$onUpdate(() => new Date()),
-	userId: text().notNull(),
-	organizationId: text().notNull(),
+	userId: text()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	organizationId: text()
+		.notNull()
+		.references(() => organization.id, { onDelete: "cascade" }),
 });
 
 export const project = pgTable("project", {
@@ -119,14 +177,19 @@ export const project = pgTable("project", {
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 	name: text().notNull(),
-	organizationId: text().notNull(),
+	organizationId: text()
+		.notNull()
+		.references(() => organization.id, { onDelete: "cascade" }),
 	cachingEnabled: boolean().notNull().default(false),
 	cacheDurationSeconds: integer().notNull().default(60),
 	mode: text({
 		enum: ["api-keys", "credits", "hybrid"],
 	})
 		.notNull()
-		.default("api-keys"),
+		.default("credits"),
+	status: text({
+		enum: ["active", "inactive", "deleted"],
+	}).default("active"),
 });
 
 export const apiKey = pgTable("api_key", {
@@ -141,7 +204,9 @@ export const apiKey = pgTable("api_key", {
 	status: text({
 		enum: ["active", "inactive", "deleted"],
 	}).default("active"),
-	projectId: text().notNull(),
+	projectId: text()
+		.notNull()
+		.references(() => project.id, { onDelete: "cascade" }),
 });
 
 export const providerKey = pgTable(
@@ -159,7 +224,9 @@ export const providerKey = pgTable(
 		status: text({
 			enum: ["active", "inactive", "deleted"],
 		}).default("active"),
-		organizationId: text().notNull(),
+		organizationId: text()
+			.notNull()
+			.references(() => organization.id, { onDelete: "cascade" }),
 	},
 	(table) => [],
 );
@@ -172,10 +239,15 @@ export const log = pgTable("log", {
 		.notNull()
 		.defaultNow()
 		.$onUpdate(() => new Date()),
-	organizationId: text().notNull(),
-	projectId: text().notNull(),
-	apiKeyId: text().notNull(),
-	providerKeyId: text().notNull(),
+	organizationId: text()
+		.notNull()
+		.references(() => organization.id, { onDelete: "cascade" }),
+	projectId: text()
+		.notNull()
+		.references(() => project.id, { onDelete: "cascade" }),
+	apiKeyId: text()
+		.notNull()
+		.references(() => apiKey.id, { onDelete: "cascade" }),
 	duration: integer().notNull(),
 	requestedModel: text().notNull(),
 	requestedProvider: text(),
@@ -188,31 +260,29 @@ export const log = pgTable("log", {
 	promptTokens: decimal(),
 	completionTokens: decimal(),
 	totalTokens: decimal(),
-	messages: json().notNull(),
+	reasoningTokens: decimal(),
+	messages: json(),
 	temperature: real(),
 	maxTokens: integer(),
 	topP: real(),
 	frequencyPenalty: real(),
 	presencePenalty: real(),
 	hasError: boolean().default(false),
-	errorDetails: json(),
+	errorDetails: json().$type<z.infer<typeof errorDetails>>(),
 	cost: real(),
 	inputCost: real(),
 	outputCost: real(),
+	requestCost: real(),
 	estimatedCost: boolean().default(false),
 	canceled: boolean().default(false),
 	streamed: boolean().default(false),
 	cached: boolean().default(false),
 	mode: text({
 		enum: ["api-keys", "credits", "hybrid"],
-	})
-		.notNull()
-		.default("api-keys"),
+	}).notNull(),
 	usedMode: text({
 		enum: ["api-keys", "credits"],
-	})
-		.notNull()
-		.default("api-keys"),
+	}).notNull(),
 });
 
 export const passkey = pgTable("passkey", {
@@ -239,7 +309,9 @@ export const paymentMethod = pgTable("payment_method", {
 	createdAt: timestamp().notNull().defaultNow(),
 	updatedAt: timestamp().notNull().defaultNow(),
 	stripePaymentMethodId: text().notNull(),
-	organizationId: text().notNull(),
+	organizationId: text()
+		.notNull()
+		.references(() => organization.id, { onDelete: "cascade" }),
 	type: text().notNull(), // "card", "sepa_debit", etc.
 	isDefault: boolean().notNull().default(false),
 });
@@ -251,10 +323,67 @@ export const organizationAction = pgTable("organization_action", {
 		.notNull()
 		.defaultNow()
 		.$onUpdate(() => new Date()),
-	organizationId: text().notNull(),
+	organizationId: text()
+		.notNull()
+		.references(() => organization.id, { onDelete: "cascade" }),
 	type: text({
 		enum: ["credit", "debit"],
 	}).notNull(),
 	amount: decimal().notNull(),
 	description: text(),
+});
+
+export const lock = pgTable("lock", {
+	id: text().primaryKey().$defaultFn(shortid),
+	createdAt: timestamp().notNull().defaultNow(),
+	updatedAt: timestamp()
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	key: text().notNull().unique(),
+});
+
+export const chat = pgTable("chat", {
+	id: text().primaryKey().$defaultFn(shortid),
+	createdAt: timestamp().notNull().defaultNow(),
+	updatedAt: timestamp()
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	title: text().notNull(),
+	userId: text()
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	model: text().notNull(),
+	status: text({
+		enum: ["active", "archived", "deleted"],
+	}).default("active"),
+});
+
+export const message = pgTable("message", {
+	id: text().primaryKey().$defaultFn(shortid),
+	createdAt: timestamp().notNull().defaultNow(),
+	updatedAt: timestamp()
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	chatId: text()
+		.notNull()
+		.references(() => chat.id, { onDelete: "cascade" }),
+	role: text({
+		enum: ["user", "assistant", "system"],
+	}).notNull(),
+	content: text().notNull(),
+	sequence: integer().notNull(), // To maintain message order
+});
+
+export const installation = pgTable("installation", {
+	id: text().primaryKey().$defaultFn(shortid),
+	createdAt: timestamp().notNull().defaultNow(),
+	updatedAt: timestamp()
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	uuid: text().notNull().unique(),
+	type: text().notNull(),
 });

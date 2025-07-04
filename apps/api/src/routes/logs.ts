@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { db } from "@openllm/db";
+import { db, errorDetails } from "@llmgateway/db";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
@@ -11,12 +11,12 @@ export const logs = new OpenAPIHono<ServerTypes>();
 // Using z.object directly instead of createSelectSchema due to compatibility issues
 const logSchema = z.object({
 	id: z.string(),
+	requestId: z.string(),
 	createdAt: z.date(),
 	updatedAt: z.date(),
 	organizationId: z.string(),
 	projectId: z.string(),
 	apiKeyId: z.string(),
-	providerKeyId: z.string(),
 	duration: z.number(),
 	requestedModel: z.string(),
 	requestedProvider: z.string().nullable(),
@@ -24,10 +24,12 @@ const logSchema = z.object({
 	usedProvider: z.string(),
 	responseSize: z.number(),
 	content: z.string().nullable(),
+	unifiedFinishReason: z.string().nullable(),
 	finishReason: z.string().nullable(),
 	promptTokens: z.string().nullable(),
 	completionTokens: z.string().nullable(),
 	totalTokens: z.string().nullable(),
+	reasoningTokens: z.string().nullable(),
 	messages: z.any(),
 	temperature: z.number().nullable(),
 	maxTokens: z.number().nullable(),
@@ -35,14 +37,17 @@ const logSchema = z.object({
 	frequencyPenalty: z.number().nullable(),
 	presencePenalty: z.number().nullable(),
 	hasError: z.boolean().nullable(),
-	errorDetails: z.any().nullable(),
+	errorDetails: errorDetails.nullable(),
 	cost: z.number().nullable(),
 	inputCost: z.number().nullable(),
 	outputCost: z.number().nullable(),
+	requestCost: z.number().nullable(),
 	estimatedCost: z.boolean().nullable(),
 	canceled: z.boolean().nullable(),
 	streamed: z.boolean().nullable(),
 	cached: z.boolean().nullable(),
+	mode: z.enum(["api-keys", "credits", "hybrid"]),
+	usedMode: z.enum(["api-keys", "credits"]),
 });
 
 const querySchema = z.object({
@@ -66,6 +71,9 @@ const querySchema = z.object({
 	}),
 	finishReason: z.string().optional().openapi({
 		description: "Filter logs by finish reason",
+	}),
+	unifiedFinishReason: z.string().optional().openapi({
+		description: "Filter logs by unified finish reason",
 	}),
 	provider: z.string().optional().openapi({
 		description: "Filter logs by provider",
@@ -143,6 +151,10 @@ logs.openapi(get, async (c) => {
 
 	// Get query parameters
 	const query = c.req.valid("query");
+
+	const sanitize = (value: string | undefined) =>
+		value === "all" ? undefined : value;
+
 	const {
 		apiKeyId,
 		providerKeyId,
@@ -151,12 +163,25 @@ logs.openapi(get, async (c) => {
 		startDate,
 		endDate,
 		finishReason,
+		unifiedFinishReason,
 		provider,
 		model,
 		cursor,
 		orderBy = "createdAt_desc",
 		limit: queryLimit,
-	} = query;
+	} = {
+		...query,
+		apiKeyId: sanitize(query.apiKeyId),
+		providerKeyId: sanitize(query.providerKeyId),
+		projectId: sanitize(query.projectId),
+		orgId: sanitize(query.orgId),
+		startDate: sanitize(query.startDate),
+		endDate: sanitize(query.endDate),
+		finishReason: sanitize(query.finishReason),
+		unifiedFinishReason: sanitize(query.unifiedFinishReason),
+		provider: sanitize(query.provider),
+		model: sanitize(query.model),
+	};
 
 	// Set default limit if not provided or enforce max limit
 	const limit = queryLimit ? Math.min(queryLimit, 100) : 50;
@@ -184,7 +209,9 @@ logs.openapi(get, async (c) => {
 	}
 
 	// Get all organizations the user is a member of
-	const organizationIds = userOrganizations.map((uo) => uo.organizationId);
+	const organizationIds = userOrganizations
+		.filter((uo) => uo.organization?.status !== "deleted")
+		.map((uo) => uo.organizationId);
 
 	// If org filter is provided, check if user has access to it
 	if (orgId && !organizationIds.includes(orgId)) {
@@ -198,6 +225,9 @@ logs.openapi(get, async (c) => {
 		where: {
 			organizationId: {
 				in: orgId ? [orgId] : organizationIds,
+			},
+			status: {
+				ne: "deleted",
 			},
 		},
 	};
@@ -305,6 +335,11 @@ logs.openapi(get, async (c) => {
 	// Add finish reason filter if provided
 	if (finishReason) {
 		logsWhere.finishReason = finishReason;
+	}
+
+	// Add unified finish reason filter if provided
+	if (unifiedFinishReason) {
+		logsWhere.unifiedFinishReason = unifiedFinishReason;
 	}
 
 	// Add apiKeyId filter if provided

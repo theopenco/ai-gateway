@@ -7,12 +7,12 @@ import type { ProviderId } from "./providers";
  */
 export function getProviderHeaders(
 	provider: ProviderId,
-	providerKey: { token: string },
+	token: string,
 ): Record<string, string> {
 	switch (provider) {
 		case "anthropic":
 			return {
-				"x-api-key": providerKey.token,
+				"x-api-key": token,
 				"anthropic-version": "2023-06-01",
 			};
 		case "google-ai-studio":
@@ -21,9 +21,13 @@ export function getProviderHeaders(
 		case "kluster.ai":
 		case "openai":
 		case "inference.net":
+		case "xai":
+		case "groq":
+		case "deepseek":
+		case "perplexity":
 		default:
 			return {
-				Authorization: `Bearer ${providerKey.token}`,
+				Authorization: `Bearer ${token}`,
 			};
 	}
 }
@@ -34,7 +38,7 @@ export function getProviderHeaders(
 export function prepareRequestBody(
 	usedProvider: ProviderId,
 	usedModel: string,
-	messages: any[],
+	messagesInput: any[],
 	stream: boolean,
 	temperature: number | undefined,
 	max_tokens: number | undefined,
@@ -42,15 +46,44 @@ export function prepareRequestBody(
 	frequency_penalty: number | undefined,
 	presence_penalty: number | undefined,
 	response_format: any,
+	tools?: any[],
+	tool_choice?: string | { type: string; function: { name: string } },
+	reasoning_effort?: "low" | "medium" | "high",
 ) {
+	// filter out empty messages
+	const messages = messagesInput.map((m) => ({
+		role: m.role,
+		content: Array.isArray(m.content)
+			? m.content.filter((c: any) => {
+					if (c.type === "text" && Object.keys(c).length === 2) {
+						return c.text.trim() !== "";
+					}
+					return true;
+				})
+			: m.content,
+	}));
+
 	const requestBody: any = {
 		model: usedModel,
 		messages,
 		stream: stream,
 	};
 
+	// Add tools and tool_choice if provided
+	if (tools && tools.length > 0) {
+		requestBody.tools = tools;
+	}
+
+	if (tool_choice) {
+		requestBody.tool_choice = tool_choice;
+	}
+
 	switch (usedProvider) {
-		case "openai": {
+		case "openai":
+		case "xai":
+		case "groq":
+		case "deepseek":
+		case "perplexity": {
 			if (stream) {
 				requestBody.stream_options = {
 					include_usage: true,
@@ -76,6 +109,9 @@ export function prepareRequestBody(
 			if (presence_penalty !== undefined) {
 				requestBody.presence_penalty = presence_penalty;
 			}
+			if (reasoning_effort !== undefined) {
+				requestBody.reasoning_effort = reasoning_effort;
+			}
 			break;
 		}
 		case "anthropic": {
@@ -87,7 +123,20 @@ export function prepareRequestBody(
 						: m.role === "system"
 							? "user"
 							: "user",
-				content: m.role === "system" ? `System: ${m.content}` : m.content,
+				content: Array.isArray(m.content)
+					? m.content.map((i: any) => {
+							switch (i.type) {
+								// anthropic does not support image URLs, only base64
+								// TODO fetch url and provide as base64 instead
+								case "image_url":
+									return {
+										type: "text",
+										text: `image URL: ${i.image_url.url}`,
+									};
+							}
+							return i;
+						})
+					: m.content,
 			}));
 
 			// Add optional parameters if they are provided
@@ -111,24 +160,24 @@ export function prepareRequestBody(
 			delete requestBody.stream; // Handled differently
 			delete requestBody.messages; // Not used in body for Google AI Studio
 
-			// Extract system messages and combine with user messages
-			const systemMessages = messages.filter((m) => m.role === "system");
-			const nonSystemMessages = messages.filter((m) => m.role !== "system");
-			const systemContext =
-				systemMessages.length > 0
-					? systemMessages.map((m) => m.content).join(" ") + " "
-					: "";
-
-			requestBody.contents = nonSystemMessages.map((m, index) => ({
-				parts: [
-					{
-						text:
-							index === 0 && systemContext
-								? systemContext + m.content
-								: m.content,
-					},
-				],
+			requestBody.contents = messages.map((m) => ({
+				role: m.role === "assistant" ? "model" : "user", // get rid of system role
+				parts: Array.isArray(m.content)
+					? m.content.map((i) => {
+							if (i.type === "text") {
+								return {
+									text: i.text,
+								};
+							}
+							throw new Error("No support for non-text parts yet");
+						})
+					: [
+							{
+								text: m.content,
+							},
+						],
 			}));
+
 			requestBody.generationConfig = {};
 
 			// Add optional parameters if they are provided
@@ -228,6 +277,24 @@ export function getProviderEndpoint(
 			case "together.ai":
 				url = "https://api.together.ai";
 				break;
+			case "cloudrift":
+				url = "https://inference.cloudrift.ai";
+				break;
+			case "mistral":
+				url = "https://api.mistral.ai";
+				break;
+			case "xai":
+				url = "https://api.x.ai";
+				break;
+			case "groq":
+				url = "https://api.groq.com/openai";
+				break;
+			case "deepseek":
+				url = "https://api.deepseek.com";
+				break;
+			case "perplexity":
+				url = "https://api.perplexity.ai";
+				break;
 			default:
 				throw new Error(`Provider ${provider} requires a baseUrl`);
 		}
@@ -247,13 +314,86 @@ export function getProviderEndpoint(
 				: `${url}/v1beta/models/gemini-2.0-flash:generateContent`;
 			return token ? `${baseEndpoint}?key=${token}` : baseEndpoint;
 		}
+		case "perplexity":
+			return `${url}/chat/completions`;
 		case "inference.net":
 		case "kluster.ai":
 		case "openai":
 		case "llmgateway":
+		case "cloudrift":
+		case "xai":
+		case "groq":
+		case "deepseek":
 		default:
 			return `${url}/v1/chat/completions`;
 	}
+}
+
+/**
+ * Get the cheapest model for a given provider based on input + output pricing
+ */
+export function getCheapestModelForProvider(
+	provider: ProviderId,
+): string | null {
+	const availableModels = models
+		.filter((model) => model.providers.some((p) => p.providerId === provider))
+		.filter((model) => !model.deprecatedAt || new Date() <= model.deprecatedAt)
+		.map((model) => ({
+			model: model.model,
+			provider: model.providers.find((p) => p.providerId === provider)!,
+		}))
+		.filter(
+			({ provider: providerInfo }) =>
+				providerInfo.inputPrice !== undefined &&
+				providerInfo.outputPrice !== undefined,
+		);
+
+	if (availableModels.length === 0) {
+		return null;
+	}
+
+	let cheapestModel = availableModels[0].provider.modelName;
+	let lowestPrice = Number.MAX_VALUE;
+
+	for (const { provider: providerInfo } of availableModels) {
+		const totalPrice =
+			(providerInfo.inputPrice! + providerInfo.outputPrice!) / 2;
+		if (totalPrice < lowestPrice) {
+			lowestPrice = totalPrice;
+			cheapestModel = providerInfo.modelName;
+		}
+	}
+
+	return cheapestModel;
+}
+
+/**
+ * Get the cheapest provider and model from a list of available model providers
+ */
+export function getCheapestFromAvailableProviders<
+	T extends { providerId: string; modelName: string },
+>(availableModelProviders: T[], modelWithPricing: any): T | null {
+	if (availableModelProviders.length === 0) {
+		return null;
+	}
+
+	let cheapestProvider = availableModelProviders[0];
+	let lowestPrice = Number.MAX_VALUE;
+
+	for (const provider of availableModelProviders) {
+		const providerInfo = modelWithPricing.providers.find(
+			(p: any) => p.providerId === provider.providerId,
+		);
+		const totalPrice =
+			((providerInfo?.inputPrice || 0) + (providerInfo?.outputPrice || 0)) / 2;
+
+		if (totalPrice < lowestPrice) {
+			lowestPrice = totalPrice;
+			cheapestProvider = provider;
+		}
+	}
+
+	return cheapestProvider;
 }
 
 /**
@@ -264,7 +404,7 @@ export async function validateProviderKey(
 	token: string,
 	baseUrl?: string,
 	skipValidation = false,
-): Promise<{ valid: boolean; error?: string }> {
+): Promise<{ valid: boolean; error?: string; statusCode?: number }> {
 	// Skip validation if requested (e.g. in test environment)
 	if (skipValidation) {
 		return { valid: true };
@@ -286,30 +426,12 @@ export async function validateProviderKey(
 		const minimalMessage = { role: "user", content: "Hello" };
 		const messages = [systemMessage, minimalMessage];
 
-		// Determine the model to use for validation
-		let validationModel: string;
-		switch (provider) {
-			case "openai":
-				validationModel = "gpt-4o-mini";
-				break;
-			case "anthropic":
-				validationModel = "claude-3-haiku-20240307";
-				break;
-			case "google-vertex":
-			case "google-ai-studio":
-				validationModel = "gemini-2.0-flash";
-				break;
-			case "inference.net":
-				validationModel = "meta-llama/llama-3.1-8b-instruct/fp-8";
-				break;
-			case "kluster.ai":
-				validationModel = "klusterai/Meta-Llama-3.1-8B-Instruct-Turbo";
-				break;
-			case "together.ai":
-				validationModel = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo";
-				break;
-			default:
-				throw new Error(`Provider ${provider} not supported for validation`);
+		const validationModel = getCheapestModelForProvider(provider);
+
+		if (!validationModel) {
+			throw new Error(
+				`No model with pricing information found for provider ${provider}`,
+			);
 		}
 
 		const payload = prepareRequestBody(
@@ -323,9 +445,12 @@ export async function validateProviderKey(
 			undefined, // frequency_penalty
 			undefined, // presence_penalty
 			undefined, // response_format
+			undefined, // tools
+			undefined, // tool_choice
+			undefined, // reasoning_effort
 		);
 
-		const headers = getProviderHeaders(provider, { token });
+		const headers = getProviderHeaders(provider, token);
 		headers["Content-Type"] = "application/json";
 
 		const response = await fetch(endpoint, {
@@ -335,16 +460,6 @@ export async function validateProviderKey(
 		});
 
 		if (!response.ok) {
-			if (response.status >= 500) {
-				throw new Error(
-					`Server error: ${response.status} ${response.statusText}`,
-				);
-			}
-
-			if (response.status === 401) {
-				return { valid: false, error: "invalid api key" };
-			}
-
 			const errorText = await response.text();
 			let errorMessage = `Error from provider: ${response.status} ${response.statusText}`;
 
@@ -355,9 +470,16 @@ export async function validateProviderKey(
 				} else if (errorJson.message) {
 					errorMessage = errorJson.message;
 				}
-			} catch (_) {}
+			} catch (_err) {}
 
-			return { valid: false, error: errorMessage };
+			if (response.status === 401) {
+				return {
+					valid: false,
+					statusCode: response.status,
+				};
+			}
+
+			return { valid: false, error: errorMessage, statusCode: response.status };
 		}
 
 		return { valid: true };

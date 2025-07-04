@@ -2,7 +2,7 @@ import {
 	CardElement,
 	Elements,
 	useElements,
-	useStripe,
+	useStripe as useStripeElements,
 } from "@stripe/react-stripe-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { CreditCard, Trash2, Plus } from "lucide-react";
@@ -19,21 +19,20 @@ import {
 	DialogTrigger,
 } from "@/lib/components/dialog";
 import { toast } from "@/lib/components/use-toast";
-import { $api } from "@/lib/fetch-client";
-import { loadStripeNow } from "@/lib/stripe";
+import { useApi } from "@/lib/fetch-client";
+import { useStripe } from "@/lib/stripe";
 
 import type React from "react";
 
-const stripePromise = loadStripeNow();
-
 export function PaymentMethodsManagement() {
 	const queryClient = useQueryClient();
-	const { data } = $api.useSuspenseQuery("get", "/payments/payment-methods");
+	const api = useApi();
+	const { data } = api.useSuspenseQuery("get", "/payments/payment-methods");
 
 	const { mutate: setDefaultMutation, isPending: isDefaultMethodPending } =
-		$api.useMutation("post", "/payments/payment-methods/default");
+		api.useMutation("post", "/payments/payment-methods/default");
 	const { mutate: deleteMutation, isPending: isDeletePending } =
-		$api.useMutation("delete", "/payments/payment-methods/{id}");
+		api.useMutation("delete", "/payments/payment-methods/{id}");
 
 	const paymentMethods = data?.paymentMethods || [];
 
@@ -42,7 +41,7 @@ export function PaymentMethodsManagement() {
 			{ body: { paymentMethodId } },
 			{
 				onSuccess: () => {
-					const queryKey = $api.queryOptions(
+					const queryKey = api.queryOptions(
 						"get",
 						"/payments/payment-methods",
 					).queryKey;
@@ -81,7 +80,7 @@ export function PaymentMethodsManagement() {
 			},
 			{
 				onSuccess: () => {
-					const queryKey = $api.queryOptions(
+					const queryKey = api.queryOptions(
 						"get",
 						"/payments/payment-methods",
 					).queryKey;
@@ -167,6 +166,7 @@ export function PaymentMethodsManagement() {
 
 function AddPaymentMethodDialog() {
 	const [open, setOpen] = useState(false);
+	const { stripe, isLoading: stripeLoading } = useStripe();
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
@@ -177,20 +177,26 @@ function AddPaymentMethodDialog() {
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
-				<Elements stripe={stripePromise}>
-					<AddPaymentMethodForm onSuccess={() => setOpen(false)} />
-				</Elements>
+				{stripeLoading ? (
+					<div className="p-6 text-center">Loading payment form...</div>
+				) : (
+					<Elements stripe={stripe}>
+						<AddPaymentMethodForm onSuccess={() => setOpen(false)} />
+					</Elements>
+				)}
 			</DialogContent>
 		</Dialog>
 	);
 }
 
 function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
-	const stripe = useStripe();
+	const queryClient = useQueryClient();
+	const stripe = useStripeElements();
 	const elements = useElements();
 	const [loading, setLoading] = useState(false);
+	const api = useApi();
 
-	const { mutateAsync: setupIntentMutation } = $api.useMutation(
+	const { mutateAsync: setupIntentMutation } = api.useMutation(
 		"post",
 		"/payments/create-setup-intent",
 	);
@@ -220,6 +226,10 @@ function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
 					variant: "destructive",
 				});
 			} else {
+				await queryClient.invalidateQueries({
+					queryKey: api.queryOptions("get", "/payments/payment-methods")
+						.queryKey,
+				});
 				toast({
 					title: "Success",
 					description: "Payment method added successfully",

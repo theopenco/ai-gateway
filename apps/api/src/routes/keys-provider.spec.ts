@@ -1,4 +1,4 @@
-import { db, tables } from "@openllm/db";
+import { db, tables } from "@llmgateway/db";
 import { expect, test, beforeEach, describe, afterEach } from "vitest";
 
 import { app } from "..";
@@ -18,6 +18,7 @@ describe("provider keys route", () => {
 		await db.insert(tables.organization).values({
 			id: "test-org-id",
 			name: "Test Organization",
+			plan: "pro",
 		});
 
 		// Associate user with organization

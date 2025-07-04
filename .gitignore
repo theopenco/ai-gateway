@@ -9,3 +9,6 @@ apps/**/*.js
 .idea/
 openapi.json
 .DS_Store
+.envrc
+llmgateway_data
+.claude/settings.local.json

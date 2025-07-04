@@ -1,7 +1,7 @@
 import { Rocket } from "lucide-react";
 import * as React from "react";
 
-import { useSession } from "../../lib/auth-client";
+import { useAuth } from "../../lib/auth-client";
 import {
 	Card,
 	CardContent,
@@ -12,6 +12,7 @@ import {
 import { Step } from "../../lib/components/stepper";
 
 export function WelcomeStep() {
+	const { useSession } = useAuth();
 	const session = useSession();
 	const user = session.data?.user;
 	const organization = { name: "Your Organization" };
@@ -65,8 +66,11 @@ export function WelcomeStep() {
 							</p>
 							<ul className="mt-2 list-inside list-disc text-sm">
 								<li>Create your first API key to access the LLM Gateway</li>
-								<li>Set up provider keys to connect to LLM services</li>
-								<li>Add credits to your account to start making requests</li>
+								<li>
+									Choose between buying credits or bringing your own API keys
+								</li>
+								<li>Set up your preferred payment method or provider keys</li>
+								<li>Get you ready to start making requests</li>
 							</ul>
 						</div>
 					</CardContent>

@@ -1,43 +1,21 @@
-import { useQuery } from "@tanstack/react-query";
+import { useApi } from "@/lib/fetch-client";
 
-const API_BASE = "/api/orgs";
-
-export interface Organization {
-	id: string;
-	name: string;
-	credits: number;
-	createdAt: string;
-	updatedAt: string;
-}
+import type { Organization } from "@/lib/types";
 
 export interface OrganizationsResponse {
 	organizations: Organization[];
 }
 
-export async function fetchOrganizations(): Promise<OrganizationsResponse> {
-	const res = await fetch(API_BASE, {
-		credentials: "include",
-	});
+export function useDefaultOrganization() {
+	const api = useApi();
+	const { data, error } = api.useSuspenseQuery("get", "/orgs");
 
-	if (!res.ok) {
-		const errorText = await res.text();
-		throw new Error(`Failed to fetch organizations: ${errorText}`);
+	if (!data?.organizations || data.organizations.length === 0) {
+		return {
+			data: null,
+			error: error || new Error("No organizations found"),
+		};
 	}
 
-	return await res.json();
-}
-
-export function useDefaultOrganization() {
-	return useQuery({
-		queryKey: ["defaultOrganization"],
-		queryFn: async () => {
-			const data = await fetchOrganizations();
-
-			if (!data.organizations || data.organizations.length === 0) {
-				throw new Error("No organizations found");
-			}
-
-			return data.organizations[0];
-		},
-	});
+	return { data: data.organizations[0], error };
 }

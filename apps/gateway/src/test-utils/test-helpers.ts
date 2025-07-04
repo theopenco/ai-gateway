@@ -1,11 +1,12 @@
-import { db, tables } from "@openllm/db";
+import { db } from "@llmgateway/db";
 
+import redisClient from "../lib/redis";
 import { processLogQueue } from "../worker";
 
-export async function flushLogs() {
-	await processLogQueue();
+export { getProviderEnvVar } from "../lib/provider";
 
-	await db.delete(tables.log);
+export async function clearCache() {
+	await redisClient.flushdb();
 }
 
 /**
@@ -45,17 +46,4 @@ export async function waitForLogs(
 	console.warn(message);
 
 	throw new Error(message);
-}
-
-export function getProviderEnvVar(provider: string): string | undefined {
-	const envMap: Record<string, string> = {
-		openai: "OPENAI_API_KEY",
-		anthropic: "ANTHROPIC_API_KEY",
-		"google-vertex": "VERTEX_API_KEY",
-		"google-ai-studio": "GOOGLE_AI_STUDIO_API_KEY",
-		"inference.net": "INFERENCE_NET_API_KEY",
-		"kluster.ai": "KLUSTER_AI_API_KEY",
-		"together.ai": "TOGETHER_AI_API_KEY",
-	};
-	return process.env[envMap[provider]];
 }
