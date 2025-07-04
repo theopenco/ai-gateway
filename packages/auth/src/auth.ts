@@ -56,6 +56,7 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	},
 	emailVerification: {
 		sendOnSignUp: true,
+		autoSignInAfterVerification: true,
 		sendVerificationEmail: async ({ user, url }) => {
 			if (!resendApiKey) {
 				console.error(
