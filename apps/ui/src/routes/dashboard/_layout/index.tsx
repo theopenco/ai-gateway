@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { TopUpCreditsButton } from "@/components/credits/top-up-credits-dialog";
 import { DashboardLoading } from "@/components/dashboard/dashboard-loading";
 import { Overview } from "@/components/dashboard/overview";
+import { UpgradeToProDialog } from "@/components/shared/upgrade-to-pro-dialog";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -27,6 +28,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/lib/components/tabs";
 import { useAppConfigValue } from "@/lib/config";
 import { useDashboardContext } from "@/lib/dashboard-context";
 import { useApi } from "@/lib/fetch-client";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
 	component: Dashboard,
@@ -100,12 +102,17 @@ export default function Dashboard() {
 		return tokens.toString();
 	};
 
+	const hasActivity =
+		activityData.length > 0 &&
+		totalRequests > 0 &&
+		selectedOrganization?.credits;
+
 	return (
 		<div className="flex flex-col">
 			<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
 				<div className="flex flex-col md:flex-row items-center justify-between space-y-2">
 					<div>
-						<h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+						<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
 						{selectedProject && (
 							<p className="text-sm text-muted-foreground mt-1">
 								Project: {selectedProject.name}
@@ -117,30 +124,82 @@ export default function Dashboard() {
 							</p>
 						)}
 					</div>
-					<div className="flex items-center space-x-2">
-						{selectedOrganization && <TopUpCreditsButton />}
-						<Button asChild>
-							<Link to="/dashboard/provider-keys">
-								<Plus className="mr-2 h-4 w-4" />
-								Add Provider
-							</Link>
-						</Button>
-					</div>
+					{hasActivity && (
+						<div className="flex items-center space-x-2">
+							{selectedOrganization && <TopUpCreditsButton />}
+							<Button asChild>
+								<Link to="/dashboard/provider-keys">
+									<Plus className="mr-2 h-4 w-4" />
+									Add Provider
+								</Link>
+							</Button>
+						</div>
+					)}
 				</div>
 
-				<Tabs
-					defaultValue="7days"
-					onValueChange={(value) => setDays(value === "7days" ? 7 : 30)}
-					className="mb-2"
-				>
-					<TabsList>
-						<TabsTrigger value="7days">Last 7 Days</TabsTrigger>
-						<TabsTrigger value="30days">Last 30 Days</TabsTrigger>
-					</TabsList>
-				</Tabs>
+				{hasActivity && (
+					<Tabs
+						defaultValue="7days"
+						onValueChange={(value) => setDays(value === "7days" ? 7 : 30)}
+						className="mb-2"
+					>
+						<TabsList>
+							<TabsTrigger value="7days">Last 7 Days</TabsTrigger>
+							<TabsTrigger value="30days">Last 30 Days</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				)}
 
 				<div className="space-y-4">
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+					{!hasActivity && selectedOrganization && (
+						<div className="flex flex-col gap-3 py-12">
+							<div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full">
+								<CreditCard className="w-8 h-8 text-muted-foreground" />
+							</div>
+							<h3 className="text-xl font-semibold">
+								You have no credits yet.
+							</h3>
+							<p className="text-muted-foreground max-w-md">
+								Add credits to your organization to start making API requests
+								and track your LLM usage.
+							</p>
+
+							<div className="flex flex-col sm:flex-row gap-3">
+								<TopUpCreditsButton />
+								<UpgradeToProDialog>
+									<Button variant="outline">
+										<Key className="mr-2 h-4 w-4" />
+										Bring Your Own Keys
+									</Button>
+								</UpgradeToProDialog>
+							</div>
+						</div>
+					)}
+
+					<div
+						className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-4", {
+							"pointer-events-none opacity-20": !hasActivity,
+						})}
+					>
+						<Card>
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="text-sm font-medium">
+									Organization Credits
+								</CardTitle>
+								<CreditCard className="text-muted-foreground h-4 w-4" />
+							</CardHeader>
+							<CardContent>
+								<div className="text-2xl font-bold truncate overflow-ellipsis">
+									$
+									{selectedOrganization
+										? Number(selectedOrganization.credits).toFixed(8)
+										: "0.00"}
+								</div>
+								<p className="text-muted-foreground text-xs">
+									Available balance
+								</p>
+							</CardContent>
+						</Card>
 						<Card>
 							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 								<CardTitle className="text-sm font-medium">
@@ -236,27 +295,12 @@ export default function Dashboard() {
 								)}
 							</CardContent>
 						</Card>
-						<Card>
-							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-								<CardTitle className="text-sm font-medium">
-									Organization Credits
-								</CardTitle>
-								<CreditCard className="text-muted-foreground h-4 w-4" />
-							</CardHeader>
-							<CardContent>
-								<div className="text-2xl font-bold truncate overflow-ellipsis">
-									$
-									{selectedOrganization
-										? Number(selectedOrganization.credits).toFixed(8)
-										: "0.00"}
-								</div>
-								<p className="text-muted-foreground text-xs">
-									Available balance
-								</p>
-							</CardContent>
-						</Card>
 					</div>
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+					<div
+						className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-7", {
+							"pointer-events-none opacity-20": !hasActivity,
+						})}
+					>
 						<Card className="col-span-4">
 							<CardHeader>
 								<CardTitle>Usage Overview</CardTitle>

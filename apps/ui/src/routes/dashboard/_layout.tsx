@@ -111,7 +111,7 @@ function RouteComponent() {
 							onSelectOrganization={setSelectedOrganization}
 							onOrganizationCreated={handleOrganizationCreated}
 						/>
-						<div className="flex flex-1 flex-col">
+						<div className="flex flex-1 flex-col justify-center">
 							<TopBar
 								projects={projects}
 								selectedProject={selectedProject}
@@ -119,7 +119,7 @@ function RouteComponent() {
 								selectedOrganization={selectedOrganization}
 								onProjectCreated={handleProjectCreated}
 							/>
-							<main className="bg-background w-full flex-1 overflow-y-auto pt-10 pb-4 px-4 md:p-6 lg:p-8">
+							<main className="bg-background max-w-7xl mx-auto w-full flex-1 overflow-y-auto pt-10 pb-4 px-4 md:p-6 lg:p-8">
 								<Outlet />
 							</main>
 						</div>
