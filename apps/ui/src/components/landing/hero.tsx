@@ -82,6 +82,7 @@ const response = await client.chat.completions.create({
 });
 
 console.log(response.choices[0].message.content);`,
+	highlightedLines: [4, 5], // Line 4 contains the apiKey
 };
 
 export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
@@ -236,7 +237,7 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 												>
 													<AuthLink>
 														<span className="text-nowrap">
-															Get your API key - free
+															Get your API key
 														</span>
 													</AuthLink>
 												</Button>
@@ -311,7 +312,7 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 														}) => (
 															<pre
 																className={cn(
-																	"p-4 overflow-x-auto text-sm leading-relaxed font-mono max-h-100 overflow-y-auto",
+																	"py-4 overflow-x-auto text-sm leading-relaxed font-mono max-h-100 overflow-y-auto",
 																	className,
 																)}
 																style={{
@@ -320,19 +321,31 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 																	overflowX: "auto",
 																}}
 															>
-																{tokens.map((line: any, i: number) => (
-																	<div
-																		key={i}
-																		{...getLineProps({ line, key: i })}
-																	>
-																		{line.map((token: any, key: number) => (
-																			<span
-																				key={key}
-																				{...getTokenProps({ token, key })}
-																			/>
-																		))}
-																	</div>
-																))}
+																{tokens.map((line: any, i: number) => {
+																	const isHighlighted =
+																		typescriptExample.highlightedLines?.includes(
+																			i + 1,
+																		);
+																	return (
+																		<div
+																			key={i}
+																			{...getLineProps({ line, key: i })}
+																			className={cn(
+																				"px-4",
+																				isHighlighted
+																					? "bg-green-500/10 dark:bg-green-500/20"
+																					: "",
+																			)}
+																		>
+																			{line.map((token: any, key: number) => (
+																				<span
+																					key={key}
+																					{...getTokenProps({ token, key })}
+																				/>
+																			))}
+																		</div>
+																	);
+																})}
 															</pre>
 														)}
 													</Highlight>
