@@ -1,4 +1,5 @@
 import { Elements } from "@stripe/react-stripe-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { usePostHog } from "posthog-js/react";
 import * as React from "react";
@@ -42,6 +43,7 @@ export function OnboardingWizard() {
 	const navigate = useNavigate();
 	const posthog = usePostHog();
 	const { stripe, isLoading: stripeLoading } = useStripe();
+	const queryClient = useQueryClient();
 	const api = useApi();
 	const completeOnboarding = api.useMutation(
 		"post",
@@ -59,6 +61,8 @@ export function OnboardingWizard() {
 					skippedAt: "plan_choice",
 				});
 				await completeOnboarding.mutateAsync({});
+				const queryKey = api.queryOptions("get", "/user/me").queryKey;
+				await queryClient.invalidateQueries({ queryKey });
 				navigate({ to: "/dashboard" });
 				return;
 			}
@@ -72,6 +76,8 @@ export function OnboardingWizard() {
 			});
 
 			await completeOnboarding.mutateAsync({});
+			const queryKey = api.queryOptions("get", "/user/me").queryKey;
+			await queryClient.invalidateQueries({ queryKey });
 			navigate({ to: "/dashboard" });
 			return;
 		}
