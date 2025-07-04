@@ -107,6 +107,12 @@ export default function Dashboard() {
 		totalRequests > 0 &&
 		selectedOrganization?.credits;
 
+	const shouldShowGetStartedState =
+		!isLoading &&
+		selectedOrganization &&
+		selectedOrganization.credits === "0" &&
+		selectedOrganization.plan !== "pro";
+
 	return (
 		<div className="flex flex-col">
 			<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -151,7 +157,7 @@ export default function Dashboard() {
 				)}
 
 				<div className="space-y-4">
-					{!hasActivity && selectedOrganization && (
+					{shouldShowGetStartedState && (
 						<div className="flex flex-col gap-3 py-12">
 							<div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full">
 								<CreditCard className="w-8 h-8 text-muted-foreground" />
