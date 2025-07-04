@@ -33,6 +33,7 @@ const getSteps = (flowType: FlowType) => [
 	{
 		id: flowType === "credits" ? "credits" : "provider-key",
 		title: flowType === "credits" ? "Credits" : "Provider Key",
+		optional: true,
 	},
 ];
 
