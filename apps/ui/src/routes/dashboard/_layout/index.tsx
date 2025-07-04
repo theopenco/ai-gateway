@@ -184,7 +184,7 @@ export default function Dashboard() {
 
 					<div
 						className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-4", {
-							"pointer-events-none opacity-20": !hasActivity,
+							"pointer-events-none opacity-20": shouldShowGetStartedState,
 						})}
 					>
 						<Card>
@@ -304,7 +304,7 @@ export default function Dashboard() {
 					</div>
 					<div
 						className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-7", {
-							"pointer-events-none opacity-20": !hasActivity,
+							"pointer-events-none opacity-20": shouldShowGetStartedState,
 						})}
 					>
 						<Card className="col-span-4">
