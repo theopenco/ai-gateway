@@ -1,6 +1,6 @@
 name: e2e
 on:
-  push:
+  pull_request:
     paths:
       - "apps/gateway/**"
       - "packages/models/**"
