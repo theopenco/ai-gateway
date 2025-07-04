@@ -17,6 +17,7 @@ export interface StepperProps {
 	onStepChange: (step: number) => void;
 	className?: string;
 	children?: React.ReactNode;
+	nextButtonDisabled?: boolean;
 }
 
 export function Stepper({
@@ -25,6 +26,7 @@ export function Stepper({
 	onStepChange,
 	className,
 	children,
+	nextButtonDisabled,
 }: StepperProps) {
 	const progress = Math.round(((activeStep + 1) / steps.length) * 100);
 	const currentStep = steps[activeStep];
@@ -100,7 +102,7 @@ export function Stepper({
 					)}
 					<Button
 						onClick={() => onStepChange(activeStep + 1)}
-						disabled={activeStep === steps.length - 1}
+						disabled={nextButtonDisabled ?? activeStep === steps.length - 1}
 					>
 						{currentStep?.customNextText ||
 							(activeStep === steps.length - 1 ? "Finish" : "Next")}

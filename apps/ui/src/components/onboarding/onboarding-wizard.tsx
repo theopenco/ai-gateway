@@ -41,6 +41,7 @@ export function OnboardingWizard() {
 	const [activeStep, setActiveStep] = useState(0);
 	const [flowType, setFlowType] = useState<FlowType>(null);
 	const [hasSelectedPlan, setHasSelectedPlan] = useState(false);
+	const [isPaymentSuccessful, setIsPaymentSuccessful] = useState(false);
 	const navigate = useNavigate();
 	const posthog = usePostHog();
 	const { stripe, isLoading: stripeLoading } = useStripe();
@@ -115,7 +116,7 @@ export function OnboardingWizard() {
 				<div className="p-6 text-center">Loading payment form...</div>
 			) : (
 				<Elements stripe={stripe}>
-					<CreditsStep />
+					<CreditsStep onPaymentSuccess={() => setIsPaymentSuccessful(true)} />
 				</Elements>
 			);
 		}
@@ -146,6 +147,12 @@ export function OnboardingWizard() {
 				!hasSelectedPlan && {
 					customNextText: "Skip",
 				}),
+			// Remove optional status from credits step when payment is successful
+			...(index === 3 &&
+				flowType === "credits" &&
+				isPaymentSuccessful && {
+					optional: false,
+				}),
 		}));
 	};
 
@@ -158,6 +165,11 @@ export function OnboardingWizard() {
 						activeStep={activeStep}
 						onStepChange={handleStepChange}
 						className="mb-6"
+						nextButtonDisabled={
+							activeStep === STEPS.length - 1 &&
+							flowType === "credits" &&
+							!isPaymentSuccessful
+						}
 					>
 						{renderCurrentStep()}
 					</Stepper>

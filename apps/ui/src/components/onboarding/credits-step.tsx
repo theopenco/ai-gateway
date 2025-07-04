@@ -28,7 +28,11 @@ const CREDIT_OPTIONS = [
 	{ value: "100", label: "$100", description: "Power user" },
 ];
 
-export function CreditsStep() {
+export function CreditsStep({
+	onPaymentSuccess,
+}: {
+	onPaymentSuccess?: () => void;
+}) {
 	const config = useAppConfigValue();
 	const [isLoading, setIsLoading] = useState(false);
 	const [selectedAmount, setSelectedAmount] = useState("50");
@@ -77,6 +81,7 @@ export function CreditsStep() {
 			}
 
 			setIsSuccess(true);
+			onPaymentSuccess?.();
 			posthog.capture("credits_purchased", {
 				amount: Number(selectedAmount),
 				source: "onboarding",
