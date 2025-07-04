@@ -66,7 +66,9 @@ export function WelcomeStep() {
 							</p>
 							<ul className="mt-2 list-inside list-disc text-sm">
 								<li>Create your first API key to access the LLM Gateway</li>
-								<li>Choose between buying credits or bringing your own API keys</li>
+								<li>
+									Choose between buying credits or bringing your own API keys
+								</li>
 								<li>Set up your preferred payment method or provider keys</li>
 								<li>Get you ready to start making requests</li>
 							</ul>
