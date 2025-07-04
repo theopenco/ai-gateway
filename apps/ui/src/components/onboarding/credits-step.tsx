@@ -3,6 +3,7 @@ import {
 	useStripe as useStripeElements,
 	useElements,
 } from "@stripe/react-stripe-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { CreditCard, Check } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
@@ -39,6 +40,7 @@ export function CreditsStep({
 	const [isSuccess, setIsSuccess] = useState(false);
 	const posthog = usePostHog();
 	const api = useApi();
+	const queryClient = useQueryClient();
 
 	const stripe = useStripeElements();
 	const elements = useElements();
@@ -80,12 +82,18 @@ export function CreditsStep({
 				throw new Error(result.error.message);
 			}
 
-			setIsSuccess(true);
+			await queryClient.invalidateQueries({
+				queryKey: api.queryOptions("get", "/orgs").queryKey,
+			});
+
 			onPaymentSuccess?.();
+			setIsSuccess(true);
+
 			posthog.capture("credits_purchased", {
 				amount: Number(selectedAmount),
 				source: "onboarding",
 			});
+
 			toast({
 				title: "Payment successful",
 				description: `$${selectedAmount} has been added to your account.`,
