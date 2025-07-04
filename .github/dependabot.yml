@@ -14,8 +14,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    ignore:
-      - dependency-name: "@steebchen/*" # we separate @steebchen packages
     groups:
       abinnovision:
         patterns:
@@ -51,15 +49,3 @@ updates:
       radix:
         patterns:
           - "@radix-ui/*"
-
-  - package-ecosystem: "npm"
-    target-branch: main # this is a hack to make the same ecosystem group work
-    directory: "/"
-    schedule:
-      interval: "daily"
-    allow:
-      - dependency-name: "@steebchen/*" # Restrict updates to @steebchen packages only
-    groups:
-      steebchen:
-        patterns:
-          - "@steebchen/*"
