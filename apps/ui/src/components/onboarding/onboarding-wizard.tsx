@@ -9,7 +9,6 @@ import { CreditsStep } from "./credits-step";
 import { PlanChoiceStep } from "./plan-choice-step";
 import { ProviderKeyStep } from "./provider-key-step";
 import { WelcomeStep } from "./welcome-step";
-import { useDefaultOrganization } from "@/hooks/useOrganization";
 import { Card, CardContent } from "@/lib/components/card";
 import { Stepper } from "@/lib/components/stepper";
 import { useApi } from "@/lib/fetch-client";
@@ -46,7 +45,6 @@ export function OnboardingWizard() {
 	const navigate = useNavigate();
 	const posthog = usePostHog();
 	const { stripe, isLoading: stripeLoading } = useStripe();
-	const { data: organization } = useDefaultOrganization();
 	const api = useApi();
 	const completeOnboarding = api.useMutation(
 		"post",
@@ -78,8 +76,6 @@ export function OnboardingWizard() {
 		setFlowType("byok");
 		setActiveStep(3);
 	};
-
-	const CurrentStepComponent = STEPS[activeStep].component;
 
 	// Special handling for PlanChoiceStep to pass callbacks
 	const renderCurrentStep = () => {
