@@ -11,7 +11,7 @@ const originUrls =
 	process.env.ORIGIN_URL || "http://localhost:3002,http://localhost:4002";
 const resendApiKey = process.env.RESEND_API_KEY;
 const resendFromEmail =
-	process.env.RESEND_FROM_EMAIL || "noreply@llmgateway.io";
+	process.env.RESEND_FROM_EMAIL || "contact@llmgateway.io";
 
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	advanced: {
