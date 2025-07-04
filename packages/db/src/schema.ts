@@ -43,6 +43,7 @@ export const user = pgTable("user", {
 	email: text().notNull().unique(),
 	emailVerified: boolean().notNull().default(false),
 	image: text(),
+	onboardingCompleted: boolean().notNull().default(false),
 });
 
 export const session = pgTable("session", {

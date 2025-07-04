@@ -18,6 +18,7 @@ export interface PasswordUpdateData {
 export interface UseUserOptions {
 	redirectTo?: string;
 	redirectWhen?: "authenticated" | "unauthenticated";
+	checkOnboarding?: boolean;
 }
 
 export function useUser(options?: UseUserOptions) {
@@ -42,11 +43,15 @@ export function useUser(options?: UseUserOptions) {
 			return;
 		}
 
-		const { redirectTo, redirectWhen } = options;
+		const { redirectTo, redirectWhen, checkOnboarding } = options;
 		const hasUser = !!data?.user;
 
 		if (redirectWhen === "authenticated" && hasUser) {
-			navigate({ to: redirectTo });
+			if (checkOnboarding && !data.user.onboardingCompleted) {
+				navigate({ to: "/onboarding" });
+			} else {
+				navigate({ to: redirectTo });
+			}
 		} else if (
 			redirectWhen === "unauthenticated" &&
 			!isLoading &&
@@ -61,6 +66,7 @@ export function useUser(options?: UseUserOptions) {
 		navigate,
 		options?.redirectTo,
 		options?.redirectWhen,
+		options?.checkOnboarding,
 		options,
 	]);
 

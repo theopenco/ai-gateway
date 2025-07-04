@@ -11,6 +11,7 @@ import { WelcomeStep } from "./welcome-step";
 import { useDefaultOrganization } from "@/hooks/useOrganization";
 import { Card, CardContent } from "@/lib/components/card";
 import { Stepper } from "@/lib/components/stepper";
+import { useApi } from "@/lib/fetch-client";
 import { useStripe } from "@/lib/stripe";
 
 const getSteps = (isProPlan: boolean) => [
@@ -48,15 +49,22 @@ export function OnboardingWizard() {
 	const posthog = usePostHog();
 	const { stripe, isLoading: stripeLoading } = useStripe();
 	const { data: organization } = useDefaultOrganization();
+	const api = useApi();
+	const completeOnboarding = api.useMutation(
+		"post",
+		"/user/me/complete-onboarding",
+	);
 
 	const isProPlan = organization?.plan === "pro";
 	const STEPS = getSteps(isProPlan);
 
-	const handleStepChange = (step: number) => {
+	const handleStepChange = async (step: number) => {
 		if (step >= STEPS.length) {
 			posthog.capture("onboarding_completed", {
 				completedSteps: STEPS.map((step) => step.id),
 			});
+
+			await completeOnboarding.mutateAsync({});
 			navigate({ to: "/dashboard" });
 			return;
 		}

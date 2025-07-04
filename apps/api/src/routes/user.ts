@@ -12,6 +12,7 @@ const publicUserSchema = z.object({
 	id: z.string(),
 	email: z.string(),
 	name: z.string().nullable(),
+	onboardingCompleted: z.boolean(),
 });
 
 const get = createRoute({
@@ -57,6 +58,7 @@ user.openapi(get, async (c) => {
 			id: user.id,
 			email: user.email,
 			name: user.name,
+			onboardingCompleted: user.onboardingCompleted,
 		},
 	});
 });
@@ -65,6 +67,8 @@ const updateUserSchema = z.object({
 	name: z.string().optional(),
 	email: z.string().email("Invalid email address").optional(),
 });
+
+const completeOnboardingSchema = z.object({});
 
 const updatePasswordSchema = z.object({
 	currentPassword: z.string().min(1, "Current password is required"),
@@ -196,6 +200,7 @@ user.openapi(updateUser, async (c) => {
 			id: updatedUser.id,
 			email: updatedUser.email,
 			name: updatedUser.name,
+			onboardingCompleted: updatedUser.onboardingCompleted,
 		},
 		message: "User updated successfully",
 	});
@@ -353,5 +358,92 @@ user.openapi(deleteUser, async (c) => {
 
 	return c.json({
 		message: "Account deleted successfully",
+	});
+});
+
+const completeOnboarding = createRoute({
+	method: "post",
+	path: "/me/complete-onboarding",
+	request: {
+		body: {
+			content: {
+				"application/json": {
+					schema: completeOnboardingSchema,
+				},
+			},
+		},
+	},
+	responses: {
+		200: {
+			content: {
+				"application/json": {
+					schema: z.object({
+						user: publicUserSchema.openapi({}),
+						message: z.string(),
+					}),
+				},
+			},
+			description: "Onboarding completed successfully.",
+		},
+		401: {
+			content: {
+				"application/json": {
+					schema: z.object({
+						message: z.string(),
+					}),
+				},
+			},
+			description: "Unauthorized.",
+		},
+		404: {
+			content: {
+				"application/json": {
+					schema: z.object({
+						message: z.string(),
+					}),
+				},
+			},
+			description: "User not found.",
+		},
+	},
+});
+
+user.openapi(completeOnboarding, async (c) => {
+	const authUser = c.get("user");
+
+	if (!authUser) {
+		throw new HTTPException(401, {
+			message: "Unauthorized",
+		});
+	}
+
+	const userRecord = await db.query.user.findFirst({
+		where: {
+			id: authUser.id,
+		},
+	});
+
+	if (!userRecord) {
+		throw new HTTPException(404, {
+			message: "User not found",
+		});
+	}
+
+	const [updatedUser] = await db
+		.update(tables.user)
+		.set({
+			onboardingCompleted: true,
+		})
+		.where(eq(tables.user.id, authUser.id))
+		.returning();
+
+	return c.json({
+		user: {
+			id: updatedUser.id,
+			email: updatedUser.email,
+			name: updatedUser.name,
+			onboardingCompleted: updatedUser.onboardingCompleted,
+		},
+		message: "Onboarding completed successfully",
 	});
 });
