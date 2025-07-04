@@ -25,9 +25,9 @@ function RouteComponent() {
 	const posthog = usePostHog();
 	const { location } = useRouterState();
 	const queryClient = useQueryClient();
-	const [organizations, setOrganizations] = useState<Organization[]>([]);
-	const [selectedOrganization, setSelectedOrganization] =
-		useState<Organization | null>(null);
+	const [selectedOrganizationId, setSelectedOrganizationId] = useState<
+		string | null
+	>(null);
 	const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 	const api = useApi();
 
@@ -35,6 +35,20 @@ function RouteComponent() {
 
 	// Fetch organizations
 	const { data: organizationsData } = api.useQuery("get", "/orgs");
+	const organizations = useMemo(
+		() => organizationsData?.organizations || [],
+		[organizationsData?.organizations],
+	);
+
+	// Derive selected organization from query data
+	const selectedOrganization = useMemo(() => {
+		if (selectedOrganizationId) {
+			return (
+				organizations.find((org) => org.id === selectedOrganizationId) || null
+			);
+		}
+		return organizations[0] || null;
+	}, [selectedOrganizationId, organizations]);
 
 	// Fetch projects for selected organization
 	const { data: projectsData } = api.useQuery(
@@ -53,18 +67,17 @@ function RouteComponent() {
 	);
 
 	// Get current projects from query data
-	const projects = projectsData?.projects || [];
+	const projects = useMemo(
+		() => projectsData?.projects || [],
+		[projectsData?.projects],
+	);
 
-	// Update organizations when data is fetched
+	// Auto-select first organization if none selected
 	useEffect(() => {
-		if (organizationsData?.organizations) {
-			setOrganizations(organizationsData.organizations);
-			// Auto-select first organization if none selected
-			if (!selectedOrganization && organizationsData.organizations.length > 0) {
-				setSelectedOrganization(organizationsData.organizations[0]);
-			}
+		if (organizations.length > 0 && !selectedOrganizationId) {
+			setSelectedOrganizationId(organizations[0].id);
 		}
-	}, [organizationsData, selectedOrganization]);
+	}, [organizations, selectedOrganizationId]);
 
 	// Reset project selection when organization changes
 	useEffect(() => {
@@ -98,8 +111,7 @@ function RouteComponent() {
 	}, [location.pathname, api, queryClient]);
 
 	const handleOrganizationCreated = (org: Organization) => {
-		setOrganizations((prev) => [...prev, org]);
-		setSelectedOrganization(org);
+		setSelectedOrganizationId(org.id);
 	};
 
 	const handleProjectCreated = (project: Project) => {
@@ -121,7 +133,9 @@ function RouteComponent() {
 					<div className="flex flex-1">
 						<DashboardSidebar
 							organizations={organizations}
-							onSelectOrganization={setSelectedOrganization}
+							onSelectOrganization={(org) =>
+								setSelectedOrganizationId(org?.id || null)
+							}
 							onOrganizationCreated={handleOrganizationCreated}
 						/>
 						<div className="flex flex-1 flex-col justify-center">
