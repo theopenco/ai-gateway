@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { useDefaultProject } from "@/hooks/useDefaultProject";
+import { Badge } from "@/lib/components/badge";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -24,8 +25,6 @@ import {
 } from "@/lib/components/form";
 import { Input } from "@/lib/components/input";
 import { Step } from "@/lib/components/stepper";
-import { toast } from "@/lib/components/use-toast";
-import { Badge } from "@/lib/components/badge";
 import {
 	Table,
 	TableBody,
@@ -34,6 +33,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/lib/components/table";
+import { toast } from "@/lib/components/use-toast";
 import { useApi } from "@/lib/fetch-client";
 
 const formSchema = z.object({
@@ -60,7 +60,7 @@ export function ApiKeyStep() {
 		},
 		{
 			enabled: !!defaultProject?.id,
-		}
+		},
 	);
 
 	const form = useForm<FormValues>({
@@ -72,7 +72,7 @@ export function ApiKeyStep() {
 
 	const createApiKey = api.useMutation("post", "/keys/api");
 
-	type ApiKeyType = {
+	interface ApiKeyType {
 		id: string;
 		createdAt: string;
 		updatedAt: string;
@@ -80,9 +80,12 @@ export function ApiKeyStep() {
 		status: "active" | "inactive" | "deleted" | null;
 		projectId: string;
 		maskedToken: string;
-	};
+	}
 
-	const existingKeys = apiKeysData?.apiKeys?.filter((key: ApiKeyType) => key.status !== "deleted") || [];
+	const existingKeys =
+		apiKeysData?.apiKeys?.filter(
+			(key: ApiKeyType) => key.status !== "deleted",
+		) || [];
 	const hasExistingKeys = existingKeys.length > 0;
 
 	async function onSubmit(values: FormValues) {
@@ -138,9 +141,7 @@ export function ApiKeyStep() {
 				<div className="flex flex-col gap-6">
 					<div className="flex flex-col gap-2 text-center">
 						<h1 className="text-2xl font-bold">API Keys</h1>
-						<p className="text-muted-foreground">
-							Loading your API keys...
-						</p>
+						<p className="text-muted-foreground">Loading your API keys...</p>
 					</div>
 				</div>
 			</Step>
@@ -236,9 +237,13 @@ export function ApiKeyStep() {
 										<TableBody>
 											{existingKeys.map((key) => (
 												<TableRow key={key.id}>
-													<TableCell className="font-medium">{key.description}</TableCell>
+													<TableCell className="font-medium">
+														{key.description}
+													</TableCell>
 													<TableCell>
-														<span className="font-mono text-xs">{key.maskedToken}</span>
+														<span className="font-mono text-xs">
+															{key.maskedToken}
+														</span>
 													</TableCell>
 													<TableCell>
 														<Badge
