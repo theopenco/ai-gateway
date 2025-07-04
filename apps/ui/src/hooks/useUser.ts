@@ -57,7 +57,7 @@ export function useUser(options?: UseUserOptions) {
 
 		// Redirect to onboarding if user hasn't completed it
 		if (!data.user.onboardingCompleted) {
-			navigate({ to: "/onboarding" });
+			navigate({ to: "/onboarding", replace: true });
 		}
 	}, [data?.user, isLoading, navigate, routerState.location.pathname]);
 
