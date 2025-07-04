@@ -43,7 +43,7 @@ jobs:
           if [[ "$AUTHOR_EMAIL" == *"claude[bot]"* ]] || [[ "$AUTHOR_NAME" == *"claude[bot]"* ]]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Skipping review - most recent commit is from Claude"
-          elif [[ "$COMMIT_TITLE" == *"WIP"* ]] || [[ "$COMMIT_TITLE" == "Merge"* ]]; then
+          elif [[ "$COMMIT_TITLE" == *"WIP"* ]] || [[ "$COMMIT_TITLE" == "Merge"* ]] || [[ "$COMMIT_TITLE" == "automated"* ]]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Skipping review - most recent commit title contains WIP"
           else
