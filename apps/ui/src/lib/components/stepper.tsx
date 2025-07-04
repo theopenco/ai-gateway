@@ -11,11 +11,13 @@ export interface StepperProps {
 		title: string;
 		description?: string;
 		optional?: boolean;
+		customNextText?: string;
 	}[];
 	activeStep: number;
 	onStepChange: (step: number) => void;
 	className?: string;
 	children?: React.ReactNode;
+	nextButtonDisabled?: boolean;
 }
 
 export function Stepper({
@@ -24,8 +26,10 @@ export function Stepper({
 	onStepChange,
 	className,
 	children,
+	nextButtonDisabled,
 }: StepperProps) {
 	const progress = Math.round(((activeStep + 1) / steps.length) * 100);
+	const currentStep = steps[activeStep];
 
 	return (
 		<div className={cn("flex flex-col gap-8", className)}>
@@ -98,9 +102,10 @@ export function Stepper({
 					)}
 					<Button
 						onClick={() => onStepChange(activeStep + 1)}
-						disabled={activeStep === steps.length - 1}
+						disabled={nextButtonDisabled ?? activeStep === steps.length - 1}
 					>
-						{activeStep === steps.length - 1 ? "Finish" : "Next"}
+						{currentStep?.customNextText ||
+							(activeStep === steps.length - 1 ? "Finish" : "Next")}
 					</Button>
 				</div>
 			</div>
