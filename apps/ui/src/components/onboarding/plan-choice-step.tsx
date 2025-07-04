@@ -17,11 +17,13 @@ import { useAppConfigValue } from "@/lib/config";
 interface PlanChoiceStepProps {
 	onSelectCredits: () => void;
 	onSelectBYOK: () => void;
+	hasSelectedPlan: boolean;
 }
 
 export function PlanChoiceStep({
 	onSelectCredits,
 	onSelectBYOK,
+	hasSelectedPlan: _hasSelectedPlan,
 }: PlanChoiceStepProps) {
 	const config = useAppConfigValue();
 	const { data: organization } = useDefaultOrganization();
@@ -33,7 +35,8 @@ export function PlanChoiceStep({
 				<div className="flex flex-col gap-2 text-center">
 					<h1 className="text-2xl font-bold">Choose Your Approach</h1>
 					<p className="text-muted-foreground">
-						Select how you'd like to use LLM Gateway
+						Select how you'd like to use LLM Gateway, or skip to continue with
+						the free plan
 					</p>
 				</div>
 

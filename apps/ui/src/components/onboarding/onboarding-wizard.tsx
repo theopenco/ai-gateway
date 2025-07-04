@@ -20,28 +20,25 @@ const getSteps = (flowType: FlowType) => [
 	{
 		id: "welcome",
 		title: "Welcome",
-		component: WelcomeStep,
 	},
 	{
 		id: "api-key",
 		title: "API Key",
-		component: ApiKeyStep,
 	},
 	{
 		id: "plan-choice",
 		title: "Choose Plan",
-		component: PlanChoiceStep,
 	},
 	{
 		id: flowType === "credits" ? "credits" : "provider-key",
 		title: flowType === "credits" ? "Credits" : "Provider Key",
-		component: flowType === "credits" ? CreditsStep : ProviderKeyStep,
 	},
 ];
 
 export function OnboardingWizard() {
 	const [activeStep, setActiveStep] = useState(0);
 	const [flowType, setFlowType] = useState<FlowType>(null);
+	const [hasSelectedPlan, setHasSelectedPlan] = useState(false);
 	const navigate = useNavigate();
 	const posthog = usePostHog();
 	const { stripe, isLoading: stripeLoading } = useStripe();
@@ -54,6 +51,20 @@ export function OnboardingWizard() {
 	const STEPS = getSteps(flowType);
 
 	const handleStepChange = async (step: number) => {
+		// Special handling for plan choice step
+		if (activeStep === 2) {
+			if (!hasSelectedPlan) {
+				// Skip to dashboard if no plan selected
+				posthog.capture("onboarding_skipped", {
+					skippedAt: "plan_choice",
+				});
+				await completeOnboarding.mutateAsync({});
+				navigate({ to: "/dashboard" });
+				return;
+			}
+			// If plan is selected, continue to next step
+		}
+
 		if (step >= STEPS.length) {
 			posthog.capture("onboarding_completed", {
 				completedSteps: STEPS.map((step) => step.id),
@@ -69,11 +80,13 @@ export function OnboardingWizard() {
 
 	const handleSelectCredits = () => {
 		setFlowType("credits");
+		setHasSelectedPlan(true);
 		setActiveStep(3);
 	};
 
 	const handleSelectBYOK = () => {
 		setFlowType("byok");
+		setHasSelectedPlan(true);
 		setActiveStep(3);
 	};
 
@@ -84,6 +97,7 @@ export function OnboardingWizard() {
 				<PlanChoiceStep
 					onSelectCredits={handleSelectCredits}
 					onSelectBYOK={handleSelectBYOK}
+					hasSelectedPlan={hasSelectedPlan}
 				/>
 			);
 		}
@@ -116,15 +130,24 @@ export function OnboardingWizard() {
 		return null;
 	};
 
+	// Customize stepper steps to show appropriate button text
+	const getStepperSteps = () => {
+		return STEPS.map((step, index) => ({
+			...step,
+			// Make plan choice step show Skip when no selection
+			...(index === 2 &&
+				!hasSelectedPlan && {
+					customNextText: "Skip",
+				}),
+		}));
+	};
+
 	return (
 		<div className="container mx-auto max-w-3xl py-10">
 			<Card>
 				<CardContent className="p-6 sm:p-8">
 					<Stepper
-						steps={STEPS.map(({ id, title }) => ({
-							id,
-							title,
-						}))}
+						steps={getStepperSteps()}
 						activeStep={activeStep}
 						onStepChange={handleStepChange}
 						className="mb-6"
