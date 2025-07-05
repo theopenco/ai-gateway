@@ -18,6 +18,7 @@ import { TopUpCreditsButton } from "@/components/credits/top-up-credits-dialog";
 import { DashboardLoading } from "@/components/dashboard/dashboard-loading";
 import { Overview } from "@/components/dashboard/overview";
 import { useDashboardGuard } from "@/hooks/useDashboardGuard";
+
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -30,6 +31,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/lib/components/tabs";
 import { useAppConfigValue } from "@/lib/config";
 import { useDashboardContext } from "@/lib/dashboard-context";
 import { useApi } from "@/lib/fetch-client";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
 	component: Dashboard,
@@ -77,7 +79,7 @@ export default function Dashboard() {
 
 			queryClient.invalidateQueries({ queryKey });
 		}
-	}, [selectedProject?.id, queryClient, days]);
+	}, [selectedProject?.id, queryClient, days, api]);
 
 	// Show loading while checking authentication
 	if (authLoading) {
@@ -109,12 +111,62 @@ export default function Dashboard() {
 		return tokens.toString();
 	};
 
+	const hasActivity =
+		activityData.length > 0 &&
+		totalRequests > 0 &&
+		selectedOrganization?.credits;
+
+	// Determine if we're still loading organization data
+	const isOrganizationLoading = !selectedOrganization;
+
+	const shouldShowGetStartedState =
+		!isLoading &&
+		!isOrganizationLoading &&
+		selectedOrganization &&
+		selectedOrganization.credits === "0" &&
+		selectedOrganization.plan !== "pro";
+
+	// Show loading state while we're determining which UI to show
+	const isInitialLoading = isOrganizationLoading;
+
+	// Show loading state while determining which UI to render
+	if (isInitialLoading) {
+		return (
+			<div className="flex flex-col">
+				<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+					<div className="flex flex-col md:flex-row items-center justify-between space-y-2">
+						<div>
+							<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+							<div className="h-5 w-48 bg-muted animate-pulse rounded mt-1" />
+						</div>
+					</div>
+					<div className="space-y-4">
+						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+							{Array.from({ length: 4 }).map((_, i) => (
+								<Card key={i}>
+									<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+										<div className="h-4 w-24 bg-muted animate-pulse rounded" />
+										<div className="h-4 w-4 bg-muted animate-pulse rounded" />
+									</CardHeader>
+									<CardContent>
+										<div className="h-8 w-20 bg-muted animate-pulse rounded mb-2" />
+										<div className="h-3 w-16 bg-muted animate-pulse rounded" />
+									</CardContent>
+								</Card>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="flex flex-col">
 			<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
 				<div className="flex flex-col md:flex-row items-center justify-between space-y-2">
 					<div>
-						<h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+						<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
 						{selectedProject && (
 							<p className="text-sm text-muted-foreground mt-1">
 								Project: {selectedProject.name}
@@ -126,30 +178,82 @@ export default function Dashboard() {
 							</p>
 						)}
 					</div>
-					<div className="flex items-center space-x-2">
-						{selectedOrganization && <TopUpCreditsButton />}
-						<Button asChild>
-							<Link to="/dashboard/provider-keys">
-								<Plus className="mr-2 h-4 w-4" />
-								Add Provider
-							</Link>
-						</Button>
-					</div>
+					{hasActivity && (
+						<div className="flex items-center space-x-2">
+							{selectedOrganization && <TopUpCreditsButton />}
+							<Button asChild>
+								<Link to="/dashboard/provider-keys">
+									<Plus className="mr-2 h-4 w-4" />
+									Add Provider
+								</Link>
+							</Button>
+						</div>
+					)}
 				</div>
 
-				<Tabs
-					defaultValue="7days"
-					onValueChange={(value) => setDays(value === "7days" ? 7 : 30)}
-					className="mb-2"
-				>
-					<TabsList>
-						<TabsTrigger value="7days">Last 7 Days</TabsTrigger>
-						<TabsTrigger value="30days">Last 30 Days</TabsTrigger>
-					</TabsList>
-				</Tabs>
+				{hasActivity && (
+					<Tabs
+						defaultValue="7days"
+						onValueChange={(value) => setDays(value === "7days" ? 7 : 30)}
+						className="mb-2"
+					>
+						<TabsList>
+							<TabsTrigger value="7days">Last 7 Days</TabsTrigger>
+							<TabsTrigger value="30days">Last 30 Days</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				)}
 
 				<div className="space-y-4">
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+					{shouldShowGetStartedState && (
+						<div className="flex flex-col gap-3 py-12">
+							<div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full">
+								<CreditCard className="w-8 h-8 text-muted-foreground" />
+							</div>
+							<h3 className="text-xl font-semibold">
+								You have no credits yet.
+							</h3>
+							<p className="text-muted-foreground max-w-md">
+								Add credits to your organization to start making API requests
+								and track your LLM usage.
+							</p>
+
+							<div className="flex flex-col sm:flex-row gap-3">
+								<TopUpCreditsButton />
+								<UpgradeToProDialog>
+									<Button variant="outline">
+										<Key className="mr-2 h-4 w-4" />
+										Bring Your Own Keys
+									</Button>
+								</UpgradeToProDialog>
+							</div>
+						</div>
+					)}
+
+					<div
+						className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-4", {
+							"pointer-events-none opacity-20": shouldShowGetStartedState,
+						})}
+					>
+						<Card>
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="text-sm font-medium">
+									Organization Credits
+								</CardTitle>
+								<CreditCard className="text-muted-foreground h-4 w-4" />
+							</CardHeader>
+							<CardContent>
+								<div className="text-2xl font-bold truncate overflow-ellipsis">
+									$
+									{selectedOrganization
+										? Number(selectedOrganization.credits).toFixed(8)
+										: "0.00"}
+								</div>
+								<p className="text-muted-foreground text-xs">
+									Available balance
+								</p>
+							</CardContent>
+						</Card>
 						<Card>
 							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 								<CardTitle className="text-sm font-medium">
@@ -245,27 +349,12 @@ export default function Dashboard() {
 								)}
 							</CardContent>
 						</Card>
-						<Card>
-							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-								<CardTitle className="text-sm font-medium">
-									Organization Credits
-								</CardTitle>
-								<CreditCard className="text-muted-foreground h-4 w-4" />
-							</CardHeader>
-							<CardContent>
-								<div className="text-2xl font-bold truncate overflow-ellipsis">
-									$
-									{selectedOrganization
-										? Number(selectedOrganization.credits).toFixed(8)
-										: "0.00"}
-								</div>
-								<p className="text-muted-foreground text-xs">
-									Available balance
-								</p>
-							</CardContent>
-						</Card>
 					</div>
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+					<div
+						className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-7", {
+							"pointer-events-none opacity-20": shouldShowGetStartedState,
+						})}
+					>
 						<Card className="col-span-4">
 							<CardHeader>
 								<CardTitle>Usage Overview</CardTitle>

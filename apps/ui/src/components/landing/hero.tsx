@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight, Copy } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Highlight, themes } from "prism-react-renderer";
 import React from "react";
 
 import { AnimatedGroup } from "./animated-group";
@@ -20,7 +22,11 @@ import XaiLogo from "@/assets/models/xai.svg?react";
 import heroImageLight from "@/assets/new-hero-light.png";
 import heroImageDark from "@/assets/new-hero.png";
 import { Button } from "@/lib/components/button";
+import { toast } from "@/lib/components/use-toast";
 import { useAppConfigValue } from "@/lib/config";
+import { cn } from "@/lib/utils";
+
+import type { Language } from "prism-react-renderer";
 
 const transitionVariants = {
 	item: {
@@ -58,8 +64,50 @@ const PROVIDER_LOGOS = [
 	{ name: "Perplexity", component: PerplexityLogo },
 ] as const;
 
+// TypeScript code example
+const typescriptExample = {
+	language: "typescript",
+	code: `import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  baseURL: "https://api.llmgateway.io/v1/"
+});
+
+const response = await client.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    { role: "user", content: "Hello, how are you?" }
+  ]
+});
+
+console.log(response.choices[0].message.content);`,
+	highlightedLines: [4, 5], // Line 4 contains the apiKey
+};
+
 export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 	const config = useAppConfigValue();
+	const { resolvedTheme } = useTheme();
+
+	const copyToClipboard = async (text: string) => {
+		try {
+			await navigator.clipboard.writeText(text);
+			toast({
+				title: "Copied to clipboard",
+				description:
+					"TypeScript code snippet has been copied to your clipboard.",
+				duration: 3000,
+			});
+		} catch (err) {
+			console.error("Failed to copy text: ", err);
+			toast({
+				title: "Copy failed",
+				description: "Could not copy to clipboard. Please try again.",
+				variant: "destructive",
+				duration: 3000,
+			});
+		}
+	};
 	return (
 		<>
 			<Navbar />
@@ -122,12 +170,13 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 								className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--background)_75%)]"
 							/>
 							<div className="mx-auto max-w-7xl px-6">
-								<div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
+								{/* Open source badge - outside grid */}
+								<div className="mb-10 lg:mb-12">
 									<AnimatedGroup variants={transitionVariants}>
 										<a
 											href="https://github.com/theopenco/llmgateway"
 											target="_blank"
-											className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
+											className="mx-auto lg:mx-0 hover:bg-background dark:hover:border-t-border bg-muted group flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
 										>
 											<span className="text-foreground text-sm">
 												LLM Gateway is fully open source
@@ -145,88 +194,197 @@ export function Hero({ navbarOnly }: { navbarOnly?: boolean }) {
 												</div>
 											</div>
 										</a>
-
-										<h1 className="mt-8 max-w-4xl mx-auto text-balance text-6xl md:text-7xl lg:mt-16 xl:text-6xl">
-											Use any model, from any provider
-											<br />— with just one API.
-										</h1>
-										<p className="mx-auto mt-8 max-w-2xl text-balance text-lg">
-											Route, manage, and analyze your LLM requests across
-											multiple providers with a unified API interface.
-										</p>
-									</AnimatedGroup>
-
-									<AnimatedGroup
-										variants={{
-											container: {
-												visible: {
-													transition: {
-														staggerChildren: 0.05,
-														delayChildren: 0.75,
-													},
-												},
-											},
-											...transitionVariants,
-										}}
-										className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row"
-									>
-										<div
-											key={1}
-											className="bg-foreground/10 rounded-[14px] border p-0.5"
-										>
-											<Button
-												asChild
-												size="lg"
-												className="rounded-xl px-5 text-base"
-											>
-												<AuthLink>
-													<span className="text-nowrap">Start Building</span>
-												</AuthLink>
-											</Button>
-										</div>
-										<Button
-											key={2}
-											asChild
-											size="lg"
-											variant="ghost"
-											className="h-10.5 rounded-xl px-5"
-										>
-											<a href={config.docsUrl} target="_blank">
-												<span className="text-nowrap">View Documentation</span>
-											</a>
-										</Button>
-									</AnimatedGroup>
-
-									<AnimatedGroup
-										variants={{
-											container: {
-												visible: {
-													transition: {
-														staggerChildren: 0.05,
-														delayChildren: 1,
-													},
-												},
-											},
-											...transitionVariants,
-										}}
-										className="mt-8 flex justify-center fixed bottom-4 left-2 z-30"
-									>
-										<a
-											href="https://www.producthunt.com/products/llm-gateway?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-llm&#0045;gateway"
-											target="_blank"
-											rel="noopener noreferrer"
-											className="transition-transform hover:scale-105"
-										>
-											<img
-												src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=986038&theme=light&t=1751353042660"
-												alt="LLM&#0032;Gateway - One&#0032;API&#0032;Gateway&#0032;for&#0032;all&#0032;your&#0032;LLM&#0032;needs | Product Hunt"
-												style={{ width: "250px", height: "54px" }}
-												width="250"
-												height="54"
-											/>
-										</a>
 									</AnimatedGroup>
 								</div>
+
+								{/* 2-column grid layout */}
+								<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+									{/* Column 1: Content */}
+									<div className="text-center lg:text-left">
+										<AnimatedGroup variants={transitionVariants}>
+											<h1 className="max-w-4xl mx-auto lg:mx-0 text-balance text-4xl md:text-6xl xl:text-6xl font-bold">
+												Use any model, from any provider
+												<br />— with just one API.
+											</h1>
+											<p className="mx-auto lg:mx-0 mt-8 max-w-2xl text-balance text-lg">
+												Route, manage, and analyze your LLM requests across
+												multiple providers with a unified API interface.
+											</p>
+										</AnimatedGroup>
+
+										<AnimatedGroup
+											variants={{
+												container: {
+													visible: {
+														transition: {
+															staggerChildren: 0.05,
+															delayChildren: 0.75,
+														},
+													},
+												},
+												...transitionVariants,
+											}}
+											className="mt-12 flex flex-col items-center lg:items-start justify-center lg:justify-start gap-2 md:flex-row"
+										>
+											<div
+												key={1}
+												className="bg-foreground/10 rounded-[14px] border p-0.5"
+											>
+												<Button
+													asChild
+													size="lg"
+													className="rounded-xl px-5 text-base"
+												>
+													<AuthLink>
+														<span className="text-nowrap">
+															Get your API key
+														</span>
+													</AuthLink>
+												</Button>
+											</div>
+											<Button
+												key={2}
+												asChild
+												size="lg"
+												variant="ghost"
+												className="h-10.5 rounded-xl px-5"
+											>
+												<a href={config.docsUrl} target="_blank">
+													<span className="text-nowrap">
+														View documentation
+													</span>
+												</a>
+											</Button>
+										</AnimatedGroup>
+									</div>
+
+									{/* Column 2: Code Example */}
+									<div className="hidden lg:block">
+										<AnimatedGroup
+											variants={{
+												container: {
+													visible: {
+														transition: {
+															staggerChildren: 0.05,
+															delayChildren: 0.5,
+														},
+													},
+												},
+												...transitionVariants,
+											}}
+										>
+											<div className="relative overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-950">
+												<Button
+													type="button"
+													variant="ghost"
+													size="sm"
+													className="absolute top-3 right-3 z-10 h-8 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm hover:bg-white dark:hover:bg-zinc-900"
+													onClick={() =>
+														copyToClipboard(typescriptExample.code)
+													}
+												>
+													<Copy className="h-4 w-4 mr-1" />
+													Copy
+												</Button>
+
+												<div className="relative">
+													<Highlight
+														code={typescriptExample.code}
+														language={typescriptExample.language as Language}
+														theme={
+															resolvedTheme === "dark"
+																? themes.dracula
+																: themes.github
+														}
+													>
+														{({
+															className,
+															style,
+															tokens,
+															getLineProps,
+															getTokenProps,
+														}: {
+															className: string;
+															style: React.CSSProperties;
+															tokens: any[];
+															getLineProps: (props: any) => any;
+															getTokenProps: (props: any) => any;
+														}) => (
+															<pre
+																className={cn(
+																	"py-4 overflow-x-auto text-sm leading-relaxed font-mono max-h-100 overflow-y-auto",
+																	className,
+																)}
+																style={{
+																	...style,
+																	borderRadius: 0,
+																	overflowX: "auto",
+																}}
+															>
+																{tokens.map((line: any, i: number) => {
+																	const isHighlighted =
+																		typescriptExample.highlightedLines?.includes(
+																			i + 1,
+																		);
+																	return (
+																		<div
+																			key={i}
+																			{...getLineProps({ line, key: i })}
+																			className={cn(
+																				"px-4",
+																				isHighlighted
+																					? "bg-green-500/10 dark:bg-green-500/20"
+																					: "",
+																			)}
+																		>
+																			{line.map((token: any, key: number) => (
+																				<span
+																					key={key}
+																					{...getTokenProps({ token, key })}
+																				/>
+																			))}
+																		</div>
+																	);
+																})}
+															</pre>
+														)}
+													</Highlight>
+												</div>
+											</div>
+										</AnimatedGroup>
+									</div>
+								</div>
+
+								{/* Product Hunt Badge - Keep in fixed position */}
+								<AnimatedGroup
+									variants={{
+										container: {
+											visible: {
+												transition: {
+													staggerChildren: 0.05,
+													delayChildren: 1,
+												},
+											},
+										},
+										...transitionVariants,
+									}}
+									className="mt-8 flex justify-center fixed bottom-4 left-2 z-30"
+								>
+									<a
+										href="https://www.producthunt.com/products/llm-gateway?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-llm&#0045;gateway"
+										target="_blank"
+										rel="noopener noreferrer"
+										className="transition-transform hover:scale-105"
+									>
+										<img
+											src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=986038&theme=light&t=1751353042660"
+											alt="LLM&#0032;Gateway - One&#0032;API&#0032;Gateway&#0032;for&#0032;all&#0032;your&#0032;LLM&#0032;needs | Product Hunt"
+											style={{ width: "250px", height: "54px" }}
+											width="250"
+											height="54"
+										/>
+									</a>
+								</AnimatedGroup>
 							</div>
 
 							<AnimatedGroup

@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { usePostHog } from "posthog-js/react";
 import { useEffect } from "react";
 
@@ -18,11 +18,13 @@ export interface PasswordUpdateData {
 export interface UseUserOptions {
 	redirectTo?: string;
 	redirectWhen?: "authenticated" | "unauthenticated";
+	checkOnboarding?: boolean;
 }
 
 export function useUser(options?: UseUserOptions) {
 	const posthog = usePostHog();
 	const navigate = useNavigate();
+	const routerState = useRouterState();
 	const api = useApi();
 
 	const { data, isLoading, error } = api.useQuery("get", "/user/me", {
@@ -37,16 +39,44 @@ export function useUser(options?: UseUserOptions) {
 		});
 	}
 
+	// Check for onboarding completion for all authenticated users
+	useEffect(() => {
+		if (!data?.user || isLoading) {
+			return;
+		}
+
+		const currentPath = routerState.location.pathname;
+		const isAuthPage = ["/login", "/signup", "/onboarding"].includes(
+			currentPath,
+		);
+		const isLandingPage = currentPath === "/";
+
+		// Don't redirect if already on auth pages
+		if (isAuthPage || isLandingPage) {
+			return;
+		}
+
+		// Redirect to onboarding if user hasn't completed it
+		if (!data.user.onboardingCompleted) {
+			navigate({ to: "/onboarding", replace: true });
+		}
+	}, [data?.user, isLoading, navigate, routerState.location.pathname]);
+
+	// Handle existing redirect logic
 	useEffect(() => {
 		if (!options?.redirectTo || !options?.redirectWhen) {
 			return;
 		}
 
-		const { redirectTo, redirectWhen } = options;
+		const { redirectTo, redirectWhen, checkOnboarding } = options;
 		const hasUser = !!data?.user;
 
 		if (redirectWhen === "authenticated" && hasUser) {
-			navigate({ to: redirectTo });
+			if (checkOnboarding && !data.user.onboardingCompleted) {
+				navigate({ to: "/onboarding" });
+			} else {
+				navigate({ to: redirectTo });
+			}
 		} else if (
 			redirectWhen === "unauthenticated" &&
 			!isLoading &&
@@ -61,6 +91,7 @@ export function useUser(options?: UseUserOptions) {
 		navigate,
 		options?.redirectTo,
 		options?.redirectWhen,
+		options?.checkOnboarding,
 		options,
 	]);
 

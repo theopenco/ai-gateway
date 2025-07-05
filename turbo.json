@@ -6,7 +6,7 @@
 	},
 	"dangerouslyDisablePackageManagerCheck": true,
 	"globalDependencies": [
-		"tsup.config.ts",
+		".npmrc",
 		"package.json",
 		"pnpm-lock.yaml",
 		"pnpm-workspace.yaml",

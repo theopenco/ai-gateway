@@ -40,7 +40,11 @@ function RouteComponent() {
 	const posthog = usePostHog();
 	const [isLoading, setIsLoading] = useState(false);
 	const { signIn } = useAuth();
-	useUser({ redirectTo: "/dashboard", redirectWhen: "authenticated" });
+	useUser({
+		redirectTo: "/dashboard",
+		redirectWhen: "authenticated",
+		checkOnboarding: true,
+	});
 
 	useEffect(() => {
 		posthog.capture("page_viewed_login");

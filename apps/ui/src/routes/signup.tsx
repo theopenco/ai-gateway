@@ -40,7 +40,11 @@ function RouteComponent() {
 	const navigate = useNavigate();
 	const [isLoading, setIsLoading] = useState(false);
 	const { signUp } = useAuth();
-	useUser({ redirectTo: "/dashboard", redirectWhen: "authenticated" });
+	useUser({
+		redirectTo: "/dashboard",
+		redirectWhen: "authenticated",
+		checkOnboarding: true,
+	});
 
 	useEffect(() => {
 		posthog.capture("page_viewed_signup");

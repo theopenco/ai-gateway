@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
 # General rules
@@ -8,3 +8,7 @@ alwaysApply: true
 always start work on agent requests immediately without needing confirmation
 
 never use `as any` or `: any` in typescript files.
+
+before committing, run `pnpm format`. if any API routes were modified, run `pnpm generate`. then commit.
+
+when writing commit messages, always use the [conventional commit messages format](https://www.conventionalcommits.org/en/v1.0.0/)
