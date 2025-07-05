@@ -58,7 +58,7 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 		sendOnSignUp: true,
 		autoSignInAfterVerification: true,
 		sendVerificationEmail: async ({ user, token }) => {
-			const url = `${apiUrl}/auth/verify-email?token=${token}&&callbackURL=${uiUrl}/dashboard`;
+			const url = `${apiUrl}/auth/verify-email?token=${token}&callbackURL=${uiUrl}/dashboard`;
 			if (!resendApiKey) {
 				console.log(`email verification link: ${url}`);
 				console.error(
@@ -69,18 +69,23 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 
 			const resend = new Resend(resendApiKey);
 
-			await resend.emails.send({
-				from: resendFromEmail,
-				replyTo: replyToEmail,
-				to: user.email,
-				subject: "Verify your email address",
-				html: `
-					<h1>Welcome to LLMGateway!</h1>
-					<p>Please click the link below to verify your email address:</p>
-					<a href="${url}">Verify Email</a>
-					<p>If you didn't create an account, you can safely ignore this email.</p>
-				`,
-			});
+			try {
+				await resend.emails.send({
+					from: resendFromEmail,
+					replyTo: replyToEmail,
+					to: user.email,
+					subject: "Verify your email address",
+					html: `
+						<h1>Welcome to LLMGateway!</h1>
+						<p>Please click the link below to verify your email address:</p>
+						<a href="${url}">Verify Email</a>
+						<p>If you didn't create an account, you can safely ignore this email.</p>
+					`,
+				});
+			} catch (error) {
+				console.error("Failed to send verification email:", error);
+				throw new Error("Failed to send verification email. Please try again.");
+			}
 		},
 	},
 	secret: process.env.AUTH_SECRET || "your-secret-key",
