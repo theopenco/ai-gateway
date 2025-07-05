@@ -3,16 +3,19 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
 import { passkey } from "better-auth/plugins/passkey";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 const apiUrl = process.env.API_URL || "http://localhost:4002";
 const uiUrl = process.env.UI_URL || "http://localhost:3002";
 const originUrls =
 	process.env.ORIGIN_URL || "http://localhost:3002,http://localhost:4002";
-const resendApiKey = process.env.RESEND_API_KEY;
-const resendFromEmail =
-	process.env.RESEND_FROM_EMAIL || "contact@mail.llmgateway.io";
-const replyToEmail = process.env.REPLY_TO_EMAIL || "contact@llmgateway.io";
+const smtpHost = process.env.SMTP_HOST;
+const smtpPort = parseInt(process.env.SMTP_PORT || "587", 10);
+const smtpUser = process.env.SMTP_USER;
+const smtpPass = process.env.SMTP_PASS;
+const smtpFromEmail =
+	process.env.SMTP_FROM_EMAIL || "contact@email.llmgateway.io";
+const replyToEmail = process.env.SMTP_REPLY_TO_EMAIL || "contact@llmgateway.io";
 
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	advanced: {
@@ -59,19 +62,27 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 		autoSignInAfterVerification: true,
 		sendVerificationEmail: async ({ user, token }) => {
 			const url = `${apiUrl}/auth/verify-email?token=${token}&callbackURL=${uiUrl}/dashboard`;
-			if (!resendApiKey) {
+			if (!smtpHost || !smtpUser || !smtpPass) {
 				console.log(`email verification link: ${url}`);
 				console.error(
-					"RESEND_API_KEY is not set. Email verification will not work.",
+					"SMTP configuration is not set. Email verification will not work.",
 				);
 				return;
 			}
 
-			const resend = new Resend(resendApiKey);
+			const transporter = nodemailer.createTransport({
+				host: smtpHost,
+				port: smtpPort,
+				secure: smtpPort === 465,
+				auth: {
+					user: smtpUser,
+					pass: smtpPass,
+				},
+			});
 
 			try {
-				await resend.emails.send({
-					from: resendFromEmail,
+				await transporter.sendMail({
+					from: smtpFromEmail,
 					replyTo: replyToEmail,
 					to: user.email,
 					subject: "Verify your email address",

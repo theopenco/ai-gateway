@@ -17,7 +17,8 @@
 		"build": "tsc && tsup"
 	},
 	"dependencies": {
+		"@types/nodemailer": "^6.4.14",
 		"better-auth": "1.2.7",
-		"resend": "4.5.1"
+		"nodemailer": "^6.9.8"
 	}
 }
