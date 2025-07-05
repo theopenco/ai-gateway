@@ -1,3 +1,5 @@
+"use client";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -15,6 +17,7 @@ import { useEffect, useState } from "react";
 import { TopUpCreditsButton } from "@/components/credits/top-up-credits-dialog";
 import { DashboardLoading } from "@/components/dashboard/dashboard-loading";
 import { Overview } from "@/components/dashboard/overview";
+import { useDashboardGuard } from "@/hooks/useDashboardGuard";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -35,12 +38,13 @@ export const Route = createFileRoute("/dashboard/_layout/")({
 });
 
 export default function Dashboard() {
+	const { isLoading: authLoading } = useDashboardGuard();
+	const api = useApi();
 	const config = useAppConfigValue();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [days, setDays] = useState<7 | 30>(7);
 	const { selectedOrganization, selectedProject } = useDashboardContext();
-	const api = useApi();
 
 	// Only fetch activity data if we have a selected project
 	const { data, isLoading } = api.useQuery(
@@ -74,6 +78,11 @@ export default function Dashboard() {
 			queryClient.invalidateQueries({ queryKey });
 		}
 	}, [selectedProject?.id, queryClient, days]);
+
+	// Show loading while checking authentication
+	if (authLoading) {
+		return <DashboardLoading />;
+	}
 
 	// Calculate total stats from activity data
 	const activityData = data?.activity || [];
@@ -287,7 +296,7 @@ export default function Dashboard() {
 							<CardContent className="grid gap-2">
 								<Button
 									variant="outline"
-									className="justify-start"
+									className="justify-start bg-transparent"
 									onClick={() => navigate({ to: "/dashboard/api-keys" })}
 									disabled={!selectedProject}
 								>
@@ -301,7 +310,7 @@ export default function Dashboard() {
 								</Button>
 								<Button
 									variant="outline"
-									className="justify-start"
+									className="justify-start bg-transparent"
 									onClick={() => navigate({ to: "/dashboard/provider-keys" })}
 									disabled={!selectedOrganization}
 								>
@@ -315,14 +324,18 @@ export default function Dashboard() {
 								</Button>
 								<Button
 									variant="outline"
-									className="justify-start"
+									className="justify-start bg-transparent"
 									onClick={() => navigate({ to: "/dashboard/models" })}
 								>
 									<Plus className="mr-2 h-4 w-4" />
 									Add Provider
 								</Button>
-								<Button variant="outline" className="justify-start" asChild>
-									<a href={config.docsUrl} target="_blank">
+								<Button
+									variant="outline"
+									className="justify-start bg-transparent"
+									asChild
+								>
+									<a href={config.docsUrl} target="_blank" rel="noreferrer">
 										<ArrowUpRight className="mr-2 h-4 w-4" />
 										View Documentation
 									</a>
