@@ -1,14 +1,30 @@
 import { type Model, type ModelDefinition, models } from "@llmgateway/models";
 import { encode, encodeChat } from "gpt-tokenizer";
 
-// Define ChatMessage type to match what gpt-tokenizer expects
-interface ChatMessage {
+// Define ChatMessage type to handle both simple and multimodal content
+export interface ChatMessage {
 	role: "user" | "system" | "assistant" | undefined;
-	content: string;
+	content: string | { type: string; text?: string; image_url?: any }[];
 	name?: string;
 }
 
-const DEFAULT_TOKENIZER_MODEL = "gpt-4";
+export const DEFAULT_TOKENIZER_MODEL = "gpt-4";
+
+export function countMessageTokens(messages: ChatMessage[]): number {
+	try {
+		const processedMessages = messages.map(msg => ({
+			role: msg.role,
+			content: typeof msg.content === 'string' 
+				? msg.content 
+				: msg.content.map(c => c.text || '[non-text content]').join(' '),
+			name: msg.name,
+		}));
+		return encodeChat(processedMessages, DEFAULT_TOKENIZER_MODEL).length;
+	} catch (error) {
+		console.error(`Failed to encode chat messages: ${error}`);
+		return 0;
+	}
+}
 
 /**
  * Calculate costs based on model, provider, and token counts
@@ -59,16 +75,8 @@ export function calculateCosts(
 		// Calculate prompt tokens
 		if (!promptTokens && fullOutput) {
 			if (fullOutput.messages) {
-				// For chat messages
-				try {
-					calculatedPromptTokens = encodeChat(
-						fullOutput.messages,
-						DEFAULT_TOKENIZER_MODEL,
-					).length;
-				} catch (error) {
-					// If encoding fails, leave as null
-					console.error(`Failed to encode chat messages: ${error}`);
-				}
+				// For chat messages - use our updated function to handle multimodal content
+				calculatedPromptTokens = countMessageTokens(fullOutput.messages);
 			} else if (fullOutput.prompt) {
 				// For text prompt
 				try {

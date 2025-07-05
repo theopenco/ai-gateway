@@ -31,7 +31,7 @@ import {
 	isCachingEnabled,
 	setCache,
 } from "../lib/cache";
-import { calculateCosts } from "../lib/costs";
+import { calculateCosts, countMessageTokens } from "../lib/costs";
 import { insertLog } from "../lib/logs";
 import {
 	hasProviderEnvironmentToken,
@@ -1070,6 +1070,14 @@ chat.openapi(completions, async (c) => {
 		(usedProvider === "llmgateway" && usedModel === "auto") ||
 		usedModel === "auto"
 	) {
+		// Calculate token count for the request messages
+		let tokenCount = 0;
+		try {
+			tokenCount = countMessageTokens(messages) + (max_tokens || 0);
+		} catch (_err) {
+			tokenCount = max_tokens || 0;
+		}
+
 		// Get available providers based on project mode
 		let availableProviders: string[] = [];
 
@@ -1115,14 +1123,19 @@ chat.openapi(completions, async (c) => {
 				continue;
 			}
 
-			// Skip deprecated models
-			if (modelDef.deprecatedAt && new Date() > modelDef.deprecatedAt) {
+			// Skip deprecated or deactivated models
+			if (
+				(modelDef.deprecatedAt && new Date() > modelDef.deprecatedAt) ||
+				(modelDef.deactivatedAt && new Date() > modelDef.deactivatedAt)
+			) {
 				continue;
 			}
 
-			// Check if any of the model's providers are available
-			const availableModelProviders = modelDef.providers.filter((provider) =>
-				availableProviders.includes(provider.providerId),
+			// Check if any of the model's providers are available and support the token count
+			const availableModelProviders = modelDef.providers.filter(
+				(provider) =>
+					availableProviders.includes(provider.providerId) &&
+					(!provider.contextSize || provider.contextSize >= tokenCount),
 			);
 
 			if (availableModelProviders.length > 0) {
