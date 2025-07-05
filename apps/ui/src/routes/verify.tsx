@@ -13,6 +13,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/lib/components/card";
+import { toast } from "@/lib/components/use-toast";
 
 export const Route = createFileRoute("/verify")({
 	component: RouteComponent,
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/verify")({
 function RouteComponent() {
 	const navigate = useNavigate();
 	const { user, isLoading } = useUser();
-	const { signOut } = useAuth();
+	const { signOut, sendVerificationEmail } = useAuth();
 	const [isResending, setIsResending] = useState(false);
 	const queryClient = useQueryClient();
 
@@ -34,19 +35,18 @@ function RouteComponent() {
 	const handleResendEmail = async () => {
 		setIsResending(true);
 		try {
-			const response = await fetch("/auth/send-verification-email", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				credentials: "include",
-			});
-
-			if (!response.ok) {
-				throw new Error("Failed to send verification email");
+			if (!user?.email) {
+				throw new Error("No email found");
 			}
+			await sendVerificationEmail({
+				email: user.email,
+			});
 		} catch (error) {
 			console.error("Failed to resend verification email:", error);
+			toast({
+				title: "Failed to resend verification email",
+				variant: "destructive",
+			});
 		} finally {
 			setIsResending(false);
 		}
