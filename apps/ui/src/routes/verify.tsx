@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { useUser } from "@/hooks/useUser";
+import { useAuth } from "@/lib/auth-client";
 import { Button } from "@/lib/components/button";
 import {
 	Card,
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/verify")({
 function RouteComponent() {
 	const navigate = useNavigate();
 	const { user, isLoading } = useUser();
+	const { signOut } = useAuth();
 	const [isResending, setIsResending] = useState(false);
 
 	useEffect(() => {
@@ -47,10 +49,15 @@ function RouteComponent() {
 		}
 	};
 
+	const handleLogout = async () => {
+		await signOut();
+		navigate({ to: "/login" });
+	};
+
 	if (isLoading) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100" />
 			</div>
 		);
 	}
@@ -61,7 +68,7 @@ function RouteComponent() {
 	}
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+		<div className="flex min-h-screen items-center justify-center bg-background px-4">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
 					<CardTitle className="text-2xl font-bold">
@@ -90,6 +97,14 @@ function RouteComponent() {
 							className="w-full"
 						>
 							{isResending ? "Sending..." : "Resend Verification Email"}
+						</Button>
+					</div>
+					<div className="pt-4 border-t">
+						<p className="text-sm text-muted-foreground text-center mb-2">
+							Wrong email address?
+						</p>
+						<Button onClick={handleLogout} variant="ghost" className="w-full">
+							Sign out and use different account
 						</Button>
 					</div>
 				</CardContent>
