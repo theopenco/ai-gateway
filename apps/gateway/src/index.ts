@@ -135,7 +135,6 @@ app.openapi(root, async (c) => {
 		await redisClient.ping();
 		health.redis.connected = true;
 	} catch (error) {
-		health.status = "error";
 		health.redis.error = "Redis connection failed";
 		console.error("Redis healthcheck failed:", error);
 	}

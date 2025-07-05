@@ -1,7 +1,7 @@
 import { db, type InferSelectModel } from "@llmgateway/db";
 import crypto from "crypto";
 
-import redisClient from "./redis";
+import redisClient, { isRedisAvailable } from "./redis";
 
 import type { tables } from "@llmgateway/db";
 
@@ -22,6 +22,10 @@ export async function setCache(
 		return;
 	}
 
+	if (!isRedisAvailable()) {
+		return;
+	}
+
 	try {
 		await redisClient.set(key, JSON.stringify(value), "EX", expirationSeconds);
 	} catch (error) {
@@ -30,6 +34,10 @@ export async function setCache(
 }
 
 export async function getCache(key: string): Promise<any | null> {
+	if (!isRedisAvailable()) {
+		return null;
+	}
+
 	try {
 		const cachedValue = await redisClient.get(key);
 		if (!cachedValue) {
@@ -47,10 +55,16 @@ export async function isCachingEnabled(
 ): Promise<{ enabled: boolean; duration: number }> {
 	try {
 		const configCacheKey = `project_cache_config:${projectId}`;
-		const cachedConfig = await redisClient.get(configCacheKey);
 
-		if (cachedConfig) {
-			return JSON.parse(cachedConfig);
+		if (isRedisAvailable()) {
+			try {
+				const cachedConfig = await redisClient.get(configCacheKey);
+				if (cachedConfig) {
+					return JSON.parse(cachedConfig);
+				}
+			} catch (error) {
+				console.error("Error getting cache config:", error);
+			}
 		}
 
 		const project = await db.query.project.findFirst({
@@ -70,12 +84,34 @@ export async function isCachingEnabled(
 			duration: project.cacheDurationSeconds || 60,
 		};
 
-		await redisClient.set(configCacheKey, JSON.stringify(config), "EX", 300);
+		if (isRedisAvailable()) {
+			try {
+				await redisClient.set(
+					configCacheKey,
+					JSON.stringify(config),
+					"EX",
+					300,
+				);
+			} catch (error) {
+				console.error("Error setting cache config:", error);
+			}
+		}
 
 		return config;
 	} catch (error) {
 		console.error("Error checking if caching is enabled:", error);
-		throw error;
+		const project = await db.query.project.findFirst({
+			where: {
+				id: {
+					eq: projectId,
+				},
+			},
+		});
+
+		return {
+			enabled: project?.cachingEnabled || false,
+			duration: project?.cacheDurationSeconds || 60,
+		};
 	}
 }
 
@@ -103,7 +139,13 @@ export async function getProject(projectId: string): Promise<any> {
 		return project;
 	} catch (error) {
 		console.error("Error fetching project:", error);
-		throw error;
+		return await db.query.project.findFirst({
+			where: {
+				id: {
+					eq: projectId,
+				},
+			},
+		});
 	}
 }
 
@@ -131,7 +173,13 @@ export async function getOrganization(organizationId: string): Promise<any> {
 		return organization;
 	} catch (error) {
 		console.error("Error fetching organization:", error);
-		throw error;
+		return await db.query.organization.findFirst({
+			where: {
+				id: {
+					eq: organizationId,
+				},
+			},
+		});
 	}
 }
 
@@ -168,6 +216,18 @@ export async function getProviderKey(
 		return providerKey;
 	} catch (error) {
 		console.error("Error fetching provider key:", error);
-		throw error;
+		return await db.query.providerKey.findFirst({
+			where: {
+				status: {
+					eq: "active",
+				},
+				organizationId: {
+					eq: organizationId,
+				},
+				provider: {
+					eq: provider,
+				},
+			},
+		});
 	}
 }
