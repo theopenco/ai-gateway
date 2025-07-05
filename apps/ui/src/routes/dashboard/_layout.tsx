@@ -23,16 +23,15 @@ import type { Organization, Project } from "@/lib/types";
 
 export const Route = createFileRoute("/dashboard/_layout")({
 	component: RouteComponent,
-	validateSearch: (search) => ({
-		emailVerified: search.emailVerified as string | undefined,
-	}),
 });
 
 function RouteComponent() {
 	const posthog = usePostHog();
 	const { location } = useRouterState();
 	const navigate = useNavigate();
-	const search = useSearch({ from: "/dashboard/_layout" });
+	const search = useSearch({ from: "/dashboard/_layout" }) as {
+		emailVerified?: boolean;
+	};
 	const queryClient = useQueryClient();
 	const [selectedOrganizationId, setSelectedOrganizationId] = useState<
 		string | null
