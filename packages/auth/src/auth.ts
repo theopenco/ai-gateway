@@ -13,7 +13,8 @@ const originUrls =
 	process.env.ORIGIN_URL || "http://localhost:3002,http://localhost:4002";
 const resendApiKey = process.env.RESEND_API_KEY;
 const resendFromEmail =
-	process.env.RESEND_FROM_EMAIL || "contact@llmgateway.io";
+	process.env.RESEND_FROM_EMAIL || "contact@mail.llmgateway.io";
+const replyToEmail = process.env.REPLY_TO_EMAIL || "contact@llmgateway.io";
 
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	advanced: {
@@ -82,6 +83,7 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 
 			await resend.emails.send({
 				from: resendFromEmail,
+				replyTo: replyToEmail,
 				to: user.email,
 				subject: "Verify your email address",
 				html: `
