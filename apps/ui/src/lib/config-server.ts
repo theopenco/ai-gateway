@@ -14,7 +14,7 @@ export const getConfig = createServerFn({
 	method: "GET",
 }).handler((): AppConfig => {
 	return {
-		hosted: process.env.HOSTED === "true",
+		hosted: true, // process.env.HOSTED === "true",
 		apiUrl: process.env.API_URL || "http://localhost:4002",
 		githubUrl:
 			process.env.GITHUB_URL || "https://github.com/theopenco/llmgateway",

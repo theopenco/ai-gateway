@@ -1,4 +1,3 @@
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
 	createRootRouteWithContext,
 	HeadContent,
@@ -6,7 +5,6 @@ import {
 	ScriptOnce,
 	Scripts,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Crisp } from "crisp-sdk-web";
 import { ThemeProvider } from "next-themes";
 import { PostHogProvider } from "posthog-js/react";
@@ -121,12 +119,12 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 					)}
 				</ThemeProvider>
 				<Toaster />
-				{process.env.NODE_ENV === "development" && (
-					<>
-						<TanStackRouterDevtools position="bottom-left" />
-						<ReactQueryDevtools buttonPosition="bottom-right" />
-					</>
-				)}
+				{/* {process.env.NODE_ENV === "development" && ( */}
+				{/*	<> */}
+				{/*		<TanStackRouterDevtools position="bottom-left" /> */}
+				{/*		<ReactQueryDevtools buttonPosition="bottom-right" /> */}
+				{/*	</> */}
+				{/* )} */}
 				<Scripts />
 			</body>
 		</html>
