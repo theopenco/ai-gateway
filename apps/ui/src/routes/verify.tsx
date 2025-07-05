@@ -38,23 +38,13 @@ function RouteComponent() {
 			if (!user?.email) {
 				throw new Error("No email found");
 			}
-
-			const res = await sendVerificationEmail({
+			await sendVerificationEmail({
 				email: user.email,
 			});
-			if (res.error) {
-				throw new Error(res.error.message);
-			}
-
-			toast({
-				title: "Verification email sent",
-				description: "Please check your email for the verification link.",
-			});
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Failed to resend verification email:", error);
 			toast({
 				title: "Failed to resend verification email",
-				description: error?.message || "Please try again later.",
 				variant: "destructive",
 			});
 		} finally {

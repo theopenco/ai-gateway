@@ -5,8 +5,6 @@ import { createAuthMiddleware } from "better-auth/api";
 import { passkey } from "better-auth/plugins/passkey";
 import { Resend } from "resend";
 
-import { rateLimit } from "./rate-limiter";
-
 const apiUrl = process.env.API_URL || "http://localhost:4002";
 const uiUrl = process.env.UI_URL || "http://localhost:3002";
 const originUrls =
@@ -60,16 +58,6 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 		sendOnSignUp: true,
 		autoSignInAfterVerification: true,
 		sendVerificationEmail: async ({ user, token }) => {
-			// Check rate limit for this email
-			const rateLimitResult = rateLimit(user.email);
-			if (!rateLimitResult.allowed) {
-				const minutes = Math.floor((rateLimitResult.remainingTime || 0) / 60);
-				const seconds = (rateLimitResult.remainingTime || 0) % 60;
-				throw new Error(
-					`Too many verification email requests. Please wait ${minutes}:${seconds.toString().padStart(2, "0")} before requesting another.`,
-				);
-			}
-
 			const url = `${apiUrl}/auth/verify-email?token=${token}&&callbackURL=${uiUrl}/dashboard`;
 			if (!resendApiKey) {
 				console.log(`email verification link: ${url}`);
