@@ -58,7 +58,7 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 		sendOnSignUp: true,
 		autoSignInAfterVerification: true,
 		sendVerificationEmail: async ({ user, token }) => {
-			const url = `${apiUrl}/auth/verify-email?token=${token}&callbackURL=${uiUrl}/dashboard`;
+			const url = `${apiUrl}/auth/verify-email?token=${token}&&callbackURL=${uiUrl}/dashboard`;
 			if (!resendApiKey) {
 				console.log(`email verification link: ${url}`);
 				console.error(
@@ -84,7 +84,7 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 		},
 	},
 	secret: process.env.AUTH_SECRET || "your-secret-key",
-	baseURL: uiUrl || "http://localhost:4002",
+	baseURL: apiUrl || "http://localhost:4002",
 	hooks: {
 		after: createAuthMiddleware(async (ctx) => {
 			// Check if this is a signup event
