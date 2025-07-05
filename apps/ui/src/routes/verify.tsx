@@ -96,7 +96,7 @@ function RouteComponent() {
 						</p>
 					</div>
 					<div className="space-y-2">
-						<p className="text-sm text-gray-600">
+						<p className="text-sm text-gray-600 dark:text-gray-400">
 							Didn't receive the email? Check your spam folder or request a new
 							one.
 						</p>
