@@ -3,12 +3,12 @@ import {
 	Outlet,
 	createFileRoute,
 	useRouterState,
-	useNavigate,
 } from "@tanstack/react-router";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useMemo, useState } from "react";
 
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { EmailVerificationBanner } from "@/components/dashboard/email-verification-banner";
 import { MobileHeader } from "@/components/dashboard/mobile-header";
 import { TopBar } from "@/components/dashboard/top-bar";
 import { useUser } from "@/hooks/useUser";
@@ -24,7 +24,6 @@ export const Route = createFileRoute("/dashboard/_layout")({
 
 function RouteComponent() {
 	const posthog = usePostHog();
-	const navigate = useNavigate();
 	const { location } = useRouterState();
 	const queryClient = useQueryClient();
 	const [selectedOrganizationId, setSelectedOrganizationId] = useState<
@@ -37,13 +36,6 @@ function RouteComponent() {
 		redirectTo: "/login",
 		redirectWhen: "unauthenticated",
 	});
-
-	// Check email verification
-	useEffect(() => {
-		if (user && !user.emailVerified) {
-			navigate({ to: "/verify", replace: true });
-		}
-	}, [user, navigate]);
 
 	// Fetch organizations
 	const { data: organizationsData } = api.useQuery("get", "/orgs");
@@ -158,6 +150,9 @@ function RouteComponent() {
 								selectedOrganization={selectedOrganization}
 								onProjectCreated={handleProjectCreated}
 							/>
+							{user && !user.emailVerified && (
+								<EmailVerificationBanner userEmail={user.email} />
+							)}
 							<main className="bg-background max-w-7xl mx-auto w-full flex-1 overflow-y-auto pt-10 pb-4 px-4 md:p-6 lg:p-8">
 								<Outlet />
 							</main>

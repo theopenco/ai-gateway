@@ -69,18 +69,11 @@ export function useUser(options?: UseUserOptions) {
 			return;
 		}
 
-		const {
-			redirectTo,
-			redirectWhen,
-			checkOnboarding,
-			checkEmailVerification,
-		} = options;
+		const { redirectTo, redirectWhen, checkOnboarding } = options;
 		const hasUser = !!data?.user;
 
 		if (redirectWhen === "authenticated" && hasUser) {
-			if (checkEmailVerification && !data.user.emailVerified) {
-				navigate({ to: "/verify" });
-			} else if (checkOnboarding && !data.user.onboardingCompleted) {
+			if (checkOnboarding && !data.user.onboardingCompleted) {
 				navigate({ to: "/onboarding" });
 			} else {
 				navigate({ to: redirectTo });

@@ -43,7 +43,6 @@ function RouteComponent() {
 	useUser({
 		redirectTo: "/dashboard",
 		redirectWhen: "authenticated",
-		checkEmailVerification: true,
 		checkOnboarding: true,
 	});
 
