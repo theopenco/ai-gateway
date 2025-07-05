@@ -56,8 +56,10 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	emailVerification: {
 		sendOnSignUp: true,
 		autoSignInAfterVerification: true,
-		sendVerificationEmail: async ({ user, url }) => {
+		sendVerificationEmail: async ({ user, token }) => {
+			const url = `${apiUrl}/auth/verify-email?token=${token}&&callbackURL=${uiUrl}/dashboard`;
 			if (!resendApiKey) {
+				console.log(`email verification link: ${url}`);
 				console.error(
 					"RESEND_API_KEY is not set. Email verification will not work.",
 				);

@@ -1,4 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import posthog from "posthog-js";
 import { useEffect, useState } from "react";
 
 import { useUser } from "@/hooks/useUser";
@@ -21,6 +23,7 @@ function RouteComponent() {
 	const { user, isLoading } = useUser();
 	const { signOut } = useAuth();
 	const [isResending, setIsResending] = useState(false);
+	const queryClient = useQueryClient();
 
 	useEffect(() => {
 		if (user?.emailVerified) {
@@ -50,8 +53,15 @@ function RouteComponent() {
 	};
 
 	const handleLogout = async () => {
-		await signOut();
-		navigate({ to: "/login" });
+		posthog.reset();
+		await signOut({
+			fetchOptions: {
+				onSuccess: () => {
+					queryClient.clear();
+					navigate({ to: "/login" });
+				},
+			},
+		});
 	};
 
 	if (isLoading) {
