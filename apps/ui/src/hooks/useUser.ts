@@ -19,6 +19,7 @@ export interface UseUserOptions {
 	redirectTo?: string;
 	redirectWhen?: "authenticated" | "unauthenticated";
 	checkOnboarding?: boolean;
+	checkEmailVerification?: boolean;
 }
 
 export function useUser(options?: UseUserOptions) {
@@ -64,15 +65,20 @@ export function useUser(options?: UseUserOptions) {
 
 	// Handle existing redirect logic
 	useEffect(() => {
-		if (!options?.redirectTo || !options?.redirectWhen || isLoading) {
+		if (!options?.redirectTo || !options?.redirectWhen) {
 			return;
 		}
 
-		const { redirectTo, redirectWhen, checkOnboarding } = options;
+		const {
+			redirectTo,
+			redirectWhen,
+			checkOnboarding,
+			checkEmailVerification,
+		} = options;
 		const hasUser = !!data?.user;
 
 		if (redirectWhen === "authenticated" && hasUser) {
-			if (!data.user.emailVerified) {
+			if (checkEmailVerification && !data.user.emailVerified) {
 				navigate({ to: "/verify" });
 			} else if (checkOnboarding && !data.user.onboardingCompleted) {
 				navigate({ to: "/onboarding" });
@@ -94,6 +100,7 @@ export function useUser(options?: UseUserOptions) {
 		options?.redirectTo,
 		options?.redirectWhen,
 		options?.checkOnboarding,
+		options?.checkEmailVerification,
 		options,
 	]);
 
