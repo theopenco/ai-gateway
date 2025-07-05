@@ -75,7 +75,7 @@ export default function Dashboard() {
 
 			queryClient.invalidateQueries({ queryKey });
 		}
-	}, [selectedProject?.id, queryClient, days]);
+	}, [selectedProject?.id, queryClient, days, api]);
 
 	// Calculate total stats from activity data
 	const activityData = data?.activity || [];
@@ -107,11 +107,50 @@ export default function Dashboard() {
 		totalRequests > 0 &&
 		selectedOrganization?.credits;
 
+	// Determine if we're still loading organization data
+	const isOrganizationLoading = !selectedOrganization;
+
 	const shouldShowGetStartedState =
 		!isLoading &&
+		!isOrganizationLoading &&
 		selectedOrganization &&
 		selectedOrganization.credits === "0" &&
 		selectedOrganization.plan !== "pro";
+
+	// Show loading state while we're determining which UI to show
+	const isInitialLoading = isOrganizationLoading;
+
+	// Show loading state while determining which UI to render
+	if (isInitialLoading) {
+		return (
+			<div className="flex flex-col">
+				<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+					<div className="flex flex-col md:flex-row items-center justify-between space-y-2">
+						<div>
+							<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+							<div className="h-5 w-48 bg-muted animate-pulse rounded mt-1" />
+						</div>
+					</div>
+					<div className="space-y-4">
+						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+							{Array.from({ length: 4 }).map((_, i) => (
+								<Card key={i}>
+									<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+										<div className="h-4 w-24 bg-muted animate-pulse rounded" />
+										<div className="h-4 w-4 bg-muted animate-pulse rounded" />
+									</CardHeader>
+									<CardContent>
+										<div className="h-8 w-20 bg-muted animate-pulse rounded mb-2" />
+										<div className="h-3 w-16 bg-muted animate-pulse rounded" />
+									</CardContent>
+								</Card>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-col">
