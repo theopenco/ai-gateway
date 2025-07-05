@@ -3,6 +3,8 @@ import {
 	Outlet,
 	createFileRoute,
 	useRouterState,
+	useNavigate,
+	useSearch,
 } from "@tanstack/react-router";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useMemo, useState } from "react";
@@ -13,6 +15,7 @@ import { MobileHeader } from "@/components/dashboard/mobile-header";
 import { TopBar } from "@/components/dashboard/top-bar";
 import { useUser } from "@/hooks/useUser";
 import { SidebarProvider } from "@/lib/components/sidebar";
+import { toast } from "@/lib/components/use-toast";
 import { DashboardContext } from "@/lib/dashboard-context";
 import { useApi } from "@/lib/fetch-client";
 
@@ -20,11 +23,16 @@ import type { Organization, Project } from "@/lib/types";
 
 export const Route = createFileRoute("/dashboard/_layout")({
 	component: RouteComponent,
+	validateSearch: (search) => ({
+		emailVerified: search.emailVerified as string | undefined,
+	}),
 });
 
 function RouteComponent() {
 	const posthog = usePostHog();
 	const { location } = useRouterState();
+	const navigate = useNavigate();
+	const search = useSearch({ from: "/dashboard/_layout" });
 	const queryClient = useQueryClient();
 	const [selectedOrganizationId, setSelectedOrganizationId] = useState<
 		string | null
@@ -107,6 +115,23 @@ function RouteComponent() {
 	useEffect(() => {
 		posthog.capture("page_viewed_dashboard");
 	}, [posthog]);
+
+	// Handle email verification success
+	useEffect(() => {
+		if (search.emailVerified) {
+			alert(1);
+			toast({
+				title: "Email verified successfully!",
+				description: "Your email address has been verified.",
+			});
+
+			// Clean up the URL parameter using TanStack Router
+			navigate({
+				to: location.pathname,
+				replace: true,
+			});
+		}
+	}, [search.emailVerified, location.pathname, navigate]);
 
 	// Refetch organizations query when navigating between dashboard pages
 	useEffect(() => {
