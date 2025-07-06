@@ -3,11 +3,19 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
 import { passkey } from "better-auth/plugins/passkey";
+import nodemailer from "nodemailer";
 
 const apiUrl = process.env.API_URL || "http://localhost:4002";
 const uiUrl = process.env.UI_URL || "http://localhost:3002";
 const originUrls =
 	process.env.ORIGIN_URL || "http://localhost:3002,http://localhost:4002";
+const smtpHost = process.env.SMTP_HOST;
+const smtpPort = parseInt(process.env.SMTP_PORT || "587", 10);
+const smtpUser = process.env.SMTP_USER;
+const smtpPass = process.env.SMTP_PASS;
+const smtpFromEmail =
+	process.env.SMTP_FROM_EMAIL || "contact@email.llmgateway.io";
+const replyToEmail = process.env.SMTP_REPLY_TO_EMAIL || "contact@llmgateway.io";
 
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	advanced: {
@@ -48,10 +56,51 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	}),
 	emailAndPassword: {
 		enabled: true,
-		autoSignIn: true,
+	},
+	emailVerification: {
+		sendOnSignUp: true,
+		autoSignInAfterVerification: true,
+		sendVerificationEmail: async ({ user, token }) => {
+			const url = `${apiUrl}/auth/verify-email?token=${token}&callbackURL=${uiUrl}/dashboard?emailVerified=true`;
+			if (!smtpHost || !smtpUser || !smtpPass) {
+				console.log(`email verification link: ${url}`);
+				console.error(
+					"SMTP configuration is not set. Email verification will not work.",
+				);
+				return;
+			}
+
+			const transporter = nodemailer.createTransport({
+				host: smtpHost,
+				port: smtpPort,
+				secure: smtpPort === 465,
+				auth: {
+					user: smtpUser,
+					pass: smtpPass,
+				},
+			});
+
+			try {
+				await transporter.sendMail({
+					from: smtpFromEmail,
+					replyTo: replyToEmail,
+					to: user.email,
+					subject: "Verify your email address",
+					html: `
+						<h1>Welcome to LLMGateway!</h1>
+						<p>Please click the link below to verify your email address:</p>
+						<a href="${url}">Verify Email</a>
+						<p>If you didn't create an account, you can safely ignore this email.</p>
+					`,
+				});
+			} catch (error) {
+				console.error("Failed to send verification email:", error);
+				throw new Error("Failed to send verification email. Please try again.");
+			}
+		},
 	},
 	secret: process.env.AUTH_SECRET || "your-secret-key",
-	baseURL: uiUrl || "http://localhost:4002",
+	baseURL: apiUrl || "http://localhost:4002",
 	hooks: {
 		after: createAuthMiddleware(async (ctx) => {
 			// Check if this is a signup event

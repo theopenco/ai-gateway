@@ -19,6 +19,7 @@ export interface UseUserOptions {
 	redirectTo?: string;
 	redirectWhen?: "authenticated" | "unauthenticated";
 	checkOnboarding?: boolean;
+	checkEmailVerification?: boolean;
 }
 
 export function useUser(options?: UseUserOptions) {
@@ -92,6 +93,7 @@ export function useUser(options?: UseUserOptions) {
 		options?.redirectTo,
 		options?.redirectWhen,
 		options?.checkOnboarding,
+		options?.checkEmailVerification,
 		options,
 	]);
 

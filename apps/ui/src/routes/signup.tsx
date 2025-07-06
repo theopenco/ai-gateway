@@ -79,8 +79,13 @@ function RouteComponent() {
 						email: values.email,
 						name: values.name,
 					});
-					toast({ title: "Account created", description: "Welcome!" });
-					navigate({ to: "/onboarding" });
+					toast({
+						title: "Account created",
+						description:
+							"Please check your email to verify your account before signing in.",
+					});
+					// Redirect to login page instead of dashboard since verification is required
+					navigate({ to: "/login" });
 				},
 				onError: (ctx) => {
 					toast({

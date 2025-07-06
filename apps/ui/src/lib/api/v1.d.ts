@@ -162,6 +162,7 @@ export interface paths {
 								email: string;
 								name: string | null;
 								onboardingCompleted: boolean;
+								emailVerified: boolean;
 							};
 						};
 					};
@@ -245,6 +246,7 @@ export interface paths {
 								email: string;
 								name: string | null;
 								onboardingCompleted: boolean;
+								emailVerified: boolean;
 							};
 							message: string;
 						};
@@ -415,6 +417,7 @@ export interface paths {
 								email: string;
 								name: string | null;
 								onboardingCompleted: boolean;
+								emailVerified: boolean;
 							};
 							message: string;
 						};
