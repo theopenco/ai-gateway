@@ -84,8 +84,7 @@ function RouteComponent() {
 						description:
 							"Please check your email to verify your account before signing in.",
 					});
-					// Redirect to login page instead of dashboard since verification is required
-					navigate({ to: "/login" });
+					navigate({ to: "/onboarding" });
 				},
 				onError: (ctx) => {
 					toast({
