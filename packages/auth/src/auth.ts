@@ -38,7 +38,12 @@ async function createBrevoContact(email: string, name?: string): Promise<void> {
 				...(process.env.BREVO_LIST_IDS && {
 					listIds: process.env.BREVO_LIST_IDS.split(",").map(Number),
 				}),
-				...(name && { attributes: { FNAME: name } }),
+				...(name && {
+					attributes: {
+						FIRSTNAME: name.split(" ")[0] || undefined,
+						LASTNAME: name.split(" ")[1] || undefined,
+					},
+				}),
 			}),
 		});
 
