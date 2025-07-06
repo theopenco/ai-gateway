@@ -17,6 +17,42 @@ const smtpFromEmail =
 	process.env.SMTP_FROM_EMAIL || "contact@email.llmgateway.io";
 const replyToEmail = process.env.SMTP_REPLY_TO_EMAIL || "contact@llmgateway.io";
 
+async function createBrevoContact(email: string, name?: string): Promise<void> {
+	const brevoApiKey = process.env.BREVO_API_KEY;
+
+	if (!brevoApiKey) {
+		console.log("BREVO_API_KEY not configured, skipping contact creation");
+		return;
+	}
+
+	try {
+		const response = await fetch("https://api.brevo.com/v3/contacts", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"api-key": brevoApiKey,
+			},
+			body: JSON.stringify({
+				email,
+				updateEnabled: true,
+				...(process.env.BREVO_LIST_IDS && {
+					listIds: process.env.BREVO_LIST_IDS.split(",").map(Number),
+				}),
+				...(name && { attributes: { FNAME: name } }),
+			}),
+		});
+
+		if (!response.ok) {
+			const error = await response.text();
+			throw new Error(`Brevo API error: ${response.status} - ${error}`);
+		}
+
+		console.log(`Successfully created Brevo contact for ${email}`);
+	} catch (error) {
+		console.error("Failed to create Brevo contact:", error);
+	}
+}
+
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
 	advanced: {
 		crossSubDomainCookies: {
@@ -131,6 +167,12 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 						organizationId: organization.id,
 						mode: process.env.HOSTED === "true" ? "credits" : "hybrid",
 					});
+
+					// Create user in brevo for email campaigns
+					await createBrevoContact(
+						newSession.user.email,
+						newSession.user.name || undefined,
+					);
 				}
 			}
 		}),
